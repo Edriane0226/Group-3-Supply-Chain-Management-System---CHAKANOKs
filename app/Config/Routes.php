@@ -6,14 +6,8 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
-$routes->get('/login', 'Login::index');
-$routes->post('/login/auth', 'Login::auth');
-$routes->get('/logout', 'Login::logout');
+$routes->get('/login', 'Auth::login');
+$routes->post('/login', 'Auth::attemptLogin');
+$routes->get('/logout', 'Auth::logout');
+$routes->get('/dashboard', 'Auth::dashboard');
 
-$routes->get('/admin/dashboard', function () {
-    echo "<h1>Admin Dashboard</h1>";
-});
-
-$routes->get('/user/dashboard', function () {
-    echo "<h1>User Dashboard</h1>";
-});

@@ -8,29 +8,27 @@ class UserSeeder extends Seeder
 {
     public function run()
     {
-        $users = [
+        $data = [
             [
-                'name'     => 'Admin',
-                'email'    => 'admin@gmail.com',
-                'password' => password_hash('admin123', PASSWORD_DEFAULT),
-                'role'     => 'admin',
+                'name'   => 'Edriane Bangonon',
+                'email'  => 'juan@example.com',
+                'role'   => 'admin',
+                'branch' => 'Main Branch',
             ],
             [
-                'name'     => 'User',
-                'email'    => 'user@gmail.com',
-                'password' => password_hash('user123', PASSWORD_DEFAULT),
-                'role'     => 'user',
-            ]
+                'name'   => 'Maria Santos',
+                'email'  => 'maria@example.com',
+                'role'   => 'Inventory Staff',
+                'branch' => 'Branch A',
+            ],
+            [
+                'name'   => 'Pedro Reyes',
+                'email'  => 'pedro@example.com',
+                'role'   => 'Branch Manager',
+                'branch' => 'Branch A',
+            ],
         ];
 
-        $builder = $this->db->table('users');
-
-        foreach ($users as $user) {
-            // Check if email already exists
-            $existing = $builder->where('email', $user['email'])->get()->getRow();
-            if (!$existing) {
-                $builder->insert($user);
-            }
-        }
+        $this->db->table('users')->insertBatch($data);
     }
 }
