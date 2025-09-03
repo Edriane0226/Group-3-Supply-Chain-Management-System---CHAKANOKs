@@ -14,40 +14,43 @@ class Auth extends Controller
         return view('auth/login');
     }
     
-    public function attemptLogin()
-    {
-        helper(['form']);
-        $session = session();
-        $userModel = new UserModel();
+public function attemptLogin()
+{
+    helper(['form']);
+    $session = session();
+    $userModel = new UserModel();
 
-        $rules = [
-            'id' => 'required|integer', // ID ra akong gi req
-        ];
+    $rules = ['id' => 'required|integer'];
 
-        if (!$this->validate($rules)) {
-            return view('auth/login', ['validation' => $this->validator]);
-        }
-
-        $user = $userModel->where('id', $this->request->getVar('id'))->first();
-
-        if ($user) {
-            $session->set([
-                'id'        => $user['id'],
-                'first_Name'      => $user['first_Name'],
-                'last_Name'      => $user['last_Name'],
-                'Middle_Name'      => $user['middle_Name'],
-                'email'     => $user['email'],
-                'role'      => $user['role'],
-                'branch_id'    => $user['branch_id'],
-                'isLoggedIn'=> true
-            ]);
-            $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
-            return redirect()->to('dashboard'); // blud will go to dashboard()
-        }
-
-        $session->setFlashdata('error', 'Invalid ID');
-        return redirect()->back();
+    if (!$this->validate($rules)) {
+        return view('auth/login', ['validation' => $this->validator]);
     }
+
+    // I remove sa niya ang old session if naa 
+    $session->remove(['id','first_Name','last_Name','Middle_Name','email','role','branch_id','isLoggedIn']);
+
+    $id = $this->request->getVar('id');
+    $user = $userModel->where('id', $id)->first();
+
+    if ($user) {
+        $session->set([
+            'id'         => $user['id'],
+            'first_Name' => $user['first_Name'],
+            'last_Name'  => $user['last_Name'],
+            'Middle_Name'=> $user['middle_Name'],
+            'email'      => $user['email'],
+            'role'       => $user['role'],
+            'branch_id'  => $user['branch_id'],
+            'isLoggedIn' => true
+        ]);
+        $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
+        return redirect()->to('dashboard');
+    }
+
+    $session->setFlashdata('error', 'Invalid ID');
+    return redirect()->back();
+}
+
     // session DESTROYER
     public function logout()
     {
