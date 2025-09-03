@@ -7,10 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { overflow-x: hidden; }
+        :root { --accent:#0d6efd; --muted:#6c757d; --surface:#ffffff; --bg:#f6f8fb; }
+        body { overflow-x: hidden; background: var(--bg); color:#212529; }
         .content { margin-left: 0; padding: 80px 24px 24px; }
-        #scanner { width: 100%; max-width: 520px; border: 1px dashed #ccc; aspect-ratio: 4/3; border-radius: .5rem; }
+        #scanner { width: 100%; max-width: 520px; border: 1px dashed #dee2e6; aspect-ratio: 4/3; border-radius: .5rem; background:#fff; }
         .table-sm td, .table-sm th { padding: .45rem .5rem; }
+        .metric.card { border: 1px solid #e9ecef; background: var(--surface); }
+        .metric .label { color: var(--muted); font-size:.9rem; }
+        .metric .value { font-size: 1.6rem; font-weight: 600; }
+        .metric .icon { color: var(--accent); opacity:.8; }
+        .section-header { background:#fff; border-bottom:1px solid #e9ecef; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
@@ -19,7 +25,7 @@
         <div class="container-fluid">
             <a class="navbar-brand fw-semibold" href="#"><i class="bi bi-box-seam"></i> Inventory</a>
             <div class="d-flex align-items-center gap-3">
-                <span class="text-muted small">Branch: <?php echo htmlspecialchars((string)(session()->get('branch_id') ?? 'N/A')); ?></span>
+                <span class="small text-muted">Branch: <?php echo htmlspecialchars((string)(session()->get('branch_id') ?? 'N/A')); ?></span>
                 <a class="btn btn-outline-secondary btn-sm" href="<?php echo base_url('logout'); ?>">Logout</a>
             </div>
         </div>
@@ -31,53 +37,53 @@
         <div class="container-fluid">
             <div class="row g-3 mb-3">
                 <div class="col-md-3">
-                    <div class="card shadow-sm h-100">
+                    <div class="card shadow-sm h-100 metric">
                         <div class="card-body">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted">Total SKUs</div>
-                                    <div class="fs-4 fw-semibold" id="total_skus">0</div>
+                                    <div class="label">Total SKUs</div>
+                                    <div class="value" id="total_skus">0</div>
                                 </div>
-                                <i class="bi bi-collection fs-1 text-primary"></i>
+                                <i class="bi bi-collection fs-1 icon"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm h-100">
+                    <div class="card shadow-sm h-100 metric">
                         <div class="card-body">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted">Total Quantity</div>
-                                    <div class="fs-4 fw-semibold" id="total_quantity">0</div>
+                                    <div class="label">Total Quantity</div>
+                                    <div class="value" id="total_quantity">0</div>
                                 </div>
-                                <i class="bi bi-basket3 fs-1 text-success"></i>
+                                <i class="bi bi-basket3 fs-1 icon"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm h-100">
+                    <div class="card shadow-sm h-100 metric">
                         <div class="card-body">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted">Low Stock Items</div>
-                                    <div class="fs-4 fw-semibold" id="low_count">0</div>
+                                    <div class="label">Low Stock Items</div>
+                                    <div class="value" id="low_count">0</div>
                                 </div>
-                                <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
+                                <i class="bi bi-exclamation-triangle fs-1 icon" style="color:#fd7e14"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm h-100">
+                    <div class="card shadow-sm h-100 metric">
                         <div class="card-body">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div class="text-muted">Expiring (30d)</div>
-                                    <div class="fs-4 fw-semibold" id="exp_count">0</div>
+                                    <div class="label">Expiring (30d)</div>
+                                    <div class="value" id="exp_count">0</div>
                                 </div>
-                                <i class="bi bi-calendar2-event fs-1 text-danger"></i>
+                                <i class="bi bi-calendar2-event fs-1 icon" style="color:#dc3545"></i>
                             </div>
                         </div>
                     </div>
@@ -87,7 +93,7 @@
             <div class="row g-3">
                 <div class="col-lg-8">
                     <div class="card shadow-sm mb-3">
-                        <div class="card-header bg-white"><i class="bi bi-bell me-2 text-warning"></i>Low Stock Alerts</div>
+                        <div class="card-header section-header fw-semibold"><i class="bi bi-bell me-2 text-warning"></i>Low Stock Alerts</div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-sm mb-0 align-middle">
@@ -103,7 +109,7 @@
                     </div>
 
                     <div class="card shadow-sm">
-                        <div class="card-header bg-white"><i class="bi bi-calendar2-week me-2 text-danger"></i>Expiring Soon</div>
+                        <div class="card-header section-header fw-semibold"><i class="bi bi-calendar2-week me-2 text-danger"></i>Expiring Soon</div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-sm mb-0 align-middle">

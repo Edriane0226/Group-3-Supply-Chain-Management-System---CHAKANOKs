@@ -63,6 +63,11 @@ public function attemptLogin()
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('login');
         }
+        // Restrict dashboard to Inventory Staff only
+        if (session()->get('role') !== 'Inventory Staff') {
+            session()->setFlashdata('error', 'Unauthorized: Inventory Staff only');
+            return redirect()->to('login');
+        }
         return view('pages/dashboard'); // load dashboard
     }
 }
