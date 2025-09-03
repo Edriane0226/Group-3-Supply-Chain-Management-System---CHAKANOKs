@@ -33,13 +33,15 @@ class Auth extends Controller
         if ($user) {
             $session->set([
                 'id'        => $user['id'],
-                'name'      => $user['name'],
+                'first_Name'      => $user['first_Name'],
+                'last_Name'      => $user['last_Name'],
+                'Middle_Name'      => $user['middle_Name'],
                 'email'     => $user['email'],
                 'role'      => $user['role'],
-                'branch'    => $user['branch'],
+                'branch_id'    => $user['branch_id'],
                 'isLoggedIn'=> true
             ]);
-            $session->setFlashdata('success', 'Welcome ' . $user['name']);
+            $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
             return redirect()->to('dashboard'); // blud will go to dashboard()
         }
 
