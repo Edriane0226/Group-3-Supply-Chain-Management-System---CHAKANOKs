@@ -55,7 +55,7 @@ public function attemptLogin()
     public function logout()
     {
         session()->destroy();
-        return redirect()->to('auth/login');
+        return redirect()->to('login');
     }
 
     public function dashboard()
