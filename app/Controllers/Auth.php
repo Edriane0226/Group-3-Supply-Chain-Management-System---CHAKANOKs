@@ -7,51 +7,54 @@ use CodeIgniter\Controller;
 
 class Auth extends Controller
 {   
-    // login form loader ni gi comment nlng nako tung sa home
+    // login form
     public function login()
     {
         helper(['form']);
         return view('auth/login');
     }
     
-public function attemptLogin()
-{
-    helper(['form']);
-    $session = session();
-    $userModel = new UserModel();
+    public function attemptLogin()
+    {
+        helper(['form']);
+        $session   = session();
+        $userModel = new UserModel();
 
-    $rules = ['id' => 'required|integer'];
+        $rules = ['id' => 'required|integer'];
 
-    if (!$this->validate($rules)) {
-        return view('auth/login', ['validation' => $this->validator]);
-    }
+        if (!$this->validate($rules)) {
+            return view('auth/login', ['validation' => $this->validator]);
+        }
 
-    // I remove sa niya ang old session if naa 
-    $session->remove(['id','first_Name','last_Name','Middle_Name','email','role','branch_id','isLoggedIn']);
-
-    $id = $this->request->getVar('id');
-    $user = $userModel->where('id', $id)->first();
-
-    if ($user) {
-        $session->set([
-            'id'         => $user['id'],
-            'first_Name' => $user['first_Name'],
-            'last_Name'  => $user['last_Name'],
-            'Middle_Name'=> $user['middle_Name'],
-            'email'      => $user['email'],
-            'role'       => $user['role'],
-            'branch_id'  => $user['branch_id'],
-            'isLoggedIn' => true
+        // Remove old session if exists
+        $session->remove([
+            'id','first_Name','last_Name','Middle_Name',
+            'email','role','branch_id','isLoggedIn'
         ]);
-        $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
-        return redirect()->to('dashboard');
+
+        $id   = $this->request->getVar('id');
+        $user = $userModel->where('id', $id)->first();
+
+        if ($user) {
+            $session->set([
+                'id'          => $user['id'],
+                'first_Name'  => $user['first_Name'],
+                'last_Name'   => $user['last_Name'],
+                'Middle_Name' => $user['middle_Name'],
+                'email'       => $user['email'],
+                'role'        => $user['role'],
+                'branch_id'   => $user['branch_id'],
+                'isLoggedIn'  => true
+            ]);
+            $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
+            return redirect()->to('dashboard');
+        }
+
+        $session->setFlashdata('error', 'Invalid ID');
+        return redirect()->back();
     }
 
-    $session->setFlashdata('error', 'Invalid ID');
-    return redirect()->back();
-}
-
-    // session DESTROYER
+    // logout / destroy session
     public function logout()
     {
         session()->destroy();
@@ -63,11 +66,18 @@ public function attemptLogin()
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('login');
         }
-        // Restrict dashboard to Inventory Staff only
-        if (session()->get('role') !== 'Inventory Staff') {
-            session()->setFlashdata('error', 'Unauthorized: Inventory Staff only');
-            return redirect()->to('login');
+
+        // ✅ Allow both Inventory Staff and Branch Manager
+        if (session()->get('role') === 'Inventory Staff') {
+            return view('pages/dashboard'); // Inventory staff dashboard
         }
-        return view('pages/dashboard'); // load dashboard
+
+        if (session()->get('role') === 'Branch Manager') {
+            return view('manage/dashboard'); // Branch manager dashboard
+        }
+
+        // Fallback for unauthorized roles
+        session()->setFlashdata('error', 'Unauthorized access');
+        return redirect()->to('login');
     }
 }

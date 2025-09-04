@@ -57,7 +57,7 @@
     </div>
     
     <!-- right -->
-    <div class="col-md-6 login-right d-flex flex-column align-items-center justify-content-center"">
+    <div class="col-md-6 login-right d-flex flex-column align-items-center justify-content-center">
       <img src="../public/images/2.jpg" alt="Logo">
       <h1 class="mt-3  text-white">Chakanoks</h1>
       <h5 class="mt-1  text-white">Masarap Kahit Walang Laman</h5>

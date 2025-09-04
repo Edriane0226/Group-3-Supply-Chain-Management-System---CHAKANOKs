@@ -18,3 +18,12 @@ $routes->post('/inventory/update', 'Inventory::updateStock');
 $routes->post('/inventory/receive', 'Inventory::receive');
 $routes->post('/inventory/damage', 'Inventory::reportDamage');
 
+$routes->get('dashboard', 'Auth::dashboard');
+
+
+
+
+
+
+
+
