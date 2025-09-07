@@ -47,7 +47,13 @@ class Auth extends Controller
                 'isLoggedIn'  => true
             ]);
             $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
-            return redirect()->to('dashboard');
+            if ($user['role'] === 'Central Office Admin') {
+                return redirect()->to('central');
+            } elseif ($user['role'] === 'Branch Manager') {
+                return redirect()->to('dashboard');
+            } else {
+                return redirect()->to('dashboard');
+            }
         }
 
         $session->setFlashdata('error', 'Invalid ID');
@@ -73,10 +79,45 @@ class Auth extends Controller
         }
 
         if (session()->get('role') === 'Branch Manager') {
-            return view('manage/dashboard'); // Branch manager dashboard
+            return view('pages/dashboard'); // Branch manager dashboard
         }
 
         // Fallback for unauthorized roles
+        session()->setFlashdata('error', 'Unauthorized access');
+        return redirect()->to('login');
+    }
+
+    public function centralDashboard()
+    {   
+        
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to('login');
+        }
+
+        if (session()->get('role') === 'Central Office Admin') {
+            return view('pages/central');
+        }
+
+        session()->setFlashdata('error', 'Unauthorized access');
+        return redirect()->to('login');
+    }
+
+    public function inventory()
+    {
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to('login');
+        }
+
+        // Allows Inv Staff to Access
+        if (session()->get('role') === 'Inventory Staff') {
+            return view('pages/InventoryBranch'); 
+        }
+        // Allows Branch Manager to Access
+        if (session()->get('role') === 'Branch Manager') {
+            return view('pages/InventoryBranch'); 
+        }
+
+        // Redirect to Login if Unauthrized User
         session()->setFlashdata('error', 'Unauthorized access');
         return redirect()->to('login');
     }

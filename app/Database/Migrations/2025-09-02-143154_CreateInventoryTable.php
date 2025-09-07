@@ -29,6 +29,11 @@ class CreateInventoryTable extends Migration
                 'constraint' => 100,
                 'null'       => true,
             ],
+            'type' => [
+                'type'       => 'ENUM',
+                'constraint' => ['Store Equipment', 'Stock Supplies'],
+                'null'       => true,
+            ],
             'quantity' => [
                 'type'       => 'INT',
                 'unsigned'   => true,
