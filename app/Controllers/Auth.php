@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use CodeIgniter\Controller;
+use App\Models\BranchModel;
 
 class Auth extends Controller
 {   
@@ -19,6 +20,7 @@ class Auth extends Controller
         helper(['form']);
         $session   = session();
         $userModel = new UserModel();
+        $branchModel = new BranchModel();
 
         $rules = ['id' => 'required|integer'];
 
@@ -36,6 +38,9 @@ class Auth extends Controller
         $user = $userModel->where('id', $id)->first();
 
         if ($user) {
+
+            $branch = $branchModel->find($user['branch_id']);
+
             $session->set([
                 'id'          => $user['id'],
                 'first_Name'  => $user['first_Name'],
@@ -44,6 +49,7 @@ class Auth extends Controller
                 'email'       => $user['email'],
                 'role'        => $user['role'],
                 'branch_id'   => $user['branch_id'],
+                'branch_name' => $branch ? $branch['branch_name'] : 'Unknown Branch',
                 'isLoggedIn'  => true
             ]);
             $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);

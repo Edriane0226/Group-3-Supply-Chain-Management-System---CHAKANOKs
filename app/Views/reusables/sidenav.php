@@ -134,14 +134,30 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <img src="<?= base_url('public/images/2.jpg') ?>" alt="Logo">
-    <h5>ChakaNoks<br>Branch Manager</h5>
-    <a href="<?= base_url('dashboard') ?>" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
-    <a href="<?= base_url('inventory')?>"><i class="bi bi-box-seam me-2"></i> Inventory</a>
-    <!-- I Comment Sa nako -->
-    <!-- <a href="#"><i class="bi bi-cart-check me-2"></i> Purchase Request</a>
-    <a href="#"><i class="bi bi-arrow-left-right me-2"></i> Transfer</a>
-    <a href="#"><i class="bi bi-gear-wide-connected me-2"></i> Operations</a> 
-    <a href="#"><i class="bi bi-truck me-2"></i> Delivery</a> -->
+    <!-- Check niya if Central or Branch Kung central or branch-->
+    <h5>
+      ChakaNoks<br>
+      <?= esc(session()->get('branch_name')) ?>
+    </h5>
+
+    <a href="<?= base_url('dashboard') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
+      <i class="bi bi-speedometer2 me-2"></i> Dashboard
+    </a>
+
+    <a href="<?= base_url('inventory') ?>" class="<?= (uri_string() == 'inventory') ? 'active' : '' ?>">
+      <i class="bi bi-box-seam me-2"></i> Inventory
+    </a>
+
+    <!-- Check The Role Then It Shows ilang perspective links or something -->
+    <?php if (session()->get('role') === 'Central Office Admin'): ?>
+        <a href="<?= base_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>
+        <a href="<?= base_url('branches') ?>"><i class="bi bi-building me-2"></i> Branches</a>
+    <?php else: ?>
+        <!-- Branch specific links -->
+        <a href="<?= base_url('orders') ?>"><i class="bi bi-cart-check me-2"></i> Orders</a>
+        <a href="<?= base_url('deliveries') ?>"><i class="bi bi-truck me-2"></i> Deliveries</a>
+    <?php endif; ?>
+
     <a href="<?= base_url('logout') ?>"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
   </div>
 </body>
