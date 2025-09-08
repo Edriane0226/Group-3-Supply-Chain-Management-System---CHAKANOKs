@@ -10,8 +10,8 @@ class UserSeeder extends Seeder
     public function run()
     {
         $mainBranch = $this->db->table('branches')->where('branch_name', 'Central')->get()->getRow();
-        $branchA    = $this->db->table('branches')->where('branch_name', 'Gensan Branch')->get()->getRow();
-        $branchB    = $this->db->table('branches')->where('branch_name', 'Polomolok Branch')->get()->getRow();
+        $branchA    = $this->db->table('branches')->where('branch_name', 'Gensan')->get()->getRow();
+        $branchB    = $this->db->table('branches')->where('branch_name', 'Polomolok')->get()->getRow();
 
         $data = [
             [
