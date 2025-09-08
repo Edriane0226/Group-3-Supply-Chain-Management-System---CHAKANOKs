@@ -9,7 +9,7 @@ class BranchModel extends Model
     protected $table            = 'branches';
     protected $primaryKey       = 'id';
     protected $returnType       = 'array';
-    protected $allowedFields    = ['branch_name', 'location', 'contact_info', 'created_at', 'updated_at'];
+    protected $allowedFields    = ['branch_name', 'location', 'contact_info', 'created_at', 'status','updated_at']; // nag Add rakog status
 
     protected $useTimestamps    = true;
     protected $createdField     = 'created_at';

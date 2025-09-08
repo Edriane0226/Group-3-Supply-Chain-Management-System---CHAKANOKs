@@ -21,6 +21,22 @@ $routes->post('/inventory/update', 'Inventory::updateStock');
 $routes->post('/inventory/receive', 'Inventory::receive');
 $routes->post('/inventory/damage', 'Inventory::reportDamage');
 
+//Para sa User Management CRUD ug Page
+$routes->get('users', 'UserManagement::index');
+$routes->get('create', 'UserManagement::create');
+$routes->post('store', 'UserManagement::store');
+$routes->get('edit/(:num)', 'UserManagement::edit/$1');
+$routes->post('update/(:num)', 'UserManagement::update/$1');
+$routes->get('delete/(:num)', 'UserManagement::delete/$1');
+
+//Para sa Branch Management CRUD ug Page
+$routes->get('branches', 'BranchManagement::index');
+$routes->get('createBranch', 'BranchManagement::create');
+$routes->post('storeBranch', 'BranchManagement::store');
+$routes->get('editBranch/(:num)', 'BranchManagement::edit/$1');
+$routes->post('updateBranch/(:num)', 'BranchManagement::update/$1');
+$routes->get('deleteBranch/(:num)', 'BranchManagement::delete/$1');
+
 
 
 

@@ -139,10 +139,16 @@
       ChakaNoks<br>
       <?= esc(session()->get('branch_name')) ?>
     </h5>
-
-    <a href="<?= base_url('dashboard') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
-      <i class="bi bi-speedometer2 me-2"></i> Dashboard
-    </a>
+    <!-- if else kay duha ang dashboard check ni siya sa role if COA kay ditso siya sa central dashboard if dli man ditso sa else -->
+    <?php if (session()->get('role') === 'Central Office Admin'): ?>
+        <a href="<?= base_url('central') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+        </a>
+    <?php else: ?>
+        <a href="<?= base_url('dashboard') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+        </a>
+    <?php endif; ?>
 
     <a href="<?= base_url('inventory') ?>" class="<?= (uri_string() == 'inventory') ? 'active' : '' ?>">
       <i class="bi bi-box-seam me-2"></i> Inventory

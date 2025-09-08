@@ -29,6 +29,11 @@ class CreateBranchesTable extends Migration
                 'constraint' => 100,
                 'null'       => true,
             ],
+            'status' => [       //Para Makahandle Ug Status sa branches
+                'type'       => 'ENUM("existing","upcoming","franchise")',
+                'default'    => 'existing',
+                'null'       => false,
+            ],
             'created_at' => [
                 'type'    => 'DATETIME',
                 'null'    => false,
