@@ -51,6 +51,10 @@
           <label for="emp_ID" class="form-label">Employee ID</label>
           <input type="number" class="form-control" id="emp_ID" name="id" placeholder="Enter your ID" required>
         </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="Enter your Password" required>
+        </div>
         <button type="submit" class="btn btn-primary w-100">Login</button>
         <p class="mt-3">Cant Login? <a href="#">Contact Us</a></p>
       </form>

@@ -22,7 +22,7 @@ class Auth extends Controller
         $userModel = new UserModel();
         $branchModel = new BranchModel();
 
-        $rules = ['id' => 'required|integer'];
+        $rules = ['id' => 'required|integer', 'password' => 'required|min_length[8]'];
 
         if (!$this->validate($rules)) {
             return view('auth/login', ['validation' => $this->validator]);

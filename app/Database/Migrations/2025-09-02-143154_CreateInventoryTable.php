@@ -59,6 +59,13 @@ class CreateInventoryTable extends Migration
                 'type'     => 'INT',
                 'unsigned' => true,
                 'default'  => 10, 
+            
+            ],
+            'Price' => [
+                'type'     => 'DECIMAL',
+                'constraint' => 10,2,                
+                'null' => false
+            
             ],
             'updated_at' => [
                 'type'     => 'DATETIME',
