@@ -3,56 +3,66 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
-use CodeIgniter\Controller;
 use App\Models\BranchModel;
+use CodeIgniter\Controller;
 
 class Auth extends Controller
-{   
-    // login form
+{
+    // Show login form
     public function login()
     {
         helper(['form']);
         return view('auth/login');
     }
-    
+
+    // Process login attempt
     public function attemptLogin()
     {
         helper(['form']);
-        $session   = session();
-        $userModel = new UserModel();
+        $session     = session();
+        $userModel   = new UserModel();
         $branchModel = new BranchModel();
 
-        $rules = ['id' => 'required|integer', 'password' => 'required|min_length[8]'];
+        $rules = [
+            'id'       => 'required|integer',
+            'password' => 'required|min_length[8]'
+        ];
 
         if (!$this->validate($rules)) {
             return view('auth/login', ['validation' => $this->validator]);
         }
 
-        // Remove old session if exists
+        // Clear old session data
         $session->remove([
-            'id','first_Name','last_Name','Middle_Name',
-            'email','role','branch_id','isLoggedIn'
+            'user_id','first_Name','last_Name','middle_Name',
+            'email','role','branch_id','branch_name','full_name','isLoggedIn'
         ]);
 
         $id   = $this->request->getVar('id');
         $user = $userModel->where('id', $id)->first();
 
         if ($user) {
-
             $branch = $branchModel->find($user['branch_id']);
 
+            // Build full name
+            $fullName = trim($user['first_Name'] . ' ' . $user['last_Name']);
+
+            // Store session
             $session->set([
-                'id'          => $user['id'],
+                'user_id'     => $user['id'],
                 'first_Name'  => $user['first_Name'],
                 'last_Name'   => $user['last_Name'],
-                'Middle_Name' => $user['middle_Name'],
+                'middle_Name' => $user['middle_Name'],
                 'email'       => $user['email'],
                 'role'        => $user['role'],
                 'branch_id'   => $user['branch_id'],
                 'branch_name' => $branch ? $branch['branch_name'] : 'Unknown Branch',
+                'full_name'   => $fullName,
                 'isLoggedIn'  => true
             ]);
+
             $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
+
             if ($user['role'] === 'Central Office Admin') {
                 return redirect()->to('central');
             } elseif ($user['role'] === 'Branch Manager') {
@@ -64,41 +74,20 @@ class Auth extends Controller
             }
         }
 
-        $session->setFlashdata('error', 'Invalid ID');
+        $session->setFlashdata('error', 'Invalid ID or password');
         return redirect()->back();
     }
 
-    // logout / destroy session
+    // Logout
     public function logout()
     {
         session()->destroy();
         return redirect()->to('login');
     }
 
-    public function dashboard()
-    {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
-        }
-
-        // Only Branch Manager should access this dashboard
-        if (session()->get('role') === 'Branch Manager') {
-            return view('pages/dashboard'); // Branch manager dashboard
-        }
-
-        // Inventory Staff should go to Inventory dashboard
-        if (session()->get('role') === 'Inventory Staff') {
-            return redirect()->to('inventory');
-        }
-
-        // Fallback for unauthorized roles
-        session()->setFlashdata('error', 'Unauthorized access');
-        return redirect()->to('login');
-    }
-
+    // Central Office Admin Dashboard
     public function centralDashboard()
-    {   
-        
+    {
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('login');
         }
@@ -111,21 +100,21 @@ class Auth extends Controller
         return redirect()->to('login');
     }
 
+    // Inventory Access
     public function inventory()
     {
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('login');
         }
 
-        // Inventory Staff go to their Overview; Branch Manager sees combined inventory dashboard
         if (session()->get('role') === 'Inventory Staff') {
             return redirect()->to('inventory/overview');
         }
+
         if (session()->get('role') === 'Branch Manager') {
-            return view('pages/InventoryBranch'); 
+            return view('pages/InventoryBranch');
         }
 
-        // Redirect to Login if Unauthrized User
         session()->setFlashdata('error', 'Unauthorized access');
         return redirect()->to('login');
     }

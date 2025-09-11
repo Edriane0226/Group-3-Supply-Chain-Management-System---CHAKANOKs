@@ -29,8 +29,16 @@ class PurchaseRequestModel extends Model
     // Join Kuhaon ang branch name and supplier name kay id raman ang gi fk sa purchase_requests table
     public function withRelations()
     {
-        return $this->select('purchase_requests.*, branches.branch_name, suppliers.name as supplier_name')
+        return $this->select('purchase_requests.*, branches.branch_name, suppliers.supplier_name as supplier_name')
                     ->join('branches', 'branches.id = purchase_requests.branch_id')
                     ->join('suppliers', 'suppliers.id = purchase_requests.supplier_id');
+    }
+
+    // Count pending PRs for a branch
+    public function getPendingPRs(int $branchId): int
+    {
+        return $this->where('branch_id', $branchId)
+                    ->where('status', 'pending')
+                    ->countAllResults();
     }
 }
