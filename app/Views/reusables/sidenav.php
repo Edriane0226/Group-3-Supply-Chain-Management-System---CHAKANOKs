@@ -139,27 +139,35 @@
       ChakaNoks<br>
       <?= esc(session()->get('branch_name')) ?>
     </h5>
-    <!-- if else kay duha ang dashboard check ni siya sa role if COA kay ditso siya sa central dashboard if dli man ditso sa else -->
-    <?php if (session()->get('role') === 'Central Office Admin'): ?>
-        <a href="<?= base_url('central') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
-          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+    <?php $role = session()->get('role'); ?>
+    <?php if ($role === 'Central Office Admin'): ?>
+        <a href="<?= base_url('central') ?>" class="<?= (uri_string() == 'central') ? 'active' : '' ?>">
+          <i class="bi bi-building-gear me-2"></i> Central Dashboard
         </a>
+        <a href="<?= base_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>
+        <a href="<?= base_url('branches') ?>"><i class="bi bi-building me-2"></i> Branches</a>
+    <?php elseif ($role === 'Inventory Staff'): ?>
+        <a href="<?= base_url('inventory/overview') ?>" class="<?= (uri_string() == 'inventory/overview') ? 'active' : '' ?>">
+          <i class="bi bi-graph-up me-2"></i> Overview
+        </a>
+        <a href="<?= base_url('inventory/scan') ?>" class="<?= (uri_string() == 'inventory/scan') ? 'active' : '' ?>">
+          <i class="bi bi-upc-scan me-2"></i> Scan
+        </a>
+        <a href="<?= base_url('inventory/low') ?>" class="<?= (uri_string() == 'inventory/low') ? 'active' : '' ?>">
+          <i class="bi bi-exclamation-triangle me-2"></i> Low Stock
+        </a>
+        <a href="<?= base_url('inventory/expiry') ?>" class="<?= (uri_string() == 'inventory/expiry') ? 'active' : '' ?>">
+          <i class="bi bi-calendar2-event me-2"></i> Expiry
+        </a>
+        <!-- Inventory Staff: no Orders/Deliveries, no Dashboard -->
     <?php else: ?>
+        <!-- Branch Manager -->
         <a href="<?= base_url('dashboard') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
           <i class="bi bi-speedometer2 me-2"></i> Dashboard
         </a>
-    <?php endif; ?>
-
-    <a href="<?= base_url('inventory') ?>" class="<?= (uri_string() == 'inventory') ? 'active' : '' ?>">
-      <i class="bi bi-box-seam me-2"></i> Inventory
-    </a>
-
-    <!-- Check The Role Then It Shows ilang perspective links or something -->
-    <?php if (session()->get('role') === 'Central Office Admin'): ?>
-        <a href="<?= base_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>
-        <a href="<?= base_url('branches') ?>"><i class="bi bi-building me-2"></i> Branches</a>
-    <?php else: ?>
-        <!-- Branch specific links -->
+        <a href="<?= base_url('inventory') ?>" class="<?= (uri_string() == 'inventory') ? 'active' : '' ?>">
+          <i class="bi bi-box-seam me-2"></i> Inventory
+        </a>
         <a href="<?= base_url('orders') ?>"><i class="bi bi-cart-check me-2"></i> Orders</a>
         <a href="<?= base_url('deliveries') ?>"><i class="bi bi-truck me-2"></i> Deliveries</a>
     <?php endif; ?>

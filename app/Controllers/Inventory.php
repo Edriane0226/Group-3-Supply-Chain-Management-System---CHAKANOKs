@@ -89,6 +89,42 @@ class Inventory extends BaseController
         $item = $this->inventoryModel->find($id);
         return $this->response->setJSON(['success' => true, 'item' => $item]);
     }
+
+    // Render pages (Inventory Staff only)
+    private function ensureStaff()
+    {
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to('login');
+        }
+        if (session()->get('role') !== 'Inventory Staff') {
+            return redirect()->to('inventory');
+        }
+        return null;
+    }
+
+    public function overviewPage()
+    {
+        $guard = $this->ensureStaff(); if ($guard) return $guard;
+        return view('pages/inventory_overview');
+    }
+
+    public function scanPage()
+    {
+        $guard = $this->ensureStaff(); if ($guard) return $guard;
+        return view('pages/inventory_scan');
+    }
+
+    public function lowPage()
+    {
+        $guard = $this->ensureStaff(); if ($guard) return $guard;
+        return view('pages/inventory_low');
+    }
+
+    public function expiryPage()
+    {
+        $guard = $this->ensureStaff(); if ($guard) return $guard;
+        return view('pages/inventory_expiry');
+    }
 }
 
 

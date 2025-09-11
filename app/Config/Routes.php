@@ -15,6 +15,10 @@ $routes->get('/central', 'Auth::centralDashboard');
 
 // Inventory endpoints for inventory 
 $routes->get('inventory', 'Auth::inventory');
+$routes->get('inventory/overview', 'Inventory::overviewPage');
+$routes->get('inventory/scan', 'Inventory::scanPage');
+$routes->get('inventory/low', 'Inventory::lowPage');
+$routes->get('inventory/expiry', 'Inventory::expiryPage');
 $routes->get('/inventory/summary', 'Inventory::summary');
 $routes->get('/inventory/find', 'Inventory::findByBarcode');
 $routes->post('/inventory/update', 'Inventory::updateStock');

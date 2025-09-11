@@ -57,8 +57,10 @@ class Auth extends Controller
                 return redirect()->to('central');
             } elseif ($user['role'] === 'Branch Manager') {
                 return redirect()->to('dashboard');
+            } elseif ($user['role'] === 'Inventory Staff') {
+                return redirect()->to('inventory/overview');
             } else {
-                return redirect()->to('dashboard');
+                return redirect()->to('login');
             }
         }
 
@@ -79,13 +81,14 @@ class Auth extends Controller
             return redirect()->to('login');
         }
 
-        // ✅ Allow both Inventory Staff and Branch Manager
-        if (session()->get('role') === 'Inventory Staff') {
-            return view('pages/dashboard'); // Inventory staff dashboard
-        }
-
+        // Only Branch Manager should access this dashboard
         if (session()->get('role') === 'Branch Manager') {
             return view('pages/dashboard'); // Branch manager dashboard
+        }
+
+        // Inventory Staff should go to Inventory dashboard
+        if (session()->get('role') === 'Inventory Staff') {
+            return redirect()->to('inventory');
         }
 
         // Fallback for unauthorized roles
@@ -114,11 +117,10 @@ class Auth extends Controller
             return redirect()->to('login');
         }
 
-        // Allows Inv Staff to Access
+        // Inventory Staff go to their Overview; Branch Manager sees combined inventory dashboard
         if (session()->get('role') === 'Inventory Staff') {
-            return view('pages/InventoryBranch'); 
+            return redirect()->to('inventory/overview');
         }
-        // Allows Branch Manager to Access
         if (session()->get('role') === 'Branch Manager') {
             return view('pages/InventoryBranch'); 
         }
