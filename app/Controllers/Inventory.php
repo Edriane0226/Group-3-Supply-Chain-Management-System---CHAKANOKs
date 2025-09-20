@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\InventoryModel;
 use CodeIgniter\HTTP\ResponseInterface;
+use App\Database\Seeds\StockSeeder;
 
 class Inventory extends BaseController
 {
@@ -15,30 +16,40 @@ class Inventory extends BaseController
         helper(['form']);
     }
 
-    public function summary(): ResponseInterface
+    // ✅ Main Inventory Page (Branch Manager)
+    public function index()
     {
-        $branchId = (int)($this->request->getGet('branch_id') ?? session()->get('branch_id') ?? 0);
-        if ($branchId <= 0) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'branch_id required']);
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to('/login');
         }
-        $data = $this->inventoryModel->getBranchSummary($branchId);
-        return $this->response->setJSON($data);
+
+        $branchId = (int)(session()->get('branch_id') ?? 0);
+
+        // 🔹 Auto-seed if inventory table is empty
+        if ($this->inventoryModel->countAllResults(false) === 0) {
+            $seeder = new StockSeeder();
+            $seeder->run();
+        }
+
+        $data['inventory'] = $branchId > 0
+            ? $this->inventoryModel->where('branch_id', $branchId)->findAll()
+            : $this->inventoryModel->findAll();
+
+        return view('pages/InventoryBranch', $data);
     }
 
-    public function findByBarcode(): ResponseInterface
+    // ✅ Live inventory JSON (for frontend auto-refresh)
+    public function liveInventory(): ResponseInterface
     {
-        $barcode  = (string)$this->request->getGet('barcode');
-        $branchId = (int)($this->request->getGet('branch_id') ?? session()->get('branch_id') ?? 0);
-        if ($barcode === '') {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'barcode required']);
-        }
-        $item = $this->inventoryModel->findByBarcode($barcode, $branchId > 0 ? $branchId : null);
-        if (!$item) {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
-        }
-        return $this->response->setJSON($item);
+        $branchId = (int)(session()->get('branch_id') ?? 0);
+        $inventory = $branchId > 0
+            ? $this->inventoryModel->where('branch_id', $branchId)->findAll()
+            : $this->inventoryModel->findAll();
+
+        return $this->response->setJSON($inventory);
     }
 
+    // ✅ Update stock
     public function updateStock(): ResponseInterface
     {
         $id    = (int)$this->request->getPost('id');
@@ -56,75 +67,41 @@ class Inventory extends BaseController
         return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
     }
 
-    public function receive(): ResponseInterface
+    // ✅ Find by barcode
+    public function findByBarcode(): ResponseInterface
     {
-        $id     = (int)$this->request->getPost('id');
-        $amount = (int)$this->request->getPost('amount');
-        $amount = max(0, $amount);
+        $barcode  = (string)$this->request->getGet('barcode');
+        $branchId = (int)(session()->get('branch_id') ?? 0);
 
-        if ($id <= 0 || $amount <= 0) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'id and positive amount required']);
+        if ($barcode === '') {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'barcode required']);
         }
-        $ok = $this->inventoryModel->adjustStock($id, $amount);
-        if (!$ok) {
+
+        $item = $this->inventoryModel->findByBarcode($barcode, $branchId > 0 ? $branchId : null);
+        if (!$item) {
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
         }
-        $item = $this->inventoryModel->find($id);
-        return $this->response->setJSON(['success' => true, 'item' => $item]);
+
+        return $this->response->setJSON($item);
     }
 
-    public function reportDamage(): ResponseInterface
-    {
-        $id     = (int)$this->request->getPost('id');
-        $amount = (int)$this->request->getPost('amount');
-        $amount = max(0, $amount);
-
-        if ($id <= 0 || $amount <= 0) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'id and positive amount required']);
-        }
-        $ok = $this->inventoryModel->adjustStock($id, -$amount);
-        if (!$ok) {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
-        }
-        $item = $this->inventoryModel->find($id);
-        return $this->response->setJSON(['success' => true, 'item' => $item]);
-    }
-
-    // Render pages (Inventory Staff only)
+    // 🔒 Staff page guards
     private function ensureStaff()
     {
         if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
+            return redirect()->to('/login');
         }
         if (session()->get('role') !== 'Inventory Staff') {
-            return redirect()->to('inventory');
+            return redirect()->to('/inventory');
         }
         return null;
     }
 
-    public function overviewPage()
-    {
-        $guard = $this->ensureStaff(); if ($guard) return $guard;
-        return view('pages/inventory_overview');
-    }
-
-    public function scanPage()
-    {
-        $guard = $this->ensureStaff(); if ($guard) return $guard;
-        return view('pages/inventory_scan');
-    }
-
-    public function lowPage()
-    {
-        $guard = $this->ensureStaff(); if ($guard) return $guard;
-        return view('pages/inventory_low');
-    }
-
-    public function expiryPage()
-    {
-        $guard = $this->ensureStaff(); if ($guard) return $guard;
-        return view('pages/inventory_expiry');
-    }
+    // Staff Pages
+    public function overviewPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_overview'); }
+    public function scanPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_scan'); }
+    public function lowPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_low'); }
+    public function expiryPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_expiry'); }
 }
 
 

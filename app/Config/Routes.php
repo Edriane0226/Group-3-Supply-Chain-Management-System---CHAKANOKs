@@ -5,7 +5,7 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Home::index');
+$routes->get('/', 'Auth::login');
 $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::attemptLogin');
 $routes->get('/logout', 'Auth::logout');
@@ -45,6 +45,8 @@ $routes->get('editBranch/(:num)', 'BranchManagement::edit/$1');
 $routes->post('updateBranch/(:num)', 'BranchManagement::update/$1');
 $routes->get('deleteBranch/(:num)', 'BranchManagement::delete/$1');
 
+$routes->get('dashboard', 'Branch::dashboard');
+$routes->get('inventory', 'Branch::inventory');
 
 
 
