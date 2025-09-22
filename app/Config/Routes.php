@@ -12,8 +12,6 @@ $routes->get('/logout', 'Auth::logout');
 
 $routes->get('dashboard', 'Dashboard::index');
 
-
-
 //Central 
 $routes->get('/central', 'Auth::centralDashboard');
 

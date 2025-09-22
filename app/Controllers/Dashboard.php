@@ -10,21 +10,28 @@ class Dashboard extends Controller
 {
     public function index()
     {
+        $session = session();
+
+        if (!$session->get('isLoggedIn')) {
+        return redirect()->to('/login');
+        }
+
+        $branchId = $session->get('branch_id');
+
         $inventoryModel = new InventoryModel();
-        $purchaseRequestModel = new PurchaseRequestModel();
 
-        // Hardcode branch_id = 2 for your case
-        $branchId = 2;
-
-        // Get total inventory value for branch 2
         $inventoryValue = $inventoryModel->getInventoryValue($branchId);
-
-
+        $stockWarning = $inventoryModel->getLowStockAlerts($branchId);
+        
         $data = [
             'inventoryValue' => $inventoryValue,
-            // 'inventoryLevels' removed
+            'stockWarning' => $stockWarning
         ];
-
-        return view('pages/dashboard', $data);
+            if($session->get('role') == 'Branch Manager') {
+                return view('pages/dashboard', $data);
+            }
+            elseif($session->get('role') == 'Inventory Staff'){
+                return view("pages/inventory_overview", $data);
+            }
     }
 }

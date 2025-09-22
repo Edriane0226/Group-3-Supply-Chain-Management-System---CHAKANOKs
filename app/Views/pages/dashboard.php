@@ -49,7 +49,7 @@
             <span class="me-2">
                 <?= esc(session()->get('first_Name') . ' ' . session()->get('last_Name')) ?>
             </span>
-            <img src="/assets/images/profile-icon.png" alt="Profile" width="30" height="30" class="rounded-circle">
+            <span class="me-2">(<?= esc(session()->get('role'))?>)</span>
         </div>
     </div>
 
@@ -81,7 +81,7 @@
           <div class="card-box">
             <i class="bi bi-archive"></i>
             <h6>Inventory Value</h6>
-            <div class="card-value">₱<?= number_format($inventoryValue ?? 0, 2) ?></div>
+            <div class="card-value">₱<?= esc(number_format($inventoryValue ?? 0, 2)) ?></div>
           </div>
         </div>
         <div class="col-md-3">
@@ -128,13 +128,30 @@
           <div class="dashboard-box">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <h6>Low Stock Alerts</h6>
-            <?php if (!empty($lowStockAlerts) && $lowStockAlerts != 'N/A'): ?>
-                <table class="table table-sm">
-                    <?= $lowStockAlerts ?>
-                </table>
-            <?php else: ?>
-                <p>N/A</p>
-            <?php endif; ?>
+            <?php if (!empty($stockWarning)) : ?>
+              <table class="table table-striped">
+                  <thead>
+                      <tr>
+                          <th>Item Name</th>
+                          <th>Quantity</th>
+                          <th>Reorder Level</th>
+                          <th>Unit</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <?php foreach ($stockWarning as $item) : ?>
+                          <tr>
+                              <td><?= esc($item['item_name']) ?></td>
+                              <td><?= esc($item['quantity']) ?></td>
+                              <td><?= esc($item['reorder_level']) ?></td>
+                              <td><?= esc($item['unit']) ?></td>
+                          </tr>
+                      <?php endforeach; ?>
+                  </tbody>
+              </table>
+              <?php else : ?>
+                <p>No low stock alerts at the moment.</p>
+              <?php endif; ?>
           </div>
         </div>
         <div class="col-md-6">

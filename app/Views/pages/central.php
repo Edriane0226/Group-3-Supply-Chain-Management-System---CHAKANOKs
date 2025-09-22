@@ -1,5 +1,6 @@
 <?php include 'app/Views/reusables/sidenav.php'; ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,11 +80,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1 class="h4 fw-bold"><?= esc($page_heading ?? 'Overview') ?></h1>
       <div class="d-flex align-items-center">
-        <span class="me-2 text-muted small"><?= esc($user_name ?? 'Juan Dela Cruz') ?></span>
-        <span class="me-2 text-muted small">(<?= esc($user_role ?? 'Central Manager') ?>)</span>
+        <span class="me-2 text-muted small"><?= esc(session()->get('first_Name')) ?> <span> </span> <?= esc(session()->get('last_Name')) ?></span>
+        <span class="me-2 text-muted small">(<?= esc(session()->get('role')) ?>)</span>
         <div class="user-avatar">
-          <!-- <?= strtoupper(substr($user_name ?? 'JD', 0, 1)) ?>
-          <?= strtoupper(substr(explode(' ', $user_name ?? 'JD')[1] ?? '', 0, 1)) ?> -->
+          <?= esc(substr(session()->get('first_Name'), 0, 1)) ?>
         </div>
       </div>
     </div>
@@ -110,7 +110,7 @@
           <div class="card-body d-flex">
             <div class="metric-icon supply-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div class="flex-grow-1">
-              <!-- <?= esc($supply_summary ?? '') ?> -->
+              <?= esc(session()->get('')) ?>
             </div>
           </div>
         </div>

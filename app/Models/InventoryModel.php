@@ -55,7 +55,7 @@ class InventoryModel extends Model
     {
         $builder = $this->builder();
         $result = $builder
-            ->select('SUM(quantity * price) AS total_value')
+            ->select('SUM(quantity * Price) AS total_value')
             ->where('branch_id', $branchId)
             ->get()
             ->getRowArray();
