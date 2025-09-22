@@ -110,7 +110,7 @@
           <div class="card-body d-flex">
             <div class="metric-icon supply-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div class="flex-grow-1">
-              <?= esc(session()->get('')) ?>
+              <?= esc(session()->get('branch_name') ?? 'All Branches') ?>
             </div>
           </div>
         </div>

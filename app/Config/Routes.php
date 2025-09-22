@@ -16,16 +16,18 @@ $routes->get('dashboard', 'Dashboard::index');
 $routes->get('/central', 'Auth::centralDashboard');
 
 // Inventory endpoints for inventory 
-$routes->get('inventory', 'Auth::inventory');
+$routes->get('inventory', 'Inventory::index');
 $routes->get('inventory/overview', 'Inventory::overviewPage');
 $routes->get('inventory/scan', 'Inventory::scanPage');
 $routes->get('inventory/low', 'Inventory::lowPage');
 $routes->get('inventory/expiry', 'Inventory::expiryPage');
+$routes->get('/inventory/live', 'Inventory::liveInventory');
 $routes->get('/inventory/summary', 'Inventory::summary');
 $routes->get('/inventory/find', 'Inventory::findByBarcode');
 $routes->post('/inventory/update', 'Inventory::updateStock');
 $routes->post('/inventory/receive', 'Inventory::receive');
 $routes->post('/inventory/damage', 'Inventory::reportDamage');
+$routes->post('/inventory/create', 'Inventory::createItem');
 
 //Para sa User Management CRUD ug Page
 $routes->get('users', 'UserManagement::index');
@@ -43,8 +45,7 @@ $routes->get('editBranch/(:num)', 'BranchManagement::edit/$1');
 $routes->post('updateBranch/(:num)', 'BranchManagement::update/$1');
 $routes->get('deleteBranch/(:num)', 'BranchManagement::delete/$1');
 
-$routes->get('dashboard', 'Branch::dashboard');
-$routes->get('inventory', 'Branch::inventory');
+// Removed duplicate/invalid Branch routes for dashboard and inventory
 
 
 

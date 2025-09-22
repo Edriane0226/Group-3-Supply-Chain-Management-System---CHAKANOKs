@@ -85,23 +85,80 @@ class Inventory extends BaseController
         return $this->response->setJSON($item);
     }
 
-    // 🔒 Staff page guards
-    private function ensureStaff()
+    // 🔒 Access guards
+    private function ensureInventoryAccess()
     {
         if (!session()->get('isLoggedIn')) {
             return redirect()->to('/login');
         }
-        if (session()->get('role') !== 'Inventory Staff') {
-            return redirect()->to('/inventory');
+        $role = (string) (session()->get('role') ?? '');
+        if ($role !== 'Inventory Staff' && $role !== 'Branch Manager' && $role !== 'Central Office Admin') {
+            return redirect()->to('/login');
         }
         return null;
     }
 
-    // Staff Pages
-    public function overviewPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_overview'); }
-    public function scanPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_scan'); }
-    public function lowPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_low'); }
-    public function expiryPage() { $guard = $this->ensureStaff(); if ($guard) return $guard; return view('pages/inventory_expiry'); }
+    // Staff Pages (Inventory Staff only)
+    public function overviewPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_overview'); }
+    public function scanPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_scan'); }
+    public function lowPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_low'); }
+    public function expiryPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_expiry'); }
+
+    // ✅ Branch-scoped summary for dashboards
+    public function summary(): ResponseInterface
+    {
+        $guard = $this->ensureInventoryAccess();
+        if ($guard) {
+            // If guard returns a redirect response, honor it
+            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        }
+        $branchId = (int)(session()->get('branch_id') ?? 0);
+        if ($branchId <= 0) {
+            return $this->response->setJSON(['totals' => ['total_skus' => 0, 'total_quantity' => 0], 'lowStock' => [], 'expiringSoon' => []]);
+        }
+        $summary = $this->inventoryModel->getBranchSummary($branchId);
+        return $this->response->setJSON($summary);
+    }
+
+    // ✅ Receive stock (increase)
+    public function receive(): ResponseInterface
+    {
+        $guard = $this->ensureInventoryAccess();
+        if ($guard) {
+            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        }
+        $id     = (int)$this->request->getPost('id');
+        $amount = (int)$this->request->getPost('amount');
+        if ($id <= 0 || $amount <= 0) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'id and positive amount required']);
+        }
+        if ($this->inventoryModel->increaseStock($id, $amount)) {
+            $item = $this->inventoryModel->find($id);
+            return $this->response->setJSON(['success' => true, 'item' => $item]);
+        }
+        return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
+    }
+
+    // ✅ Report damage (decrease)
+    public function reportDamage(): ResponseInterface
+    {
+        $guard = $this->ensureInventoryAccess();
+        if ($guard) {
+            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        }
+        $id     = (int)$this->request->getPost('id');
+        $amount = (int)$this->request->getPost('amount');
+        if ($id <= 0 || $amount <= 0) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'id and positive amount required']);
+        }
+        if ($this->inventoryModel->decreaseStock($id, $amount)) {
+            $item = $this->inventoryModel->find($id);
+            return $this->response->setJSON(['success' => true, 'item' => $item]);
+        }
+        return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found']);
+    }
+
+    
 }
 
 

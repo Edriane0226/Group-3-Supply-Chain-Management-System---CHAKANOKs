@@ -42,30 +42,17 @@
                     <div class="card-header section-header fw-semibold"><i class="bi bi-bell me-2 text-warning"></i>Low Stock Alerts</div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <?php if (!empty($stockWarning)) : ?>
                             <table class="table table-sm mb-0 align-middle">
-                                <thead>
-                      <tr>
-                          <th>Item Name</th>
-                          <th>Quantity</th>
-                          <th>Reorder Level</th>
-                          <th>Unit</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      <?php foreach ($stockWarning as $item) : ?>
-                          <tr>
-                              <td><?= esc($item['item_name']) ?></td>
-                              <td><?= esc($item['quantity']) ?></td>
-                              <td><?= esc($item['reorder_level']) ?></td>
-                              <td><?= esc($item['unit']) ?></td>
-                          </tr>
-                      <?php endforeach; ?>
-                  </tbody>
-              </table>
-              <?php else : ?>
-                <p>No low stock alerts at the moment.</p>
-              <?php endif; ?>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th class="text-end">Quantity</th>
+                                        <th class="text-end">Reorder Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="low_stock">
+                                    <tr><td colspan="3" class="text-center text-muted">Loading…</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -76,8 +63,15 @@
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-sm mb-0 align-middle">
-                                <thead class="table-light"><tr><th>Item</th><th>Expiry</th></tr></thead>
-                                <tbody id="expiring"><tr><td colspan="2" class="text-center text-muted">Loading…</td></tr></tbody>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Item Name</th>
+                                        <th class="text-end">Quantity</th>
+                                        <th class="text-end">Unit</th>
+                                        <th class="text-end">Expiry Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expiring"><tr><td colspan="4" class="text-center text-muted">Loading…</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -115,16 +109,21 @@
 
         const expBody = document.getElementById('expiring');
         expBody.innerHTML = '';
-        if (!exp.length) expBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No upcoming expiries</td></tr>';
+        if (!exp.length) expBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No upcoming expiries</td></tr>';
         exp.forEach(i => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${i.item_name}</td><td>${i.expiry_date ?? ''}</td>`;
+            const qty = i.quantity ?? 1;
+            const unit = i.unit ?? '';
+            const expiry = i.expiry_date ?? '';
+            tr.innerHTML = `<td>${i.item_name ?? ''}</td><td class="text-end">${qty}</td><td class="text-end">${unit}</td><td class="text-end">${expiry}</td>`;
             expBody.appendChild(tr);
         });
     }
 
     loadSummary();
     setInterval(loadSummary, 15000);
+
+    
 </script>
 </body>
 </html>
