@@ -13,7 +13,8 @@
 
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <form action="<?= base_url('updateBranch'.$branch['id']) ?>" method="post">
+        <!-- ✅ updated form action -->
+        <form action="<?= site_url('branches/update/'.$branch['id']) ?>" method="post">
           <div class="row g-3">
 
             <div class="col-md-6">

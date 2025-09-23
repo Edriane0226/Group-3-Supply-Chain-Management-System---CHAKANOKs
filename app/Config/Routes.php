@@ -39,11 +39,11 @@ $routes->get('delete/(:num)', 'UserManagement::delete/$1');
 
 //Para sa Branch Management CRUD ug Page
 $routes->get('branches', 'BranchManagement::index');
-$routes->get('createBranch', 'BranchManagement::create');
-$routes->post('storeBranch', 'BranchManagement::store');
-$routes->get('editBranch/(:num)', 'BranchManagement::edit/$1');
-$routes->post('updateBranch/(:num)', 'BranchManagement::update/$1');
-$routes->get('deleteBranch/(:num)', 'BranchManagement::delete/$1');
+$routes->get('branches/create', 'BranchManagement::create');
+$routes->post('branches/store', 'BranchManagement::store');
+$routes->get('branches/edit/(:num)', 'BranchManagement::edit/$1');
+$routes->post('branches/update/(:num)', 'BranchManagement::update/$1');
+$routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 
 // Removed duplicate/invalid Branch routes for dashboard and inventory
 

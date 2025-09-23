@@ -6,14 +6,15 @@
   <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h4 class="fw-bold text-warning mb-0"><i class="bi bi-plus-circle me-2"></i>Create Branch</h4>
-      <a href="<?= base_url('branches') ?>"class="btn btn-sm btn-outline-secondary">
+      <a href="<?= base_url('branches') ?>" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left"></i> Back
       </a>
     </div>
 
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
-        <form action="<?= base_url('storeBranch') ?>" method="post">
+        <!-- ✅ updated form action -->
+        <form action="<?= site_url('branches/store') ?>" method="post">
           <div class="row g-3">
 
             <div class="col-md-6">

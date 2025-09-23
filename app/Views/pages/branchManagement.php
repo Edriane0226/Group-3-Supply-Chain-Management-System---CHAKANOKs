@@ -9,7 +9,8 @@
       <h5 class="fw-bold mb-0">
         <i class="bi bi-building me-2 text-warning"></i> Branch Management
       </h5>
-      <a href="<?= base_url('createBranch') ?>" class="btn btn-sm btn-warning text-white shadow-sm">
+      <!-- ✅ Update Add Branch button -->
+      <a href="<?= site_url('branches/create') ?>" class="btn btn-sm btn-warning text-white shadow-sm">
         <i class="bi bi-plus-circle"></i> Add Branch
       </a>
     </div>
@@ -33,10 +34,12 @@
                 </small>
               </div>
               <div class="card-footer bg-light text-center">
-                <a href="<?= base_url('editBranch/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
+                <!-- ✅ Update Edit -->
+                <a href="<?= site_url('branches/edit/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
                   <i class="bi bi-pencil"></i> Edit
                 </a>
-                <a href="<?= base_url('deleteBranch/'.$branch['id']) ?>" 
+                <!-- ✅ Update Delete -->
+                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" 
                    onclick="return confirm('Are you sure you want to delete this branch?')" 
                    class="btn btn-sm btn-outline-danger">
                   <i class="bi bi-trash"></i> Delete
@@ -65,7 +68,7 @@
             </div>
           </div>
         <?php endif; ?>
-      <?php endforeach; ?>
+      <?php endforeach; ?>    
     </div>
 
     <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-people me-1 text-primary"></i> Franchise Partners</h6>
@@ -85,10 +88,12 @@
                 </small>
               </div>
               <div class="card-footer bg-light text-center">
-                <a href="<?= base_url('editBranch/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
+                <!-- ✅ Update Edit -->
+                <a href="<?= site_url('branches/edit/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
                   <i class="bi bi-pencil"></i> Edit
                 </a>
-                <a href="<?= base_url('deleteBranch/'.$branch['id']) ?>" 
+                <!-- ✅ Update Delete -->
+                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" 
                    onclick="return confirm('Are you sure you want to delete this branch?')" 
                    class="btn btn-sm btn-outline-danger">
                   <i class="bi bi-trash"></i> Delete

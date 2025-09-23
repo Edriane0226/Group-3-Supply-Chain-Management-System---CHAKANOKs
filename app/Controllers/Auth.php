@@ -46,8 +46,8 @@ class Auth extends Controller
             $branch = $branchModel->find($user['branch_id']);
 
             if (!password_verify($pass, $user['password'])) {
-            $session->setFlashdata('error', 'Invalid ID or password');
-            return redirect()->back();
+                $session->setFlashdata('error', 'Invalid ID or password');
+                return redirect()->back();
             }
 
             // Build full name
@@ -69,14 +69,16 @@ class Auth extends Controller
 
             $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
 
+            // Role-based redirect
             if ($user['role'] === 'Central Office Admin') {
-                return redirect()->to('central');
+                return redirect()->to(site_url('central'));
             } elseif ($user['role'] === 'Branch Manager') {
-                return redirect()->to('dashboard');
+                return redirect()->to(site_url('dashboard'));
             } elseif ($user['role'] === 'Inventory Staff') {
-                return redirect()->to('inventory/overview');
+                return redirect()->to(site_url('inventory/overview'));
             } else {
-                return redirect()->to('login');
+                $session->setFlashdata('error', 'Unauthorized role.');
+                return redirect()->to(site_url('login'));
             }
         }
 
@@ -88,40 +90,55 @@ class Auth extends Controller
     public function logout()
     {
         session()->destroy();
-        return redirect()->to('login');
+        return redirect()->to(site_url('login'))->with('success', 'You have been logged out.');
     }
 
     // Central Office Admin Dashboard
     public function centralDashboard()
     {
         if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
         if (session()->get('role') === 'Central Office Admin') {
             return view('pages/central');
         }
 
-        session()->setFlashdata('error', 'Unauthorized access');
-        return redirect()->to('login');
+        session()->setFlashdata('error', 'Unauthorized access.');
+        return redirect()->to(site_url('login'));
     }
 
     // Inventory Access
     public function inventory()
     {
         if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
         if (session()->get('role') === 'Inventory Staff') {
-            return redirect()->to('inventory/overview');
+            return redirect()->to(site_url('inventory/overview'));
         }
 
         if (session()->get('role') === 'Branch Manager') {
             return view('pages/InventoryBranch');
         }
 
-        session()->setFlashdata('error', 'Unauthorized access');
-        return redirect()->to('login');
+        session()->setFlashdata('error', 'Unauthorized access.');
+        return redirect()->to(site_url('login'));
+    }
+
+    // Branches Access
+    public function branches()
+    {
+        if (!session()->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if (session()->get('role') === 'Central Office Admin') {
+            return view('pages/branches'); // kailangan gumawa ka ng branches view file
+        }
+
+        session()->setFlashdata('error', 'Unauthorized access to branches.');
+        return redirect()->to(site_url('login'));
     }
 }
