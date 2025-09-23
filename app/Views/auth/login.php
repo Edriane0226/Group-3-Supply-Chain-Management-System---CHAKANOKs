@@ -45,6 +45,13 @@
     <!-- left -->
     <div class="col-md-6 login-left">
       <h2 class="mb-4">Welcome Back</h2>
+      <!-- Flash Message galing sa Controller kung unsa Error -->
+      <?php if (session()->getFlashdata('error')): ?>
+          <div class="alert alert-danger">
+              <?= session()->getFlashdata('error') ?>
+          </div>
+      <?php endif; ?>
+
       <!-- It will go to loginAttempt -->
       <form action= "<?= base_url('login') ?>" method="POST"> 
         <div class="mb-3">

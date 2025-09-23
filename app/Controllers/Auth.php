@@ -39,10 +39,16 @@ class Auth extends Controller
         ]);
 
         $id   = $this->request->getVar('id');
+        $pass = $this->request->getVar('password');
         $user = $userModel->where('id', $id)->first();
 
         if ($user) {
             $branch = $branchModel->find($user['branch_id']);
+
+            if (!password_verify($pass, $user['password'])) {
+            $session->setFlashdata('error', 'Invalid ID or password');
+            return redirect()->back();
+            }
 
             // Build full name
             $fullName = trim($user['first_Name'] . ' ' . $user['last_Name']);
