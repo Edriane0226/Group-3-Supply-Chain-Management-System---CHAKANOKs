@@ -7,7 +7,7 @@ use CodeIgniter\Controller;
 
 class BranchManagement extends Controller
 {
-     //Pang access ni siya sa branchManagement page at the same time gikuha niya ang branches store to $data['branches']
+
     protected $session;
 
     public function __construct()
@@ -15,9 +15,7 @@ class BranchManagement extends Controller
         $this->session = session();
     }
 
-    /**
-     * Check if user is logged in and has correct role
-     */
+    
     private function authorize()
     {
         if (!$this->session->get('isLoggedIn')) {
@@ -33,9 +31,7 @@ class BranchManagement extends Controller
         return null; // Authorized
     }
 
-    /**
-     * Show list of branches
-     */
+    //Pang access ni siya sa branchManagement page at the same time gikuha niya ang branches store to $data['branches']
     public function index()
     {
         if ($redirect = $this->authorize()) {
