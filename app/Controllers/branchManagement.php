@@ -7,6 +7,7 @@ use CodeIgniter\Controller;
 
 class BranchManagement extends Controller
 {
+     //Pang access ni siya sa branchManagement page at the same time gikuha niya ang branches store to $data['branches']
     protected $session;
 
     public function __construct()
@@ -47,9 +48,7 @@ class BranchManagement extends Controller
         return view('pages/branchManagement', $data);
     }
 
-    /**
-     * Show form to create branch
-     */
+     //Paadto sa createBranch form
     public function create()
     {
         if ($redirect = $this->authorize()) {
@@ -70,22 +69,21 @@ class BranchManagement extends Controller
 
         $branchModel = new BranchModel();
 
+        //Gikuha niya data from the createBranch form POST 
         $data = [
             'branch_name'  => $this->request->getPost('branch_name'),
             'location'     => $this->request->getPost('location'),
             'contact_info' => $this->request->getPost('contact_info'),
             'status'       => $this->request->getPost('status'),
         ];
-
+        //Save dayun
         $branchModel->save($data);
 
         return redirect()->to(site_url('branches'))
             ->with('success', 'Branch added successfully.');
     }
 
-    /**
-     * Show form to edit a branch
-     */
+    //Show form the same time kuha branch id
     public function edit($id)
     {
         if ($redirect = $this->authorize()) {
@@ -103,9 +101,7 @@ class BranchManagement extends Controller
         return view('branchManager/editBranch', $data);
     }
 
-    /**
-     * Update branch record
-     */
+    // Update dayun from edit form POST tapos update data           
     public function update($id)
     {
         if ($redirect = $this->authorize()) {
