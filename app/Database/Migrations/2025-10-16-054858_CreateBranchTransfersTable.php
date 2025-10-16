@@ -22,7 +22,7 @@ class CreateBranchTransfersTable extends Migration
             'type'=>'INT',
             'unsigned'=>true
             ],
-            'inventory_id'=>[
+            'stock_in_id'=>[
             'type'=>'INT',
             'unsigned'=>true
             ],
@@ -42,7 +42,7 @@ class CreateBranchTransfersTable extends Migration
         $this->forge->addKey('id',true);
         $this->forge->addForeignKey('from_branch_id','branches','id','CASCADE','CASCADE');
         $this->forge->addForeignKey('to_branch_id','branches','id','CASCADE','CASCADE');
-        $this->forge->addForeignKey('inventory_id','inventory','id','CASCADE','CASCADE');
+        $this->forge->addForeignKey('stock_in_id','stock_in','id','CASCADE','CASCADE');
         $this->forge->createTable('branch_transfers');
     }
 

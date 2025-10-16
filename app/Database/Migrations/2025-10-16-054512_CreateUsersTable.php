@@ -39,18 +39,10 @@ class CreateUsersTable extends Migration
                 'constraint' => 255, 
                 'null'       => false,
             ],
-            'role' => [
-                'type'       => 'ENUM',
-                'constraint' => [
-                    'Branch Manager',
-                    'Inventory Staff',
-                    'Central Office Admin',
-                    'Supplier',
-                    'Logistics Coordinator',
-                    'Franchise Manager',
-                    'System Administrator'
-                ],
-                'null'       => false,
+            'role_id' => [
+                'type'     => 'INT',
+                'unsigned' => true,
+                'null'     => false,
             ],
             'branch_id' => [
                 'type'     => 'INT',
@@ -70,6 +62,7 @@ class CreateUsersTable extends Migration
         ]);
 
         $this->forge->addKey('id');
+        $this->forge->addForeignKey('role_id', 'roles', 'id', 'CASCADE', 'RESTRICT');
         $this->forge->addForeignKey('branch_id', 'branches', 'id', 'CASCADE', 'SET NULL');
         $this->forge->createTable('users');
 

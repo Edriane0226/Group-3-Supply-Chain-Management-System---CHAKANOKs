@@ -87,7 +87,7 @@
                   <td><?= esc($row['expiry_date']) ?></td>
                   <td><?= esc($row['barcode']) ?></td>
                   <td><?= esc($row['reorder_level']) ?></td>
-                  <td><?= esc($row['price']) ?></td>
+                  <td><?= esc($row['Price']) ?></td>
                   <td><?= esc($row['updated_at']) ?></td>
                   <td><?= esc($row['created_at']) ?></td>
                   <td>

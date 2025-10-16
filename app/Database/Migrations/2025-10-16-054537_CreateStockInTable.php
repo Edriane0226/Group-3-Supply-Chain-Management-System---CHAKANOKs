@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateInventoryTable extends Migration
+class CreateStockInTable extends Migration
 {
     public function up()
     {
@@ -13,6 +13,11 @@ class CreateInventoryTable extends Migration
                 'type'           => 'INT',
                 'unsigned'       => true,
                 'auto_increment' => true,
+            ],
+            'item_type_id' => [
+                'type'     => 'INT',
+                'unsigned' => true,
+                'null'     => false,
             ],
             'branch_id' => [
                 'type'     => 'INT',
@@ -29,11 +34,6 @@ class CreateInventoryTable extends Migration
                 'constraint' => 100,
                 'null'       => true,
             ],
-            'type' => [
-                'type'       => 'ENUM',
-                'constraint' => ['Store Equipment', 'Stock Supplies'],
-                'null'       => true,
-            ],
             'quantity' => [
                 'type'       => 'INT',
                 'unsigned'   => true,
@@ -45,6 +45,11 @@ class CreateInventoryTable extends Migration
                 'null'       => false,
                 'default'    => 'pcs',
             ],
+            'price' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '10,2',
+                'null'       => false,
+            ],
             'expiry_date' => [
                 'type' => 'DATE',
                 'null' => true,
@@ -53,19 +58,10 @@ class CreateInventoryTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
-                'unique'     => true,
             ],
-            'reorder_level' => [
-                'type'     => 'INT',
-                'unsigned' => true,
-                'default'  => 10, 
-            
-            ],
-            'Price' => [
-                'type'     => 'DECIMAL',
-                'constraint' => 10,2,                
-                'null' => false
-            
+            'created_at' => [
+                'type'    => 'DATETIME',
+                'null'    => false,
             ],
             'updated_at' => [
                 'type'     => 'DATETIME',
@@ -73,19 +69,16 @@ class CreateInventoryTable extends Migration
                 'default'  => null,
                 'on_update'=> 'CURRENT_TIMESTAMP',
             ],
-            'created_at' => [
-                'type'    => 'DATETIME',
-                'null'    => false,
-            ],
         ]);
 
-        $this->forge->addKey('id', true);
+        $this->forge->addKey('id');
         $this->forge->addForeignKey('branch_id', 'branches', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->createTable('inventory');
+        $this->forge->addForeignKey('item_type_id', 'stock_types', 'id', 'CASCADE', 'CASCADE');
+        $this->forge->createTable('stock_in');
     }
 
     public function down()
     {
-        $this->forge->dropTable('inventory', true);
+        $this->forge->dropTable('stock_in');
     }
 }
