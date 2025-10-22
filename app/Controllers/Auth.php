@@ -8,14 +8,16 @@ use CodeIgniter\Controller;
 
 class Auth extends Controller
 {
-    // Show login form
+
+    // Show Login Form
     public function login()
     {
         helper(['form']);
         return view('auth/login');
     }
 
-    // Process login attempt
+    
+    // Process Login Attempt
     public function attemptLogin()
     {
         helper(['form']);
@@ -25,67 +27,84 @@ class Auth extends Controller
 
         $rules = [
             'id'       => 'required|integer',
-            'password' => 'required|min_length[8]'
+            'password' => 'required'
         ];
 
         if (!$this->validate($rules)) {
             return view('auth/login', ['validation' => $this->validator]);
         }
 
-        // Clear old session data
+        // Clear any previous session
         $session->remove([
             'user_id','first_Name','last_Name','middle_Name',
             'email','role','branch_id','branch_name','full_name','isLoggedIn'
         ]);
 
-        $id   = $this->request->getVar('id');
-        $pass = $this->request->getVar('password');
-        $user = $userModel->where('id', $id)->first();
+        $id       = $this->request->getVar('id');
+        $password = $this->request->getVar('password');
 
-        if ($user) {
-            $branch = $branchModel->find($user['branch_id']);
+        // Get user with role info
+        $user = $userModel->select('users.*, roles.role_name')
+                         ->join('roles', 'roles.id = users.role_id')
+                         ->where('users.id', $id)
+                         ->first();
 
-            if (!password_verify($pass, $user['password'])) {
-                $session->setFlashdata('error', 'Invalid ID or password');
-                return redirect()->back();
-            }
-
-            // Build full name
-            $fullName = trim($user['first_Name'] . ' ' . $user['last_Name']);
-
-            // Store session
-            $session->set([
-                'user_id'     => $user['id'],
-                'first_Name'  => $user['first_Name'],
-                'last_Name'   => $user['last_Name'],
-                'middle_Name' => $user['middle_Name'],
-                'email'       => $user['email'],
-                'role'        => $user['role'],
-                'branch_id'   => $user['branch_id'],
-                'branch_name' => $branch ? $branch['branch_name'] : 'Unknown Branch',
-                'full_name'   => $fullName,
-                'isLoggedIn'  => true
-            ]);
-
-            $session->setFlashdata('success', 'Welcome ' . $user['first_Name']);
-
-            // Role-based redirect
-            if ($user['role'] === 'Central Office Admin') {
-                return redirect()->to(site_url('central'));
-            } elseif ($user['role'] === 'Branch Manager') {
-                return redirect()->to(site_url('dashboard'));
-            } elseif ($user['role'] === 'Inventory Staff') {
-                return redirect()->to(site_url('inventory/overview'));
-            } else {
-                $session->setFlashdata('error', 'Unauthorized role.');
-                return redirect()->to(site_url('login'));
-            }
+        if (!$user) {
+            $session->setFlashdata('error', 'Invalid ID or password');
+            return redirect()->back();
         }
 
-        $session->setFlashdata('error', 'Invalid ID or password');
-        return redirect()->back();
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            $session->setFlashdata('error', 'Invalid ID or password');
+            return redirect()->back();
+        }
+
+        // Get branch info safely
+        $branchId   = $user['branch_id'] ?? null;
+        $branchData = $branchId ? $branchModel->find($branchId) : null;
+
+        // Prepare full name
+        $fullName = trim($user['first_Name'] . ' ' . $user['last_Name']);
+
+        // Set session data
+        $session->set([
+            'user_id'     => $user['id'],
+            'first_Name'  => $user['first_Name'],
+            'last_Name'   => $user['last_Name'],
+            'middle_Name' => $user['middle_Name'],
+            'email'       => $user['email'],
+            'role'        => $user['role_name'],
+            'role_id'     => $user['role_id'],
+            'branch_id'   => $branchId,
+            'branch_name' => $branchData['branch_name'] ?? 'No Assigned Branch',
+            'full_name'   => $fullName,
+            'isLoggedIn'  => true
+        ]);
+
+        $session->setFlashdata('success', 'Welcome ' . $user['first_Name'] . '!');
+
+        // Redirect by role
+        return $this->redirectByRole($user['role_name']);
     }
 
+    // Redirect User by Role
+    private function redirectByRole(string $role)
+    {
+        switch ($role) {
+            case 'Central Office Admin':
+                return redirect()->to(site_url('central'));
+            case 'Branch Manager':
+                return redirect()->to(site_url('dashboard'));
+            case 'Inventory Staff':
+                return redirect()->to(site_url('inventory/overview'));
+            default:
+                session()->setFlashdata('error', 'Unauthorized role.');
+                return redirect()->to(site_url('login'));
+        }
+    }
+
+    
     // Logout
     public function logout()
     {
@@ -115,11 +134,13 @@ class Auth extends Controller
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
-        if (session()->get('role') === 'Inventory Staff') {
+        $role = session()->get('role');
+
+        if ($role === 'Inventory Staff') {
             return redirect()->to(site_url('inventory/overview'));
         }
 
-        if (session()->get('role') === 'Branch Manager') {
+        if ($role === 'Branch Manager') {
             return view('pages/InventoryBranch');
         }
 
@@ -135,7 +156,7 @@ class Auth extends Controller
         }
 
         if (session()->get('role') === 'Central Office Admin') {
-            return view('pages/branches'); // kailangan gumawa ka ng branches view file
+            return view('pages/branches');
         }
 
         session()->setFlashdata('error', 'Unauthorized access to branches.');

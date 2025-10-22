@@ -53,10 +53,14 @@
       <?php endif; ?>
 
       <!-- It will go to loginAttempt -->
-      <form action= "<?= base_url('login') ?>" method="POST"> 
+      <form action="<?= site_url('login') ?>" method="POST">
+        <?= csrf_field() ?>
+        <?php if (isset($validation)): ?>
+          <div class="alert alert-danger"><?= $validation->listErrors() ?></div>
+        <?php endif; ?>
         <div class="mb-3">
-          <label for="emp_ID" class="form-label">Employee ID</label>
-          <input type="number" class="form-control" id="emp_ID" name="id" placeholder="Enter your ID" required>
+          <label for="id" class="form-label">Employee ID</label>
+          <input type="number" class="form-control" id="id" name="id" placeholder="Enter your ID" value="<?= set_value('id') ?>" required>
         </div>
         <div class="mb-3">
           <label for="password" class="form-label">Password</label>

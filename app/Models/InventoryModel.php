@@ -51,8 +51,12 @@ class InventoryModel extends Model
 
 
     
-    public function getInventoryValue(int $branchId): float
+    public function getInventoryValue(?int $branchId): float
     {
+        if (!$branchId) {
+            return 0.0;
+        }
+        
         $builder = $this->builder();
         $result = $builder
             ->select('SUM(quantity * Price) AS total_value')
@@ -75,8 +79,12 @@ class InventoryModel extends Model
 
 
 
-    public function getLowStockAlerts(int $branchId): array
+    public function getLowStockAlerts(?int $branchId): array
     {
+        if (!$branchId) {
+            return [];
+        }
+        
         return $this->where('branch_id', $branchId)
             ->where('quantity <= reorder_level')
             ->orderBy('quantity', 'ASC')

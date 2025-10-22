@@ -10,7 +10,7 @@ $routes->get('/login', 'Auth::login');
 $routes->post('/login', 'Auth::attemptLogin');
 $routes->get('/logout', 'Auth::logout');
 
-$routes->get('dashboard', 'Dashboard::index');
+$routes->get('dashboard', 'BranchDashboard::index');
 
 //Central 
 $routes->get('/central', 'Auth::centralDashboard');
