@@ -85,24 +85,24 @@ class Auth extends Controller
         $session->setFlashdata('success', 'Welcome ' . $user['first_Name'] . '!');
 
         // Redirect by role
-        return $this->redirectByRole($user['role_name']);
+        return redirect()->to('dashboard');
     }
 
-    // Redirect User by Role
-    private function redirectByRole(string $role)
-    {
-        switch ($role) {
-            case 'Central Office Admin':
-                return redirect()->to(site_url('central'));
-            case 'Branch Manager':
-                return redirect()->to(site_url('dashboard'));
-            case 'Inventory Staff':
-                return redirect()->to(site_url('inventory/overview'));
-            default:
-                session()->setFlashdata('error', 'Unauthorized role.');
-                return redirect()->to(site_url('login'));
-        }
-    }
+    // // Redirect User by Role
+    //     private function redirectByRole(string $role)
+    //     {
+    //         switch ($role) {
+    //             case 'Central Office Admin':
+    //                 return redirect()->to(site_url('central'));
+    //             case 'Branch Manager':
+    //                 return redirect()->to(site_url('dashboard'));
+    //             case 'Inventory Staff':
+    //                 return redirect()->to(site_url('inventory/overview'));
+    //             default:
+    //                 session()->setFlashdata('error', 'Unauthorized role.');
+    //                 return redirect()->to(site_url('login'));
+    //         }
+    //     }
 
     
     // Logout
@@ -147,7 +147,7 @@ class Auth extends Controller
         session()->setFlashdata('error', 'Unauthorized access.');
         return redirect()->to(site_url('login'));
     }
-
+    
     // Branches Access
     public function branches()
     {

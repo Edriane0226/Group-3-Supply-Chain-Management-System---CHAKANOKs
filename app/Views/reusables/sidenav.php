@@ -141,7 +141,7 @@
     <?php $role = session()->get('role'); ?>
 
     <?php if ($role === 'Central Office Admin'): ?>
-        <a href="<?= site_url('central') ?>" class="<?= (uri_string() == 'central') ? 'active' : '' ?>">
+        <a href="<?= site_url('dashboard') ?>">
             <i class="bi bi-building-gear me-2"></i> Central Dashboard
         </a>
         <a href="<?= site_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>

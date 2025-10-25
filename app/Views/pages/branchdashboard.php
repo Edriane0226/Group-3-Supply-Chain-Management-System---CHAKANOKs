@@ -1,6 +1,6 @@
-<?php
-  include APPPATH . 'Views/reusables/sidenav.php';
-?>
+<!-- 
+
+Na Merge na dashboard of Branch and Central 
 
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +42,6 @@
 </head>
 <body>
   <div class="content p-3">
-    <!-- Top Bar -->
     <div class="top-bar d-flex justify-content-between align-items-center p-3 border-bottom bg-white">
         <h5 class="mb-0">Branch Dashboard</h5>
         <div class="d-flex align-items-center">
@@ -53,14 +52,12 @@
         </div>
     </div>
 
-    <!-- Search Bar -->
     <div class="searchbar">
       <input type="text" class="form-control" placeholder="Search">
       <button class="btn btn-light"><i class="bi bi-list"></i></button>
       <button class="btn btn-light"><i class="bi bi-gear"></i></button>
     </div>
 
-    <!-- Top Cards -->
     <div class="dashboard-section">
       <div class="row g-3">
         <div class="col-md-3">
@@ -94,7 +91,6 @@
       </div>
     </div>
 
-    <!-- Middle Graphs -->
     <div class="dashboard-section">
       <div class="row g-3">
         <div class="col-md-6">
@@ -115,13 +111,12 @@
           <div class="dashboard-box">
             <i class="bi bi-boxes"></i>
             <h6>Inventory Levels</h6>
-            <p>N/A</p> <!-- Inventory Levels content removed -->
+            <p>N/A</p>  Inventory Levels content removed
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Alerts -->
     <div class="dashboard-section">
       <div class="row g-3">
         <div class="col-md-6">
@@ -165,4 +160,4 @@
     </div>
   </div>
 </body>
-</html>
+</html> -->

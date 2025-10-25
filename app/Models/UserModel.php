@@ -12,4 +12,9 @@ class UserModel extends Model
     protected $allowedFields = ['id', 'first_Name', 'last_Name', 'middle_Name', 'email', 'password', 'role_id', 'branch_id', 'created_at', 'updated_at'];
 
     protected $returnType    = 'array';
+
+    public function getUserByBranch($branch_id)
+    {
+        return $this->where('branch_id', $branch_id)->findAll();
+    }
 }

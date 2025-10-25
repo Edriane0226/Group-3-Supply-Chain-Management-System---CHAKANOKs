@@ -1,5 +1,6 @@
-<?php include 'app/Views/reusables/sidenav.php'; ?>
+<!-- 
 
+Na Merge na dashboard of Branch and Central 
 
 <!DOCTYPE html>
 <html lang="en">
@@ -101,7 +102,7 @@
           <div class="card-body d-flex">
             <div class="metric-icon"><i class="fa-solid fa-peso-sign"></i></div>
             <div class="flex-grow-1">
-              <!-- <?= esc($sales_summary ?? '') ?> -->
+              <?= esc($sales_summary ?? '') ?> 
             </div>
           </div>
         </div>
@@ -118,7 +119,7 @@
         <div class="card mb-3">
           <div class="card-body">
             <h6 class="fw-semibold mb-3">Branches</h6>
-            <!-- <?= $branches_list ?? '' ?> -->
+             <?= $branches_list ?? '' ?> 
           </div>
         </div>
 
@@ -131,7 +132,7 @@
             </div>
           </div>
           <div class="card-body d-flex">
-            <!-- <?= $branch_performance_chart ?? '' ?> -->
+             <?= $branch_performance_chart ?? '' ?> 
           </div>
         </div>
       </div>
@@ -140,13 +141,13 @@
         <div class="card mb-3">
           <div class="card-body">
             <h6 class="fw-semibold mb-3">Reports</h6>
-            <!-- <?= $reports_section ?? '' ?> -->
+             <?= $reports_section ?? '' ?> 
           </div>
         </div>
         <div class="card">
           <div class="card-body">
             <h6 class="fw-semibold mb-3">Delivery Status</h6>
-            <!-- <?= $delivery_status ?? '' ?> -->
+             <?= $delivery_status ?? '' ?> 
           </div>
         </div>
       </div>
@@ -155,4 +156,4 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html> -->
