@@ -1,7 +1,3 @@
-<?php
-  include APPPATH . 'Views/reusables/sidenav.php';
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +7,13 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    body { background-color: #f8f9fa; }
+    body { background-color: #f8f9fa; display: flex; }
+    .sidebar { width: 220px; background-color: orange; color: #fff; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; min-height: 100vh; }
+    .sidebar img { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; }
+    .sidebar h5 { margin-bottom: 20px; text-align: center; }
+    .sidebar a { width: 100%; padding: 12px 20px; color: #fff; text-decoration: none; display: block; }
+    .sidebar a:hover, .sidebar a.active { background-color: #495057; }
+    .content { flex-grow: 1; padding: 20px; }
     .content-box {
       background: #fff;
       border-radius: 10px;
@@ -31,6 +33,9 @@
   </style>
 </head>
 <body>
+
+<?php echo view('reusables/sidenav'); ?>
+
   <div class="content p-3">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-white rounded">
@@ -77,22 +82,22 @@
             <?php if (!empty($inventory)): ?>
               <?php foreach ($inventory as $row): ?>
                 <tr>
-                  <td><?= esc($row['id']) ?></td>
+                  <td>N/A</td>
                   <td><?= esc($row['branch_id']) ?></td>
                   <td><?= esc($row['item_name']) ?></td>
-                  <td><?= esc($row['category']) ?></td>
-                  <td><?= esc($row['type']) ?></td>
-                  <td><?= esc($row['quantity']) ?></td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td><?= esc($row['current_stock']) ?></td>
                   <td><?= esc($row['unit']) ?></td>
                   <td><?= esc($row['expiry_date']) ?></td>
                   <td><?= esc($row['barcode']) ?></td>
-                  <td><?= esc($row['reorder_level']) ?></td>
-                  <td><?= esc($row['Price']) ?></td>
-                  <td><?= esc($row['updated_at']) ?></td>
-                  <td><?= esc($row['created_at']) ?></td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
                   <td>
-                    <a href="<?= site_url('inventory/edit/'.$row['id']) ?>" class="btn btn-sm btn-primary">Edit</a>
-                    <a href="<?= site_url('inventory/delete/'.$row['id']) ?>" class="btn btn-sm btn-danger">Delete</a>
+                    <a href="<?= site_url('inventory/stockin') ?>" class="btn btn-sm btn-primary">Stock In</a>
+                    <a href="<?= site_url('inventory/stockout') ?>" class="btn btn-sm btn-danger">Stock Out</a>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -107,29 +112,29 @@
 
    <!-- Quick Actions -->
 <div class="quick-actions mt-3 d-flex gap-2 flex-wrap">
-  <a href="<?= site_url('inventory/add') ?>" class="btn" 
-     style="min-width: 160px; border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+  <a href="<?= site_url('inventory/stockin') ?>" class="btn"
+     style="min-width: 160px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align:center; background-color: orange; color: #fff;">
-     Add New Items
+     <i class="bi bi-plus-circle me-2"></i>Add Stock
   </a>
-  <a href="<?= site_url('inventory/update-stock') ?>" class="btn" 
-     style="min-width: 160px; border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  <a href="<?= site_url('inventory/stockout') ?>" class="btn"
+     style="min-width: 160px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align:center; background-color: orange; color:#fff;">
-     Update Stock
+     <i class="bi bi-dash-circle me-2"></i>Remove Stock
   </a>
-  <a href="<?= site_url('inventory/scan') ?>" class="btn" 
-     style="min-width: 160px; border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  <a href="<?= site_url('inventory/scan') ?>" class="btn"
+     style="min-width: 160px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align:center; background-color: orange; color:#fff;">
-     Scan Barcode
+     <i class="bi bi-upc-scan me-2"></i>Scan Barcode
   </a>
-  <a href="<?= site_url('inventory/report') ?>" class="btn" 
-     style="min-width: 160px; border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  <a href="<?= site_url('inventory/reports') ?>" class="btn"
+     style="min-width: 160px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align:center; background-color: orange; color:#fff;">
-     Generate Inventory Report
+     <i class="bi bi-file-earmark-bar-graph me-2"></i>Reports
   </a>
 </div>
 
@@ -149,22 +154,22 @@
       data.forEach(row => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${row.id}</td>
+          <td>N/A</td>
           <td>${row.branch_id}</td>
           <td>${row.item_name}</td>
-          <td>${row.category}</td>
-          <td>${row.type}</td>
-          <td>${row.quantity}</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>${row.current_stock}</td>
           <td>${row.unit}</td>
           <td>${row.expiry_date ?? ''}</td>
           <td>${row.barcode}</td>
-          <td>${row.reorder_level}</td>
-          <td>${row.price}</td>
-          <td>${row.updated_at}</td>
-          <td>${row.created_at}</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
           <td>
-            <a href="<?= site_url('inventory/edit') ?>/${row.id}" class="btn btn-sm btn-primary">Edit</a>
-            <a href="<?= site_url('inventory/delete') ?>/${row.id}" class="btn btn-sm btn-danger">Delete</a>
+            <a href="<?= site_url('inventory/stockin') ?>" class="btn btn-sm btn-primary">Stock In</a>
+            <a href="<?= site_url('inventory/stockout') ?>" class="btn btn-sm btn-danger">Stock Out</a>
           </td>
         `;
         tbody.appendChild(tr);

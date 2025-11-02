@@ -1,6 +1,3 @@
-<?php
-    include 'app\\Views\\reusables\\sidenav.php';
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,134 +6,235 @@
     <title>Inventory | Scan</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
-        body { overflow-x: hidden; background: #f6f8fb; color:#212529; }
-        .content { margin-left: 0; padding: 80px 24px 24px; }
-        #scanner { width: 100%; max-width: 640px; border: 1px dashed #dee2e6; aspect-ratio: 4/3; border-radius: .5rem; background:#fff; }
+        body { overflow-x: hidden; background: #f6f8fb; color:#212529; display: flex; }
+        .sidebar { width: 220px; background-color: orange; color: #fff; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; min-height: 100vh; }
+        .sidebar img { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; }
+        .sidebar h5 { margin-bottom: 20px; text-align: center; }
+        .sidebar a { width: 100%; padding: 12px 20px; color: #fff; text-decoration: none; display: block; }
+        .sidebar a:hover, .sidebar a.active { background-color: #495057; }
+        .content { flex-grow: 1; padding: 80px 24px 24px; }
+        #interactive.viewport { position: relative; width: 100%; height: 300px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; }
+        #interactive.viewport > canvas, #interactive.viewport > video { max-width: 100%; width: 100%; }
+        canvas.drawing, canvas.drawingBuffer { position: absolute; left: 0; top: 0; }
+        .camera-container { position: relative; }
+        .camera-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 2px; background: rgba(255, 0, 0, 0.8); border-radius: 1px; }
+        .camera-overlay::before { content: ''; position: absolute; top: -10px; left: -10px; width: 20px; height: 20px; border: 2px solid rgba(255, 0, 0, 0.8); border-radius: 50%; }
+        .camera-overlay::after { content: ''; position: absolute; top: -10px; right: -10px; width: 20px; height: 20px; border: 2px solid rgba(255, 0, 0, 0.8); border-radius: 50%; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
+<?php echo view('reusables/sidenav'); ?>
+
 <main class="content">
     <div class="container-fluid">
-        <h5 class="mb-3">Barcode Scanner</h5>
-        <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-outline-secondary btn-sm" id="scan_start"><i class="bi bi-camera-video"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="scan_stop"><i class="bi bi-stop-circle"></i></button>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="mb-0">Barcode Scanner</h5>
+            <span class="badge rounded-pill text-bg-secondary small">Real-time Camera</span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header section-header fw-semibold">
+                        <i class="bi bi-upc-scan me-2 text-primary"></i>Scan Barcode
                     </div>
-                    <small class="text-muted" id="scan_status">Scanner idle</small>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="barcodeInput" class="form-label">Barcode</label>
+                            <input type="text" class="form-control" id="barcodeInput" placeholder="Scan or enter barcode manually">
+                        </div>
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn btn-primary" id="scanBtn">
+                                <i class="bi bi-search me-2"></i>Find Item
+                            </button>
+                            <button class="btn btn-outline-secondary" id="cameraBtn">
+                                <i class="bi bi-camera me-2"></i>Camera Scan
+                            </button>
+                        </div>
+                        <div class="camera-container">
+                            <div id="interactive" class="viewport d-none">
+                                <div class="camera-overlay"></div>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>Position barcode within the red lines for best results
+                        </div>
+                    </div>
                 </div>
-                <div id="scanner" class="mb-3"></div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                    <input type="text" class="form-control" id="barcode" placeholder="Scan or enter barcode">
-                    <button class="btn btn-primary" id="lookup"><i class="bi bi-search"></i></button>
-                </div>
-                <div id="item_details" class="small text-muted">Scan or search an item to see details.</div>
-                <div class="d-grid gap-2 mt-3">
-                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal"><i class="bi bi-pencil-square me-1"></i>Update Stock</button>
-                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#receiveModal"><i class="bi bi-box-arrow-in-down me-1"></i>Receive Delivery</button>
-                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#damageModal"><i class="bi bi-exclamation-octagon me-1"></i>Report Damage/Expired</button>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header section-header fw-semibold">
+                        <i class="bi bi-info-circle me-2 text-info"></i>Item Details
+                    </div>
+                    <div class="card-body">
+                        <div id="itemDetails" class="text-center text-muted">
+                            <i class="bi bi-upc-scan fs-1 mb-3 text-primary"></i>
+                            <p>Scan a barcode to view item details</p>
+                        </div>
+                        <div id="itemInfo" class="d-none">
+                            <div class="row g-2">
+                                <div class="col-6"><strong>Item Name:</strong></div>
+                                <div class="col-6" id="itemName">-</div>
+                                <div class="col-6"><strong>Available Stock:</strong></div>
+                                <div class="col-6" id="availableStock">-</div>
+                                <div class="col-6"><strong>Unit:</strong></div>
+                                <div class="col-6" id="unit">-</div>
+                                <div class="col-6"><strong>Price:</strong></div>
+                                <div class="col-6" id="price">-</div>
+                                <div class="col-6"><strong>Expiry Date:</strong></div>
+                                <div class="col-6" id="expiryDate">-</div>
+                            </div>
+                            <div class="mt-3">
+                                <a href="#" class="btn btn-sm btn-primary me-2" id="stockInBtn">
+                                    <i class="bi bi-plus-circle me-1"></i>Stock In
+                                </a>
+                                <a href="#" class="btn btn-sm btn-danger" id="stockOutBtn">
+                                    <i class="bi bi-dash-circle me-1"></i>Stock Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </main>
 
-<div class="modal" id="updateModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Update Stock</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Item ID</label><input type="number" id="item_id" class="form-control" placeholder="e.g. 101"></div>
-            <div><label class="form-label">Change (±)</label><input type="number" id="delta" class="form-control" placeholder="e.g. 5 or -2"></div>
-            <div class="small text-muted mt-2">Positive to add, negative to deduct.</div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button class="btn btn-primary" id="update_btn">Apply</button></div>
-    </div></div>
-</div>
-
-<div class="modal" id="receiveModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Receive Delivery</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Item ID</label><input type="number" id="receive_item_id" class="form-control" placeholder="e.g. 101"></div>
-            <div><label class="form-label">Quantity</label><input type="number" id="receive_amt" class="form-control" placeholder="e.g. 25"></div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button class="btn btn-success" id="receive_btn">Receive</button></div>
-    </div></div>
-</div>
-
-<div class="modal" id="damageModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Report Damage/Expired</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
-            <div class="mb-2"><label class="form-label">Item ID</label><input type="number" id="damage_item_id" class="form-control" placeholder="e.g. 101"></div>
-            <div><label class="form-label">Quantity</label><input type="number" id="damage_amt" class="form-control" placeholder="e.g. 3"></div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button class="btn btn-danger" id="damage_btn">Report</button></div>
-    </div></div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const branchId = <?php echo json_encode(session()->get('branch_id') ?? null); ?>;
+    let scanning = false;
 
-    function initScanner() {
-        if (!navigator.mediaDevices?.getUserMedia) return;
-        Quagga.init({ inputStream : { name : 'Live', type : 'LiveStream', target: document.querySelector('#scanner') }, decoder : { readers : ['ean_reader','ean_8_reader','code_128_reader','code_39_reader','upc_reader'] } }, function(err) {
-            if (err) { console.log(err); document.getElementById('scan_status').textContent = 'Scanner error'; return; }
-            document.getElementById('scan_status').textContent = 'Scanner ready';
+    document.getElementById('scanBtn').addEventListener('click', async () => {
+        const barcode = document.getElementById('barcodeInput').value.trim();
+        if (!barcode) {
+            alert('Please enter a barcode');
+            return;
+        }
+
+        await findItem(barcode);
+    });
+
+    document.getElementById('cameraBtn').addEventListener('click', () => {
+        if (scanning) {
+            stopScanning();
+        } else {
+            startScanning();
+        }
+    });
+
+    async function findItem(barcode) {
+        try {
+            const url = new URL('<?php echo base_url('inventory/find'); ?>', window.location.origin);
+            url.searchParams.set('barcode', barcode);
+            if (branchId) url.searchParams.set('branch_id', branchId);
+
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (res.ok) {
+                displayItem(data);
+            } else {
+                document.getElementById('itemDetails').innerHTML = `
+                    <i class="bi bi-exclamation-triangle fs-1 mb-3 text-warning"></i>
+                    <p>${data.error}</p>
+                `;
+                document.getElementById('itemInfo').classList.add('d-none');
+                document.getElementById('itemDetails').classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error scanning barcode');
+        }
+    }
+
+    function startScanning() {
+        document.getElementById('interactive').classList.remove('d-none');
+        document.getElementById('cameraBtn').innerHTML = '<i class="bi bi-stop-circle me-2"></i>Stop Camera';
+        scanning = true;
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "environment"
+                },
+            },
+            locator: {
+                patchSize: "medium",
+                halfSample: true
+            },
+            numOfWorkers: 2,
+            decoder: {
+                readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader", "upc_e_reader"]
+            },
+            locate: true
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                alert('Camera access failed. Please check permissions.');
+                stopScanning();
+                return;
+            }
+            Quagga.start();
         });
+
         Quagga.onDetected(function(result) {
-            const code = result?.codeResult?.code; if (code) { document.getElementById('barcode').value = code; lookupBarcode(); }
+            const code = result.codeResult.code;
+            document.getElementById('barcodeInput').value = code;
+            stopScanning();
+            findItem(code);
         });
     }
-    function startScanner() { if (Quagga) { Quagga.start(); document.getElementById('scan_status').textContent = 'Scanning…'; } }
-    function stopScanner() { if (Quagga) { Quagga.stop(); document.getElementById('scan_status').textContent = 'Scanner stopped'; } }
 
-    async function lookupBarcode() {
-        const code = document.getElementById('barcode').value.trim(); if (!code) return;
-        const url = new URL('<?php echo base_url('inventory/find'); ?>', window.location.origin);
-        url.searchParams.set('barcode', code); if (branchId) url.searchParams.set('branch_id', branchId);
-        const res = await fetch(url);
-        const box = document.getElementById('item_details');
-        if (!res.ok) { box.innerHTML = '<span class="text-danger">Item not found</span>'; return; }
-        const i = await res.json();
-        box.innerHTML = `<div class="fw-semibold">${i.item_name} <span class="badge text-bg-light">${i.unit}</span></div>
-                         <div class="text-muted">ID: ${i.id} · Reorder: ${i.reorder_level} · Qty: <span class="badge text-bg-secondary">${i.quantity}</span></div>
-                         <div class="text-muted">Expiry: ${i.expiry_date ?? ''}</div>`;
-        document.getElementById('item_id').value = i.id;
-        document.getElementById('receive_item_id').value = i.id;
-        document.getElementById('damage_item_id').value = i.id;
+    function stopScanning() {
+        if (scanning) {
+            Quagga.stop();
+            document.getElementById('interactive').classList.add('d-none');
+            document.getElementById('cameraBtn').innerHTML = '<i class="bi bi-camera me-2"></i>Camera Scan';
+            scanning = false;
+        }
     }
 
-    async function postForm(url, data) {
-        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data) });
-        return res;
-    }
-    async function doAction(kind) {
-        let url = ''; let data = {};
-        if (kind === 'update') { url = '<?php echo base_url('inventory/update'); ?>'; data = { id: document.getElementById('item_id').value, delta: document.getElementById('delta').value }; }
-        if (kind === 'receive') { url = '<?php echo base_url('inventory/receive'); ?>'; data = { id: document.getElementById('receive_item_id').value, amount: document.getElementById('receive_amt').value }; }
-        if (kind === 'damage') { url = '<?php echo base_url('inventory/damage'); ?>'; data = { id: document.getElementById('damage_item_id').value, amount: document.getElementById('damage_amt').value }; }
-        const res = await postForm(url, data); const json = await res.json();
-        if (!res.ok) { alert(json.error || 'Request failed'); return; }
-        lookupBarcode();
+    function displayItem(item) {
+        document.getElementById('itemName').textContent = item.item_name;
+        document.getElementById('availableStock').textContent = item.available_stock;
+        document.getElementById('unit').textContent = item.unit;
+        document.getElementById('price').textContent = '₱' + parseFloat(item.price).toFixed(2);
+        document.getElementById('expiryDate').textContent = item.expiry_date || 'N/A';
+
+        document.getElementById('stockInBtn').href = '<?php echo base_url('inventory/stockin'); ?>';
+        document.getElementById('stockOutBtn').href = '<?php echo base_url('inventory/stockout'); ?>';
+
+        document.getElementById('itemDetails').classList.add('d-none');
+        document.getElementById('itemInfo').classList.remove('d-none');
     }
 
-    document.getElementById('lookup').addEventListener('click', lookupBarcode);
-    document.getElementById('scan_start').addEventListener('click', startScanner);
-    document.getElementById('scan_stop').addEventListener('click', stopScanner);
-    document.getElementById('update_btn').addEventListener('click', () => doAction('update'));
-    document.getElementById('receive_btn').addEventListener('click', () => doAction('receive'));
-    document.getElementById('damage_btn').addEventListener('click', () => doAction('damage'));
+    // Auto-focus on barcode input
+    document.getElementById('barcodeInput').focus();
 
-    initScanner();
+    // Allow scanning by pressing Enter
+    document.getElementById('barcodeInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('scanBtn').click();
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (scanning) {
+            stopScanning();
+        }
+    });
 </script>
 </body>
 </html>
-

@@ -12,22 +12,24 @@ $routes->get('/logout', 'Auth::logout');
 
 $routes->get('dashboard', 'Dashboard::index');
 
-//Central 
+//Central
 $routes->get('/central', 'Auth::centralDashboard');
 
-// Inventory endpoints for inventory 
+// Inventory endpoints for inventory
 $routes->get('inventory', 'Inventory::index');
 $routes->get('inventory/overview', 'Inventory::overviewPage');
+
+$routes->get('inventory/stockin', 'Inventory::stockInPage');
+$routes->post('inventory/stockin', 'Inventory::stockin');
+$routes->get('inventory/stockout', 'Inventory::stockOutPage');
+$routes->post('inventory/stockout', 'Inventory::stockout');
+$routes->get('inventory/reports', 'Inventory::reportsPage');
 $routes->get('inventory/scan', 'Inventory::scanPage');
-$routes->get('inventory/low', 'Inventory::lowPage');
-$routes->get('inventory/expiry', 'Inventory::expiryPage');
 $routes->get('/inventory/live', 'Inventory::liveInventory');
 $routes->get('/inventory/summary', 'Inventory::summary');
 $routes->get('/inventory/find', 'Inventory::findByBarcode');
-$routes->post('/inventory/update', 'Inventory::updateStock');
-$routes->post('/inventory/receive', 'Inventory::receive');
-$routes->post('/inventory/damage', 'Inventory::reportDamage');
-$routes->post('/inventory/create', 'Inventory::createItem');
+$routes->get('/inventory/balance', 'Inventory::balance');
+$routes->get('/inventory/export', 'Inventory::export');
 
 //Para sa User Management CRUD ug Page
 $routes->get('users', 'UserManagement::index');
@@ -46,14 +48,3 @@ $routes->post('branches/update/(:num)', 'BranchManagement::update/$1');
 $routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 
 // Removed duplicate/invalid Branch routes for dashboard and inventory
-
-
-
-
-
-
-
-
-
-
-
