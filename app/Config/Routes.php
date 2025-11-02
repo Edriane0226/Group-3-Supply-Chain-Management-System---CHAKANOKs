@@ -16,7 +16,8 @@ $routes->get('dashboard', 'Dashboard::index');
 $routes->get('/central', 'Auth::centralDashboard');
 
 // Inventory endpoints for inventory
-$routes->get('inventory', 'Inventory::index');
+// Route landing inventory to Auth::inventory for role-based routing (BM -> InventoryBranch view)
+$routes->get('inventory', 'Auth::inventory');
 $routes->get('inventory/overview', 'Inventory::overviewPage');
 
 $routes->get('inventory/stockin', 'Inventory::stockInPage');
@@ -30,6 +31,11 @@ $routes->get('/inventory/summary', 'Inventory::summary');
 $routes->get('/inventory/find', 'Inventory::findByBarcode');
 $routes->get('/inventory/balance', 'Inventory::balance');
 $routes->get('/inventory/export', 'Inventory::export');
+
+// Branch Manager simple pages
+$routes->get('purchase-request', 'PurchaseRequest::index');
+$routes->get('orders', 'Orders::index'); // legacy link, can be removed later
+$routes->get('deliveries', 'Deliveries::index');
 
 //Para sa User Management CRUD ug Page
 $routes->get('users', 'UserManagement::index');

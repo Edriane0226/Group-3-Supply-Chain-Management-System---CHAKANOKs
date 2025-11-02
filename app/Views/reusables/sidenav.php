@@ -32,6 +32,7 @@
       </a>
 
   <?php else: ?>
+
       <!-- Branch Manager -->
       <a href="<?= site_url('dashboard') ?>" class="<?= (uri_string() == 'dashboard') ? 'active' : '' ?>">
           <i class="bi bi-speedometer2 me-2"></i> Dashboard
@@ -39,17 +40,12 @@
       <a href="<?= site_url('inventory') ?>" class="<?= (uri_string() == 'inventory') ? 'active' : '' ?>">
           <i class="bi bi-box-seam me-2"></i> Inventory
       </a>
-      <a href="<?= site_url('inventory/stockin') ?>" class="<?= (uri_string() == 'inventory/stockin') ? 'active' : '' ?>">
-          <i class="bi bi-plus-circle me-2"></i> Stock In
+      <a href="<?= site_url('purchase-request') ?>" class="<?= (uri_string() == 'purchase-request') ? 'active' : '' ?>">
+          <i class="bi bi-journal-text me-2"></i> Purchase Request
       </a>
-      <a href="<?= site_url('inventory/stockout') ?>" class="<?= (uri_string() == 'inventory/stockout') ? 'active' : '' ?>">
-          <i class="bi bi-dash-circle me-2"></i> Stock Out
+      <a href="<?= site_url('deliveries') ?>" class="<?= (uri_string() == 'deliveries') ? 'active' : '' ?>">
+          <i class="bi bi-truck me-2"></i> Deliveries
       </a>
-      <a href="<?= site_url('inventory/reports') ?>" class="<?= (uri_string() == 'inventory/reports') ? 'active' : '' ?>">
-          <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
-      </a>
-      <a href="<?= site_url('orders') ?>"><i class="bi bi-cart-check me-2"></i> Orders</a>
-      <a href="<?= site_url('deliveries') ?>"><i class="bi bi-truck me-2"></i> Deliveries</a>
   <?php endif; ?>
 
   <a href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>

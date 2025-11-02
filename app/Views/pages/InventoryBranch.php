@@ -39,10 +39,15 @@
   <div class="content p-3">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-white rounded">
-      <h4 class="mb-0">ChakaNoks Branch Manager</h4>
+      <h4 class="mb-0">Inventory</h4>
       <div class="d-flex align-items-center">
-        <span class="me-2">Admin Dashboard</span>
-        <img src="/assets/images/profile-icon.png" alt="Profile" width="30" height="30" class="rounded-circle">
+        <span class="me-2 text-muted small">
+          <?= esc(session()->get('first_Name')) ?> <?= esc(session()->get('last_Name')) ?>
+        </span>
+        <span class="me-2 text-muted small">(<?= esc(session()->get('role')) ?>)</span>
+        <div style="width:32px;height:32px;border-radius:50%;background:#6c757d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;">
+          <?= esc(substr(session()->get('first_Name'), 0, 1)) ?>
+        </div>
       </div>
     </div>
 

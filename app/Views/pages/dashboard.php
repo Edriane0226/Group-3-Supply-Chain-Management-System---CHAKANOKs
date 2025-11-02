@@ -30,6 +30,36 @@
       bottom: 0;
     }
 
+    /* Sidebar branding and nav styles */
+    .sidebar img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 10px;
+    }
+    .sidebar h5 {
+      font-weight: 600;
+      text-align: center;
+      margin: 10px 0 20px;
+      line-height: 1.2;
+    }
+    .sidebar a {
+      color: #fff;
+      text-decoration: none;
+      width: 100%;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 6px;
+      margin: 2px 8px;
+    }
+    .sidebar a.active,
+    .sidebar a:hover {
+      background: rgba(0, 0, 0, 0.25);
+    }
+
     .main-content {
       margin-left: 220px;
       padding: 20px;
@@ -108,7 +138,11 @@
   <div class="main-content">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-      <h1 class="h5 fw-bold">Dashboard</h1>
+      <?php if (($role ?? '') === 'Branch Manager'): ?>
+        <h1 class="h5 fw-bold">Branch Dashboard</h1>
+      <?php else: ?>
+        <h1 class="h5 fw-bold">Dashboard</h1>
+      <?php endif; ?>
       <div class="d-flex align-items-center">
         <span class="me-2 text-muted small">
           <?= esc(session()->get('first_Name')) ?> <?= esc(session()->get('last_Name')) ?>
@@ -134,86 +168,103 @@
             <div class="card-box">
               <i class="bi bi-cash-stack"></i>
               <h6>Total Sales Today</h6>
-              <!-- Add Data Here kung available na data -->
-              <div class="card-value"></div>
+              <div class="card-value"><?= esc($totalSalesToday ?? 'N/A') ?></div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card-box">
               <i class="bi bi-star-fill"></i>
               <h6>Top-Selling Items</h6>
-              <!-- Add Data Here kung available na data -->
-              <div class="card-value"></div>
+              <div class="card-value"><?= esc($topSellingItems ?? 'N/A') ?></div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card-box">
               <i class="bi bi-archive"></i>
               <h6>Inventory Value</h6>
-              <!-- Add Data Here kung available na data -->
-              <div class="card-value"></div>
+              <div class="card-value">₱<?= esc(number_format($inventoryValue ?? 0, 2)) ?></div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="card-box">
               <i class="bi bi-file-earmark-text"></i>
               <h6>Pending PRs</h6>
-              <!-- Add Data Here kung available na data -->
-              <div class="card-value">></div>
+              <div class="card-value"><?= esc($pendingPRs ?? '0') ?></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="row mt-4">
-        <div class="col-lg-8">
-          <div class="dashboard-box mb-3">
-            <i class="bi bi-graph-up"></i>
-            <h6>Daily Sales Summary</h6>
-            <p><?= esc($dailySalesSummary ?? 'N/A') ?></p>
+      <div class="dashboard-section">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="dashboard-box">
+              <i class="bi bi-graph-up"></i>
+              <h6>Daily Sales Summary</h6>
+              <p><?= esc($dailySalesSummary ?? 'N/A') ?></p>
+            </div>
           </div>
-          <div class="dashboard-box mb-3">
-            <i class="bi bi-clock-history"></i>
-            <h6>Recent Activity</h6>
-            <p><?= esc($recentActivity ?? 'N/A') ?></p>
+          <div class="col-md-3">
+            <div class="dashboard-box">
+              <i class="bi bi-pie-chart-fill"></i>
+              <h6>Sales Breakdown</h6>
+              <p><?= esc($salesBreakdown ?? 'N/A') ?></p>
+            </div>
           </div>
-        </div>
-
-        <div class="col-lg-4">
-          <div class="dashboard-box mb-3">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <h6>Low Stock Alerts</h6>
-            <?php if (!empty($stockWarning)) : ?>
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Qty</th>
-                    <th>Reorder</th>
-                    <th>Unit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($stockWarning as $item): ?>
-                    <tr>
-                      <td><?= esc($item['item_name']) ?></td>
-                      <td><?= esc($item['quantity']) ?></td>
-                      <td><?= esc($item['reorder_level']) ?></td>
-                      <td><?= esc($item['unit']) ?></td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            <?php else: ?>
-              <p>No low stock alerts at the moment.</p>
-            <?php endif; ?>
+          <div class="col-md-3">
+            <div class="dashboard-box">
+              <i class="bi bi-boxes"></i>
+              <h6>Inventory Levels</h6>
+              <p><?= esc($inventoryLevels ?? 'N/A') ?></p>
+            </div>
           </div>
         </div>
       </div>
-    
+
+      <div class="dashboard-section">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="dashboard-box">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <h6>Low Stock Alerts</h6>
+              <?php if (!empty($stockWarning)) : ?>
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Item Name</th>
+                      <th>Qty</th>
+                      <th>Reorder</th>
+                      <th>Unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($stockWarning as $item): ?>
+                      <tr>
+                        <td><?= esc($item['item_name']) ?></td>
+                        <td><?= esc($item['quantity']) ?></td>
+                        <td><?= esc($item['reorder_level']) ?></td>
+                        <td><?= esc($item['unit']) ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              <?php else: ?>
+                <p>No low stock alerts at the moment.</p>
+              <?php endif; ?>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="dashboard-box">
+              <i class="bi bi-clock-history"></i>
+              <h6>Recent Activity</h6>
+              <p><?= esc($recentActivity ?? 'N/A') ?></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
     <!-- Central Office Admin -->
     <?php elseif ($role == 'Central Office Admin'): ?>
-
       <div class="row">
         <div class="col-lg-8">
           <div class="card mb-3">

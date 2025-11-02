@@ -11,10 +11,22 @@ class PurchaseRequest extends Controller
 {
     public function index()
     {
-        $model = new PurchaseRequestModel();
-        $data['requests'] = $model->withRelations()->findAll();
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
 
-        return view('purchase_requests/index', $data);
+        if ($session->get('role') !== 'Branch Manager') {
+            $session->setFlashdata('error', 'Unauthorized access.');
+            return redirect()->to(site_url('login'));
+        }
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Purchase Request',
+        ];
+
+        return view('reusables/sidenav', $data) . view('pages/purchase_request', $data);
     }
 
     public function create()
