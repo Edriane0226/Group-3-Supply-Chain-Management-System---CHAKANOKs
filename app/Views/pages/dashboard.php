@@ -1,9 +1,3 @@
-<?php
-  include APPPATH . 'Views/reusables/sidenav.php';
-
-  $role = session()->get('role');
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

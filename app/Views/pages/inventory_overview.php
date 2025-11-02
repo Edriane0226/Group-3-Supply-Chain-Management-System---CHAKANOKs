@@ -1,6 +1,3 @@
-<?php
-    include 'app\\Views\\reusables\\sidenav.php';
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

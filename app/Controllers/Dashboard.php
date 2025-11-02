@@ -29,6 +29,7 @@ class Dashboard extends Controller
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
+                'role' => $session->get('role'),
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
@@ -43,6 +44,7 @@ class Dashboard extends Controller
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
+                'role' => $session->get('role'),
             ];
             
             return view('reusables/sidenav', $data) . view('pages/dashboard');
