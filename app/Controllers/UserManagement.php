@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\BranchModel;
+use App\Models\RoleModel;
 use CodeIgniter\Controller;
 
 class UserManagement extends Controller
@@ -22,8 +23,9 @@ class UserManagement extends Controller
         $branchId = $this->request->getGet('branch');
         // GET niya all users and ilang branch name
         $data['users'] = $userModel
-            ->select('users.*, branches.branch_name')
+            ->select('users.*, branches.branch_name, roles.role_name')
             ->join('branches', 'branches.id = users.branch_id', 'left')
+            ->join('roles', 'roles.id = users.role_id', 'left')
             ->where('users.branch_id', $branchId)
             ->findAll();
 
@@ -36,8 +38,10 @@ class UserManagement extends Controller
     public function create()
     {
         $branchModel = new BranchModel();
+        $roleModel = new RoleModel();
         // GET niya Current na naa sa database
         $data['branches'] = $branchModel->findAll();
+        $data['roles'] = $roleModel->findAll();
         return view('users/create', $data);
     }
 
@@ -50,7 +54,7 @@ class UserManagement extends Controller
             'last_Name'   => $this->request->getPost('last_name'),
             'middle_Name' => $this->request->getPost('middle_name'),
             'email'       => $this->request->getPost('email'),
-            'role'        => $this->request->getPost('role'),
+            'role_id'        => $this->request->getPost('role_id'),
             'branch_id'   => $this->request->getPost('branch_id') ?: null,
             'password'    => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'created_at'  => date('Y-m-d H:i:s')
@@ -65,10 +69,12 @@ class UserManagement extends Controller
         //bale nag create ni siya ug instance sa models
         $userModel = new UserModel();
         $branchModel = new BranchModel();
+        $roleModel = new RoleModel();
 
         //gigamit dayun para mag kuha ug data pasulod sa array
         $data['user'] = $userModel->find($id);
         $data['branches'] = $branchModel->findAll();
+        $data['roles'] = $roleModel->findAll();
 
         return view('users/edit', $data);
     }
@@ -81,7 +87,7 @@ class UserManagement extends Controller
             'last_Name'   => $this->request->getPost('last_name'),
             'middle_Name' => $this->request->getPost('middle_name'),
             'email'       => $this->request->getPost('email'),
-            'role'        => $this->request->getPost('role'),
+            'role_id'        => $this->request->getPost('role_id'),
             'branch_id'   => $this->request->getPost('branch_id') ?: null,
             'updated_at'  => date('Y-m-d H:i:s')
         ];

@@ -272,7 +272,7 @@ class Inventory extends BaseController
         if ($guard) return $guard;
         if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
         $branchId = (int)(session()->get('branch_id') ?? 0);
-        $data['inventory'] = $this->inventoryModel->getBalance($branchId);
+        $data['inventory'] = $this->inventoryModel->getStockBalance($branchId);
         return view('pages/inventory_overview', $data);
     }
     public function scanPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_scan'); }

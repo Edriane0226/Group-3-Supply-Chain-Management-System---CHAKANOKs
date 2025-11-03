@@ -41,10 +41,10 @@
               <h6 class="mt-2 mb-0"><?= esc($user['first_Name'] . ' ' . $user['last_Name']) ?></h6>
               <small class="text-muted d-block mb-2"><?= esc($user['email']) ?></small>
 
-              <?php if ($user['role'] === 'Central Office Admin'): ?>
-                <span class="badge bg-primary"><?= esc($user['role']) ?></span>
+              <?php if ($user['role_id'] === 'Central Office Admin'): ?>
+                <span class="badge bg-primary"><?= esc($user['role_name']) ?></span>
               <?php else: ?>
-                <span class="badge bg-secondary"><?= esc($user['role']) ?></span>
+                <span class="badge bg-secondary"><?= esc($user['role_name']) ?></span>
               <?php endif; ?>
 
               <p class="mt-2 mb-0">

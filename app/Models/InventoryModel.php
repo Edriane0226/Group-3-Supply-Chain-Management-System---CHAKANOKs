@@ -30,7 +30,7 @@ class InventoryModel extends Model
     public function getBalance(int $branchId): array
     {
         $query = "
-            SELECT
+            SELECT 
                 si.item_name,
                 si.item_type_id,
                 si.branch_id,
@@ -44,7 +44,13 @@ class InventoryModel extends Model
                 AND si.branch_id = so.branch_id
                 AND si.item_name = so.item_name
             WHERE si.branch_id = ?
-            GROUP BY si.item_type_id, si.branch_id, si.item_name
+            GROUP BY 
+                si.item_type_id, 
+                si.branch_id, 
+                si.item_name, 
+                si.unit, 
+                si.expiry_date, 
+                si.barcode
         ";
         return $this->db->query($query, [$branchId])->getResultArray();
     }

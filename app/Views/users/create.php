@@ -38,15 +38,11 @@
 
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="bi bi-person-badge"></i> Role</label>
-              <select name="role" class="form-select" required>
+              <select name="role_id" class="form-select" required>
                 <option value="">Select Role</option>
-                <option>Branch Manager</option>
-                <option>Inventory Staff</option>
-                <option>Central Office Admin</option>
-                <option>Supplier</option>
-                <option>Logistics Coordinator</option>
-                <option>Franchise Manager</option>
-                <option>System Administrator</option>
+                <?php foreach ($roles as $role): ?>
+                  <option value="<?= esc($role['id']) ?>"><?= esc($role['role_name']) ?></option>
+                <?php endforeach; ?>
               </select>
             </div>
 
