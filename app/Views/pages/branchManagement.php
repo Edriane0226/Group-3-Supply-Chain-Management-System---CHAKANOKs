@@ -3,13 +3,12 @@
 ?>
 
 <div class="content">
-
-  <div class="topbar">
-    <div class="topbar-header">
+  <!-- Topbar -->
+  <div class="topbar mb-3">
+    <div class="topbar-header d-flex justify-content-between align-items-center w-100">
       <h5 class="fw-bold mb-0">
         <i class="bi bi-building me-2 text-warning"></i> Branch Management
       </h5>
-      <!-- ✅ Update Add Branch button -->
       <a href="<?= site_url('branches/create') ?>" class="btn btn-sm btn-warning text-white shadow-sm">
         <i class="bi bi-plus-circle"></i> Add Branch
       </a>
@@ -17,6 +16,7 @@
   </div>
 
   <div class="dashboard-section">
+    <!-- Existing Branches -->
     <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-check-circle me-1 text-success"></i> Existing Branches</h6>
     <div class="row g-3 mb-4">
       <?php foreach ($branches as $branch): ?>
@@ -34,14 +34,10 @@
                 </small>
               </div>
               <div class="card-footer bg-light text-center">
-                <!-- ✅ Update Edit -->
                 <a href="<?= site_url('branches/edit/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
                   <i class="bi bi-pencil"></i> Edit
                 </a>
-                <!-- ✅ Update Delete -->
-                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" 
-                   onclick="return confirm('Are you sure you want to delete this branch?')" 
-                   class="btn btn-sm btn-outline-danger">
+                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" onclick="return confirm('Are you sure you want to delete this branch?')" class="btn btn-sm btn-outline-danger">
                   <i class="bi bi-trash"></i> Delete
                 </a>
               </div>
@@ -51,6 +47,7 @@
       <?php endforeach; ?>
     </div>
 
+    <!-- Upcoming Branch -->
     <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-hourglass-split me-1 text-warning"></i> Upcoming Branch</h6>
     <div class="row g-3 mb-4">
       <?php foreach ($branches as $branch): ?>
@@ -68,9 +65,10 @@
             </div>
           </div>
         <?php endif; ?>
-      <?php endforeach; ?>    
+      <?php endforeach; ?>
     </div>
 
+    <!-- Franchise Partners -->
     <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-people me-1 text-primary"></i> Franchise Partners</h6>
     <div class="row g-3">
       <?php foreach ($branches as $branch): ?>
@@ -88,14 +86,10 @@
                 </small>
               </div>
               <div class="card-footer bg-light text-center">
-                <!-- ✅ Update Edit -->
                 <a href="<?= site_url('branches/edit/'.$branch['id']) ?>" class="btn btn-sm btn-outline-warning me-2">
                   <i class="bi bi-pencil"></i> Edit
                 </a>
-                <!-- ✅ Update Delete -->
-                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" 
-                   onclick="return confirm('Are you sure you want to delete this branch?')" 
-                   class="btn btn-sm btn-outline-danger">
+                <a href="<?= site_url('branches/delete/'.$branch['id']) ?>" onclick="return confirm('Are you sure you want to delete this branch?')" class="btn btn-sm btn-outline-danger">
                   <i class="bi bi-trash"></i> Delete
                 </a>
               </div>
@@ -104,6 +98,5 @@
         <?php endif; ?>
       <?php endforeach; ?>
     </div>
-
   </div>
 </div>
