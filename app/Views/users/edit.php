@@ -35,13 +35,11 @@
 
           <div class="col-md-6">
             <label class="form-label fw-semibold">Role</label>
-            <select name="role" class="form-select" required>
+            <select name="role_id" class="form-select" required>
               <option value="">Select Role</option>
-              <?php
-                $roles = ['Branch Manager','Inventory Staff','Central Office Admin','Supplier','Logistics Coordinator','Franchise Manager','System Administrator'];
-                foreach ($roles as $role): ?>
-                <option value="<?= $role ?>" <?= ($user['role_id'] === $role) ? 'selected' : '' ?>>
-                  <?= $role ?>
+              <?php foreach ($roles as $role): ?>
+                <option value="<?= $role['id'] ?>" <?= ($user['role_id'] == $role['id']) ? 'selected' : '' ?>>
+                  <?= esc($role['role_name']) ?>
                 </option>
               <?php endforeach; ?>
             </select>

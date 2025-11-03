@@ -87,7 +87,7 @@ class UserManagement extends Controller
             'last_Name'   => $this->request->getPost('last_name'),
             'middle_Name' => $this->request->getPost('middle_name'),
             'email'       => $this->request->getPost('email'),
-            'role_id'        => $this->request->getPost('role_id'),
+            'role_id'     => $this->request->getPost('role_id'),
             'branch_id'   => $this->request->getPost('branch_id') ?: null,
             'updated_at'  => date('Y-m-d H:i:s')
         ];
