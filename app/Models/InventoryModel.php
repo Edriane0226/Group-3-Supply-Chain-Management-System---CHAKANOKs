@@ -235,4 +235,124 @@ class InventoryModel extends Model
 
         return $this->db->query($query, $params)->getResultArray();
     }
+
+    // Deliveries methods
+
+    // Create a new delivery
+    public function createDelivery(array $data): int
+    {
+        $insertData = [
+            'supplier_name' => $data['supplier_name'],
+            'branch_id' => $data['branch_id'],
+            'delivery_date' => $data['delivery_date'],
+            'status' => 'Pending',
+            'remarks' => $data['remarks'] ?? null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $this->db->table('deliveries')->insert($insertData);
+        return $this->db->insertID();
+    }
+
+    // Add items to a delivery
+    public function addDeliveryItems(int $deliveryId, array $items): bool
+    {
+        $insertData = [];
+        foreach ($items as $item) {
+            $insertData[] = [
+                'delivery_id' => $deliveryId,
+                'item_name' => $item['item_name'],
+                'quantity' => $item['quantity'],
+                'unit' => $item['unit'],
+                'price' => $item['price'],
+                'expiry_date' => $item['expiry_date'] ?? null,
+                'barcode' => $item['barcode'] ?? null,
+                'item_type_id' => $item['item_type_id'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        return $this->db->table('delivery_items')->insertBatch($insertData);
+    }
+
+    // Get deliveries for a branch
+    public function getDeliveries(int $branchId, ?string $status = null): array
+    {
+        $builder = $this->db->table('deliveries')
+            ->select('deliveries.*, COUNT(di.item_name) AS total_items')
+            ->join('delivery_items di', 'deliveries.id = di.delivery_id', 'left')
+            ->where('deliveries.branch_id', $branchId)
+            ->groupBy('deliveries.id')
+            ->orderBy('deliveries.delivery_date', 'DESC');
+
+        if ($status) {
+            $builder->where('deliveries.status', $status);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    // Get delivery details with items
+    public function getDeliveryDetails(int $deliveryId): ?array
+    {
+        $delivery = $this->db->table('deliveries')->where('id', $deliveryId)->get()->getRowArray();
+        if (!$delivery) {
+            return null;
+        }
+
+        $items = $this->db->table('delivery_items')->where('delivery_id', $deliveryId)->get()->getResultArray();
+        $delivery['items'] = $items;
+
+        return $delivery;
+    }
+
+    // Mark delivery as received and insert items into stock_in
+    public function receiveDelivery(int $deliveryId): bool
+    {
+        $this->db->transStart();
+
+        // Update delivery status
+        $this->db->table('deliveries')
+            ->where('id', $deliveryId)
+            ->update(['status' => 'Received', 'updated_at' => date('Y-m-d H:i:s')]);
+
+        // Get delivery items
+        $items = $this->db->table('delivery_items')->where('delivery_id', $deliveryId)->get()->getResultArray();
+
+        // Get delivery branch
+        $delivery = $this->db->table('deliveries')->select('branch_id')->where('id', $deliveryId)->get()->getRowArray();
+
+        // Insert into stock_in
+        $stockInData = [];
+        foreach ($items as $item) {
+            $stockInData[] = [
+                'item_type_id' => $item['item_type_id'],
+                'branch_id' => $delivery['branch_id'],
+                'item_name' => $item['item_name'],
+                'category' => null, // Can be added later if needed
+                'quantity' => $item['quantity'],
+                'unit' => $item['unit'],
+                'price' => $item['price'],
+                'expiry_date' => $item['expiry_date'],
+                'barcode' => $item['barcode'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+        }
+
+        if (!empty($stockInData)) {
+            $this->db->table('stock_in')->insertBatch($stockInData);
+        }
+
+        $this->db->transComplete();
+
+        return $this->db->transStatus();
+    }
+
+    // Cancel delivery
+    public function cancelDelivery(int $deliveryId): bool
+    {
+        return $this->db->table('deliveries')
+            ->where('id', $deliveryId)
+            ->update(['status' => 'Cancelled', 'updated_at' => date('Y-m-d H:i:s')]);
+    }
 }
