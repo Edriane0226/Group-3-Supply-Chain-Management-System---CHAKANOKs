@@ -136,7 +136,8 @@
       </div>
     </div>
 
-    <!-- Create Delivery -->
+    <!-- Create Delivery  -->
+    <!-- <Purchase Request dapat ni> -->
     <div id="sec-create" class="section d-none">
       <div class="row g-3">
         <div class="col-md-8">

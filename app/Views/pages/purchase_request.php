@@ -23,6 +23,7 @@
   </style>
 </head>
 <body>
+<?php if ($role == 'Branch Manager'): ?>
   <div class="main-content">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h1 class="h5 fw-bold mb-0">Purchase Request</h1>
@@ -31,82 +32,108 @@
       </div>
     </div>
 
-    <!-- Search toolbar -->
-    <div class="pr-toolbar d-flex align-items-center gap-2 mb-3">
-      <i class="bi bi-search"></i>
-      <input type="text" class="form-control form-control-sm border-0" placeholder="Search"/>
-      <button class="btn btn-sm btn-light ms-auto"><i class="bi bi-list"></i></button>
-    </div>
-
-    <!-- Request table -->
-    <div class="pr-table mb-4">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Code</th>
-            <th>Current Stock</th>
-            <th>Supplier</th>
-            <th>Unit Price</th>
-            <th>Total Price</th>
-            <th>Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td colspan="7" class="text-center text-muted py-4">No items added yet</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Wizard cards -->
-    <div class="row g-3 mb-4">
-      <div class="col-md-4">
-        <div class="wizard-card">
-          <h6 class="fw-semibold mb-3">Select Items</h6>
-          <div class="input-group input-group-sm mb-2">
-            <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input class="form-control" placeholder="Search"/>
-            <button class="btn btn-light"><i class="bi bi-list"></i></button>
-          </div>
-          <div class="table-responsive" style="max-height:180px">
-            <table class="table table-sm">
-              <thead><tr><th>Item Name</th><th>Category</th><th>Current Stock</th></tr></thead>
-              <tbody><tr><td colspan="3" class="text-muted">...</td></tr></tbody>
-            </table>
-          </div>
-          <div class="d-flex justify-content-end"><button class="btn btn-sm btn-secondary">Next</button></div>
-        </div>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-warning text-white">
+        <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Your Purchase Requests</h6>
       </div>
-      <div class="col-md-4">
-        <div class="wizard-card">
-          <h6 class="fw-semibold mb-3">Select Quantities</h6>
-          <div class="table-responsive" style="max-height:212px">
-            <table class="table table-sm">
-              <thead><tr><th>Item Name</th><th class="text-end">Quantity</th></tr></thead>
-              <tbody><tr><td>...</td><td class="text-end"><input type="number" class="form-control form-control-sm" style="max-width:110px"></td></tr></tbody>
-            </table>
-          </div>
-          <div class="d-flex justify-content-between"><button class="btn btn-sm btn-outline-secondary">Back</button><button class="btn btn-sm btn-secondary">Next</button></div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="wizard-card">
-          <h6 class="fw-semibold mb-3">Choose Supplier</h6>
-          <div class="mb-2">
-            <select class="form-select form-select-sm">
-              <option>Supplier Name</option>
-            </select>
-          </div>
-          <div class="small text-muted mb-2">Contact Supplier</div>
-          <div class="small text-muted mb-3">Delivery Lead Time</div>
-          <div class="d-flex justify-content-between"><button class="btn btn-sm btn-outline-secondary">Back</button><button class="btn btn-sm btn-secondary">Next</button></div>
-        </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>PR No.</th>
+              <th>Item Name</th>
+              <th>Quantity</th>
+              <th>Supplier</th>
+              <th>Status</th>
+              <th>Date Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (!empty($requests)): ?>
+              <?php foreach ($requests as $req): ?>
+                <tr>
+                  <td><?= esc($req['id']) ?></td>
+                  <td><?= esc($req['item_name']) ?></td>
+                  <td><?= esc($req['quantity']) ?></td>
+                  <td><?= esc($req['supplier_name']) ?></td>
+                  <td><span class="badge bg-<?= $req['status'] == 'Approved' ? 'success' : ($req['status'] == 'Pending' ? 'warning' : 'danger') ?>">
+                    <?= esc($req['status']) ?></span>
+                  </td>
+                  <td><?= esc($req['request_date']) ?></td>
+                </tr>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <tr><td colspan="6" class="text-center text-muted py-4">No purchase requests yet.</td></tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
       </div>
     </div>
 
     <div class="text-center">
-      <button class="btn btn-secondary btn-pill px-5">Submit to Central</button>
+      <a href="<?= site_url('purchase-requests/create') ?>" class="btn btn-secondary px-4">
+        <i class="bi bi-plus-circle me-1"></i>New Request
+      </a>
     </div>
   </div>
+
+<?php elseif ($role == 'Central Office Admin'): ?>
+  <!-- 🟣 Central Office Admin View -->
+  <div class="main-content container">
+    <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-bag-check-fill me-2 text-warning"></i>Branch Purchase Requests</h5>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Request ID</th>
+              <th>Branch</th>
+              <th>Item Name</th>
+              <th>Quantity</th>
+              <th>Unit</th>
+              <th>Status</th>
+              <th>Request Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php if (!empty($requests)): ?>
+              <?php foreach ($requests as $req): ?>
+                <tr>
+                  <td><?= esc($req['id']) ?></td>
+                  <td><?= esc($req['branch_name']) ?></td>
+                  <td><?= esc($req['item_name']) ?></td>
+                  <td><?= esc($req['quantity']) ?></td>
+                  <td><?= esc($req['unit']) ?></td>
+                  <td>
+                    <span class="badge bg-<?= $req['status'] == 'Approved' ? 'success' : ($req['status'] == 'Pending' ? 'warning' : 'danger') ?>">
+                      <?= esc($req['status']) ?>
+                    </span>
+                  </td>
+                  <td><?= esc($req['request_date']) ?></td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <form action="<?= site_url('purchase-requests/approve/' . $req['id']) ?>" method="post" class="d-inline">
+                        <button class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i></button>
+                      </form>
+                      <form action="<?= site_url('purchase-requests/cancel/' . $req['id']) ?>" method="post" class="d-inline">
+                        <button class="btn btn-danger btn-sm"><i class="bi bi-x-circle"></i></button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <tr><td colspan="8" class="text-center text-muted py-4">No branch requests found.</td></tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<?php endif; ?>
+
 </body>
 </html>

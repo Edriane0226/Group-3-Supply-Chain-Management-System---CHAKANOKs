@@ -16,15 +16,29 @@ class PurchaseRequest extends Controller
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
-        if ($session->get('role') !== 'Branch Manager') {
+        if ($session->get('role') !== 'Branch Manager' && $session->get('role') !== 'Central Office Admin') {
             $session->setFlashdata('error', 'Unauthorized access.');
             return redirect()->to(site_url('login'));
         }
 
-        $data = [
-            'role' => $session->get('role'),
-            'title' => 'Purchase Request',
-        ];
+        if ($session->get('role') == 'Central Office Admin') {
+            $branchModel = new BranchModel();
+            $purchModel = new PurchaseRequestModel();
+            
+            $data = [
+                'role' => $session->get('role'),
+                'title' => 'Purchase Request',
+                'branches' => $branchModel->findAll(),
+                'requests' => $purchModel->findAll()
+            ];
+        }else if ($session->get('role') == 'Branch Manager') {
+            $purchModel = new PurchaseRequestModel();
+            $data = [
+                'role' => $session->get('role'),
+                'title' => 'Purchase Request',
+                'requests' => $purchModel->where('branch_id', $session->get('branch_id'))->findAll()
+            ];
+        }
 
         return view('reusables/sidenav', $data) . view('pages/purchase_request', $data);
     }
