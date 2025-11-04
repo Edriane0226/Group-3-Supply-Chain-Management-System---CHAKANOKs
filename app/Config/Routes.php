@@ -36,6 +36,10 @@ $routes->get('/inventory/export', 'Inventory::export');
 $routes->get('purchase-request', 'PurchaseRequest::index');
 $routes->get('orders', 'Orders::index'); // legacy link, can be removed later
 $routes->get('deliveries', 'Deliveries::index');
+$routes->post('deliveries/create', 'Deliveries::create');
+$routes->get('deliveries/details/(:num)', 'Deliveries::details/$1');
+$routes->post('deliveries/receive/(:num)', 'Deliveries::receive/$1');
+$routes->post('deliveries/cancel/(:num)', 'Deliveries::cancel/$1');
 
 //Para sa User Management CRUD ug Page
 $routes->get('users', 'UserManagement::index');

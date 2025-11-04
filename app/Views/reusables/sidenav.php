@@ -111,6 +111,9 @@
       <a href="<?= site_url('inventory/stockout') ?>" class="<?= (uri_string() == 'inventory/stockout') ? 'active' : '' ?>">
           <i class="bi bi-dash-circle me-2"></i> Stock Out
       </a>
+      <a href="<?= site_url('deliveries') ?>" class="<?= (uri_string() == 'deliveries') ? 'active' : '' ?>">
+          <i class="bi bi-truck me-2"></i> Deliveries
+      </a>
       <a href="<?= site_url('inventory/reports') ?>" class="<?= (uri_string() == 'inventory/reports') ? 'active' : '' ?>">
           <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
       </a>
