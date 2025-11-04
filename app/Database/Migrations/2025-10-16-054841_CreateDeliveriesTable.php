@@ -9,35 +9,46 @@ class CreateDeliveriesTable extends Migration
     public function up()
     {
         $this->forge->addField([
-            'id'=>[
-            'type'=>'INT',
-            'unsigned'=>true,
-            'auto_increment'=>true
+            'id' => [
+                'type'           => 'INT',
+                'unsigned'       => true,
+                'auto_increment' => true,
             ],
-            'purchase_order_id'=>[
-            'type'=>'INT',
-            'unsigned'=>true
+            'supplier_name' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => false,
             ],
-            'delivered_by'=>[
-            'type'=>'VARCHAR',
-            'constraint'=>100,
-            'null'=>true
+            'branch_id' => [
+                'type'     => 'INT',
+                'unsigned' => true,
+                'null'     => false,
             ],
-            'delivery_date'=>[
-            'type'=>'DATETIME',
-            'null'=>false
+            'delivery_date' => [
+                'type' => 'DATE',
+                'null' => false,
             ],
-            'status'=>[
-            'type'=>'ENUM("in_transit","delivered","delayed")',
-            'default'=>'in_transit'
+            'status' => [
+                'type' => 'ENUM("Pending","Received","Cancelled")',
+                'default' => 'Pending',
             ],
-            'remarks'=>[
-            'type'=>'TEXT',
-            'null'=>true
+            'remarks' => [
+                'type' => 'TEXT',
+                'null' => true,
+            ],
+            'created_at' => [
+                'type'    => 'DATETIME',
+                'null'    => false,
+            ],
+            'updated_at' => [
+                'type'     => 'DATETIME',
+                'null'     => true,
+                'default'  => null,
+                'on_update' => 'CURRENT_TIMESTAMP',
             ],
         ]);
-        $this->forge->addKey('id',true);
-        $this->forge->addForeignKey('purchase_order_id','purchase_orders','id','CASCADE','CASCADE');
+        $this->forge->addKey('id', true);
+        $this->forge->addForeignKey('branch_id', 'branches', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('deliveries');
     }
 
