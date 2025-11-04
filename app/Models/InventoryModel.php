@@ -110,7 +110,7 @@ class InventoryModel extends Model
     public function findByBarcode(string $barcode, ?int $branchId = null): ?array
     {
         $builder = $this->db->table('stock_in')->where('barcode', $barcode);
-        if ($branchId !== null) {
+        if ($branchId > 0) {
             $builder->where('branch_id', $branchId);
         }
         $item = $builder->get()->getRowArray();
