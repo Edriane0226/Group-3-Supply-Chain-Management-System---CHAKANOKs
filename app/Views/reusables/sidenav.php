@@ -82,6 +82,42 @@
   .card {
     border-radius: 10px;
   }
+
+  /* Dashboard card layout */
+  .dashboard-section {
+    margin-top: 20px;
+  }
+  .card-box, .dashboard-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+  .card-box {
+    text-align: center;
+  }
+  .dashboard-box {
+    text-align: left;
+  }
+  .card-box i, .dashboard-box i {
+    font-size: 1.25rem;
+    color: #6c757d;
+  }
+  .card-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
