@@ -34,6 +34,11 @@ $routes->get('/inventory/export', 'Inventory::export');
 
 // Branch Manager simple pages
 $routes->get('purchase-request', 'PurchaseRequest::index');
+$routes->get('purchase-requests', 'PurchaseRequest::index');
+$routes->get('purchase-requests/create', 'PurchaseRequest::create');
+$routes->post('purchase-requests', 'PurchaseRequest::store');
+$routes->post('purchase-requests/approve/(:num)', 'PurchaseRequest::approve/$1');
+$routes->post('purchase-requests/cancel/(:num)', 'PurchaseRequest::cancel/$1');
 $routes->get('orders', 'Orders::index'); // legacy link, can be removed later
 $routes->get('deliveries', 'Deliveries::index');
 $routes->post('deliveries/create', 'Deliveries::create');

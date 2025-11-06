@@ -16,6 +16,11 @@ class PurchaseRequestModel extends Model
     protected $allowedFields    = [
         'branch_id',
         'supplier_id',
+        'item_name',
+        'quantity',
+        'unit',
+        'description',
+        'remarks',
         'request_date',
         'status',
         'created_at',
@@ -40,5 +45,22 @@ class PurchaseRequestModel extends Model
         return $this->where('branch_id', $branchId)
                     ->where('status', 'pending')
                     ->countAllResults();
+    }
+
+    // Fetch all requests for a specific branch with relations
+    public function findByBranchWithRelations(int $branchId): array
+    {
+        return $this->withRelations()
+                    ->where('purchase_requests.branch_id', $branchId)
+                    ->orderBy('purchase_requests.created_at', 'DESC')
+                    ->findAll();
+    }
+
+    // Fetch all requests across branches (for Central Office Admin)
+    public function findAllWithRelations(): array
+    {
+        return $this->withRelations()
+                    ->orderBy('purchase_requests.created_at', 'DESC')
+                    ->findAll();
     }
 }
