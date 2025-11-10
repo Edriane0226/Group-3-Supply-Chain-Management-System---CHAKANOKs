@@ -140,6 +140,7 @@ class NotificationModel extends Model
                 'approved' => 'Purchase order has been approved and is ready for delivery.',
                 'in_transit' => 'Purchase order is now in transit.',
                 'delivered' => 'Purchase order has been delivered.',
+                'pending_logistics' => 'Purchase order is pending logistics review.',
             ],
             'delivery' => [
                 'Approved' => 'Delivery has been approved and scheduled.',
@@ -158,6 +159,42 @@ class NotificationModel extends Model
                 'title' => $title,
                 'message' => $message,
                 'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+            ]);
+        }
+    }
+
+    // Notify logistics coordinators about new approved PO
+    public function notifyLogisticsCoordinator(string $eventType, int $referenceId, array $coordinatorIds): void
+    {
+        $messages = [
+            'new_po_ready' => 'A new purchase order is ready for logistics coordination.',
+            'supplier_coordinated' => 'Supplier coordination completed for purchase order.',
+            'delivery_scheduled' => 'Delivery has been scheduled for purchase order.',
+            'delivery_started' => 'Delivery has started for purchase order.',
+            'branch_notified' => 'Branch has been notified about incoming delivery.',
+            'delivery_completed' => 'Delivery has been completed and verified.',
+        ];
+
+        $titles = [
+            'new_po_ready' => 'New Purchase Order Ready',
+            'supplier_coordinated' => 'Supplier Coordination Complete',
+            'delivery_scheduled' => 'Delivery Scheduled',
+            'delivery_started' => 'Delivery Started',
+            'branch_notified' => 'Branch Notified',
+            'delivery_completed' => 'Delivery Completed',
+        ];
+
+        $title = $titles[$eventType] ?? 'Logistics Update';
+        $message = $messages[$eventType] ?? 'Logistics workflow update.';
+
+        foreach ($coordinatorIds as $coordinatorId) {
+            $this->createNotification([
+                'user_id' => $coordinatorId,
+                'type' => 'in_app',
+                'title' => $title,
+                'message' => $message,
+                'reference_type' => 'purchase_order',
                 'reference_id' => $referenceId,
             ]);
         }

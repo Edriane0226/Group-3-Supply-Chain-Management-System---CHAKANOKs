@@ -16,6 +16,7 @@ class PurchaseOrderModel extends Model
         'branch_id',
         'supplier_id',
         'status',
+        'logistics_status',
         'total_amount',
         'approved_by',
         'approved_at',
@@ -66,11 +67,12 @@ class PurchaseOrderModel extends Model
         $poData = [
             'branch_id' => $request['branch_id'],
             'supplier_id' => $request['supplier_id'],
-            'status' => 'approved',
+            'status' => 'approved', // Changed from 'approved' to 'pending_logistics' to trigger logistics workflow
             'total_amount' => 0.00, // Will be calculated based on items
             'approved_by' => $approvedBy,
             'approved_at' => date('Y-m-d H:i:s'),
             'expected_delivery_date' => date('Y-m-d', strtotime('+7 days')), // Default 7 days
+            'logistics_status' => 'pending_review', // New field for logistics workflow
         ];
 
         $this->insert($poData);
@@ -153,6 +155,18 @@ class PurchaseOrderModel extends Model
                     ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
                     ->whereIn('purchase_orders.status', ['approved', 'in_transit'])
                     ->orderBy('purchase_orders.expected_delivery_date', 'ASC')
+                    ->findAll();
+    }
+
+    // Get pending purchase orders for logistics workflow
+    public function getPendingForLogisticsWorkflow(): array
+    {
+        return $this->select('purchase_orders.*, branches.branch_name, suppliers.supplier_name, suppliers.contact_info')
+                    ->join('branches', 'branches.id = purchase_orders.branch_id')
+                    ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                    ->where('purchase_orders.status', 'approved')
+                    ->whereIn('purchase_orders.logistics_status', ['pending_review', 'supplier_coordination', 'supplier_coordinated', 'delivery_scheduled', 'delivery_started', 'branch_notified'])
+                    ->orderBy('purchase_orders.created_at', 'ASC')
                     ->findAll();
     }
 }

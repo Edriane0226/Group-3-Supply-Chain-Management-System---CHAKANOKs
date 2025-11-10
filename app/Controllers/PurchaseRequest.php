@@ -147,9 +147,18 @@ class PurchaseRequest extends Controller
         }
 
         $model = new PurchaseRequestModel();
-        $model->update($id, ['status' => 'approved']);
+        $approvedBy = (int)$session->get('user_id');
 
-        return redirect()->back()->with('success', 'Request approved');
+        try {
+            if ($model->approveRequest($id, $approvedBy)) {
+                return redirect()->back()->with('success', 'Request approved and purchase order created');
+            }
+
+            return redirect()->back()->with('error', 'Failed to approve request');
+        } catch (\Exception $e) {
+            log_message('error', 'Error approving purchase request: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'An error occurred while approving the request');
+        }
     }
 
     public function cancel($id)
@@ -161,8 +170,13 @@ class PurchaseRequest extends Controller
 
         $remarks = $this->request->getPost('remarks');
         $model = new PurchaseRequestModel();
-        $model->update($id, ['status' => 'cancelled', 'remarks' => $remarks]);
 
-        return redirect()->back()->with('success', 'Request cancelled');
+        try {
+            $model->update($id, ['status' => 'cancelled', 'remarks' => $remarks]);
+            return redirect()->back()->with('success', 'Request cancelled');
+        } catch (\Exception $e) {
+            log_message('error', 'Error cancelling purchase request: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'An error occurred while cancelling the request');
+        }
     }
 }

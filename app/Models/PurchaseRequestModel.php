@@ -113,6 +113,17 @@ class PurchaseRequestModel extends Model
 
         $userIds = array_merge($userIds, array_column($centralAdmins, 'id'));
 
+        // Notify Logistics Coordinators about new approved PO
+        $logisticsCoordinators = $this->db->table('users')
+                                         ->where('role', 'Logistics Coordinator')
+                                         ->get()
+                                         ->getResultArray();
+
+        $coordinatorIds = array_column($logisticsCoordinators, 'id');
+
         $notificationModel->notifyStatusChange('purchase_request', $requestId, 'pending', 'approved', $userIds);
+
+        // Send specific notification to logistics coordinators
+        $notificationModel->notifyLogisticsCoordinator('new_po_ready', $requestId, $coordinatorIds);
     }
 }
