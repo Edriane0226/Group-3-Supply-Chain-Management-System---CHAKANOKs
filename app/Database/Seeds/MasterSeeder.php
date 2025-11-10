@@ -10,6 +10,8 @@ class MasterSeeder extends Seeder
     {
         $this->call('BranchesSeeder');
         $this->call('UserSeeder');
+        $this->call('StockTypeSeeder');
         $this->call('StockSeeder');
+        $this->call('SupplierSeeder');
     }
 }
