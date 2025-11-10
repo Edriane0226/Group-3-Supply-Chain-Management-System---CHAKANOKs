@@ -63,4 +63,56 @@ class PurchaseRequestModel extends Model
                     ->orderBy('purchase_requests.created_at', 'DESC')
                     ->findAll();
     }
+
+    // Approve purchase request
+    public function approveRequest(int $requestId, int $approvedBy): bool
+    {
+        $result = $this->update($requestId, [
+            'status' => 'approved',
+            'approved_by' => $approvedBy,
+            'approved_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        if ($result) {
+            // Create purchase order from approved request
+            $purchaseOrderModel = new \App\Models\PurchaseOrderModel();
+            $poId = $purchaseOrderModel->createFromPurchaseRequest($requestId, $approvedBy);
+
+            // Notify relevant users
+            $this->notifyApproval($requestId, $approvedBy);
+        }
+
+        return $result;
+    }
+
+    // Notify users about approval
+    private function notifyApproval(int $requestId, int $approvedBy): void
+    {
+        $notificationModel = new \App\Models\NotificationModel();
+
+        // Get request details
+        $request = $this->find($requestId);
+        if (!$request) {
+            return;
+        }
+
+        // Get branch users for notifications
+        $branchUsers = $this->db->table('users')
+                               ->where('branch_id', $request['branch_id'])
+                               ->get()
+                               ->getResultArray();
+
+        $userIds = array_column($branchUsers, 'id');
+
+        // Also notify central office admins
+        $centralAdmins = $this->db->table('users')
+                                 ->where('role', 'Central Office Admin')
+                                 ->get()
+                                 ->getResultArray();
+
+        $userIds = array_merge($userIds, array_column($centralAdmins, 'id'));
+
+        $notificationModel->notifyStatusChange('purchase_request', $requestId, 'pending', 'approved', $userIds);
+    }
 }

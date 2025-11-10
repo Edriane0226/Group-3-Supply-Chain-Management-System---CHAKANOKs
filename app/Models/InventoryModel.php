@@ -355,4 +355,112 @@ class InventoryModel extends Model
             ->where('id', $deliveryId)
             ->update(['status' => 'Cancelled', 'updated_at' => date('Y-m-d H:i:s')]);
     }
+
+    // Update delivery status with notifications
+    public function updateDeliveryStatus(int $deliveryId, string $status, ?int $userId = null): bool
+    {
+        $oldDelivery = $this->db->table('deliveries')->where('id', $deliveryId)->get()->getRowArray();
+        if (!$oldDelivery) {
+            return false;
+        }
+
+        $updateData = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
+
+        if ($status === 'Delivered') {
+            $updateData['actual_delivery_time'] = date('Y-m-d H:i:s');
+        }
+
+        $result = $this->db->table('deliveries')
+                          ->where('id', $deliveryId)
+                          ->update($updateData);
+
+        if ($result) {
+            // Create notifications for relevant users
+            $this->notifyDeliveryStatusChange($deliveryId, $oldDelivery['status'], $status);
+        }
+
+        return $result;
+    }
+
+    // Notify users about delivery status changes
+    private function notifyDeliveryStatusChange(int $deliveryId, string $oldStatus, string $newStatus): void
+    {
+        $notificationModel = new \App\Models\NotificationModel();
+
+        // Get branch users for notifications
+        $delivery = $this->db->table('deliveries')
+                            ->select('deliveries.*, branches.branch_name')
+                            ->join('branches', 'branches.id = deliveries.branch_id')
+                            ->where('deliveries.id', $deliveryId)
+                            ->get()
+                            ->getRowArray();
+
+        if (!$delivery) {
+            return;
+        }
+
+        // Get users from the branch
+        $branchUsers = $this->db->table('users')
+                               ->where('branch_id', $delivery['branch_id'])
+                               ->get()
+                               ->getResultArray();
+
+        $userIds = array_column($branchUsers, 'id');
+
+        // Also notify central office admins
+        $centralAdmins = $this->db->table('users')
+                                 ->where('role', 'Central Office Admin')
+                                 ->get()
+                                 ->getResultArray();
+
+        $userIds = array_merge($userIds, array_column($centralAdmins, 'id'));
+
+        $notificationModel->notifyStatusChange('delivery', $deliveryId, $oldStatus, $newStatus, $userIds);
+    }
+
+    // Get deliveries with enhanced tracking info
+    public function getDeliveriesWithTracking(int $branchId, ?string $status = null): array
+    {
+        $builder = $this->db->table('deliveries')
+            ->select('deliveries.*, COUNT(di.item_name) AS total_items, ds.scheduled_date, ds.scheduled_time, ds.status as schedule_status')
+            ->join('delivery_items di', 'deliveries.id = di.delivery_id', 'left')
+            ->join('delivery_schedules ds', 'deliveries.id = ds.delivery_id', 'left')
+            ->where('deliveries.branch_id', $branchId)
+            ->groupBy('deliveries.id')
+            ->orderBy('deliveries.delivery_date', 'DESC');
+
+        if ($status) {
+            $builder->where('deliveries.status', $status);
+        }
+
+        return $builder->get()->getResultArray();
+    }
+
+    // Get delivery performance metrics
+    public function getDeliveryPerformanceMetrics(int $branchId): array
+    {
+        $query = "
+            SELECT
+                COUNT(*) as total_deliveries,
+                SUM(CASE WHEN status = 'Delivered' THEN 1 ELSE 0 END) as completed_deliveries,
+                SUM(CASE WHEN status = 'Delivered' AND actual_delivery_time <= estimated_eta THEN 1 ELSE 0 END) as on_time_deliveries,
+                AVG(CASE WHEN status = 'Delivered' THEN TIMESTAMPDIFF(MINUTE, delivery_date, actual_delivery_time) END) as avg_delivery_time_minutes
+            FROM deliveries
+            WHERE branch_id = ?
+        ";
+
+        $result = $this->db->query($query, [$branchId])->getRowArray();
+
+        $totalDeliveries = (int)($result['total_deliveries'] ?? 0);
+        $completedDeliveries = (int)($result['completed_deliveries'] ?? 0);
+        $onTimeDeliveries = (int)($result['on_time_deliveries'] ?? 0);
+
+        return [
+            'total_deliveries' => $totalDeliveries,
+            'completed_deliveries' => $completedDeliveries,
+            'completion_rate' => $totalDeliveries > 0 ? round(($completedDeliveries / $totalDeliveries) * 100, 2) : 0,
+            'on_time_rate' => $completedDeliveries > 0 ? round(($onTimeDeliveries / $completedDeliveries) * 100, 2) : 0,
+            'avg_delivery_time_hours' => round(($result['avg_delivery_time_minutes'] ?? 0) / 60, 2),
+        ];
+    }
 }

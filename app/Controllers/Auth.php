@@ -85,7 +85,19 @@ class Auth extends Controller
         $session->setFlashdata('success', 'Welcome ' . $user['first_Name'] . '!');
 
         // Redirect by role
-        return redirect()->to('dashboard');
+        switch ($user['role_name']) {
+            case 'Central Office Admin':
+                return redirect()->to(site_url('central'));
+            case 'Branch Manager':
+                return redirect()->to(site_url('dashboard'));
+            case 'Inventory Staff':
+                return redirect()->to(site_url('inventory/overview'));
+            case 'Logistics Coordinator':
+                return redirect()->to(site_url('logistics-coordinator'));
+            default:
+                $session->setFlashdata('error', 'Unauthorized role.');
+                return redirect()->to(site_url('login'));
+        }
     }
 
     // // Redirect User by Role
