@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
         $mainBranch = $this->db->table('branches')->where('branch_name', 'Central')->get()->getRow();
         $branchA    = $this->db->table('branches')->where('branch_name', 'Gensan')->get()->getRow();
         $branchB    = $this->db->table('branches')->where('branch_name', 'Polomolok')->get()->getRow();
-
+        // Same Branch for all users for testing lng sa ngayon
         $data = [
             [
                 'first_Name'      => 'Edriane',
@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
                 'email'           => 'maria@example.com',
                 'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Inventory Staff'] ?? null,
-                'branch_id'       => $branchA->id ?? null,
+                'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
                 'email'           => 'pedro@example.com',
                 'password'       => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Branch Manager'] ?? null,
-                'branch_id'       => $branchB->id ?? null,
+                'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
