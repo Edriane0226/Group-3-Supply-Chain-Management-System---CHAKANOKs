@@ -41,7 +41,7 @@ $routes->post('purchase-requests/approve/(:num)', 'PurchaseRequest::approve/$1')
 $routes->post('purchase-requests/cancel/(:num)', 'PurchaseRequest::cancel/$1');
 $routes->get('orders', 'Orders::index'); // legacy link, can be removed later
 $routes->get('deliveries', 'Deliveries::index');
-$routes->post('deliveries/create', 'Deliveries::create');
+
 $routes->get('deliveries/details/(:num)', 'Deliveries::details/$1');
 $routes->post('deliveries/receive/(:num)', 'Deliveries::receive/$1');
 $routes->post('deliveries/cancel/(:num)', 'Deliveries::cancel/$1');
@@ -70,5 +70,14 @@ $routes->get('logistics-coordinator/get-calendar-data', 'LogisticsCoordinator::g
 $routes->get('logistics-coordinator/get-delivery-details/(:num)', 'LogisticsCoordinator::getDeliveryDetails/$1');
 $routes->get('logistics-coordinator/get-notifications', 'LogisticsCoordinator::getNotifications');
 $routes->post('logistics-coordinator/mark-notification-read/(:num)', 'LogisticsCoordinator::markNotificationRead/$1');
+
+// Logistics Workflow routes
+$routes->post('logistics-coordinator/review-po/(:num)', 'LogisticsCoordinator::reviewApprovedPO/$1');
+$routes->post('logistics-coordinator/coordinate-supplier/(:num)', 'LogisticsCoordinator::coordinateWithSupplier/$1');
+$routes->post('logistics-coordinator/create-delivery-schedule/(:num)', 'LogisticsCoordinator::createDeliverySchedule/$1');
+$routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateLogisticsDeliveryStatus/$1');
+$routes->post('logistics-coordinator/coordinate-branch/(:num)', 'LogisticsCoordinator::coordinateWithBranch/$1');
+$routes->post('logistics-coordinator/close-delivery/(:num)', 'LogisticsCoordinator::closeDeliveryRecord/$1');
+$routes->get('logistics-coordinator/po-details/(:num)', 'LogisticsCoordinator::getPODetails/$1');
 
 // Removed duplicate/invalid Branch routes for dashboard and inventory

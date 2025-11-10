@@ -51,45 +51,7 @@ class Deliveries extends BaseController
         return view('reusables/sidenav', $data) . view('pages/deliveries', $data);
     }
 
-    // Create new delivery
-    public function create(): ResponseInterface
-    {
-        $session = session();
-        if (!$session->get('isLoggedIn') || !in_array($session->get('role'), ['Branch Manager', 'Central Office Admin'])) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
-        }
 
-        $data = $this->request->getJSON(true);
-
-        if (!$data) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid JSON data']);
-        }
-
-        $required = ['supplier_name', 'branch_id', 'delivery_date', 'items'];
-        foreach ($required as $field) {
-            if (!isset($data[$field]) || $data[$field] === '') {
-                return $this->response->setStatusCode(400)->setJSON(['error' => "Field '$field' is required"]);
-            }
-        }
-
-        if (empty($data['items'])) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'At least one item is required']);
-        }
-
-        // Create delivery
-        $deliveryId = $this->inventoryModel->createDelivery($data);
-
-        if (!$deliveryId) {
-            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to create delivery']);
-        }
-
-        // Add items
-        if (!$this->inventoryModel->addDeliveryItems($deliveryId, $data['items'])) {
-            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to add delivery items']);
-        }
-
-        return $this->response->setJSON(['success' => true, 'message' => 'Delivery created successfully', 'delivery_id' => $deliveryId]);
-    }
 
     // Get delivery details
     public function details(int $id): ResponseInterface

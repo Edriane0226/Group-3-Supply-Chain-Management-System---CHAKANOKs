@@ -37,7 +37,6 @@
       <button class="tab-btn active" data-target="#sec-pending">Pending Deliveries</button>
       <button class="tab-btn" data-target="#sec-received">Received Deliveries</button>
       <button class="tab-btn" data-target="#sec-cancelled">Cancelled Deliveries</button>
-      <button class="tab-btn" data-target="#sec-create">Create Delivery</button>
     </div>
 
     <!-- Pending Deliveries -->
@@ -136,96 +135,7 @@
       </div>
     </div>
 
-    <!-- Create Delivery  -->
-    <!-- <Purchase Request dapat ni> -->
-    <div id="sec-create" class="section d-none">
-      <div class="row g-3">
-        <div class="col-md-8">
-          <div class="section-card">
-            <h6 class="mb-3">Create New Delivery</h6>
-            <form id="createDeliveryForm">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Supplier Name</label>
-                  <input type="text" class="form-control" id="supplier_name" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Delivery Date</label>
-                  <input type="date" class="form-control" id="delivery_date" required>
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Remarks (Optional)</label>
-                  <textarea class="form-control" id="remarks" rows="2"></textarea>
-                </div>
-              </div>
 
-              <h6 class="mt-4 mb-3">Delivery Items</h6>
-              <div id="itemsContainer">
-                <div class="item-row border rounded p-3 mb-3">
-                  <div class="row g-3">
-                    <div class="col-md-3">
-                      <label class="form-label">Item Name</label>
-                      <input type="text" class="form-control item-name" required>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label">Quantity</label>
-                      <input type="number" class="form-control item-quantity" min="1" required>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label">Unit</label>
-                      <input type="text" class="form-control item-unit" placeholder="pcs, kg, etc." required>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label">Price</label>
-                      <input type="number" class="form-control item-price" step="0.01" min="0" required>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label">Item Type</label>
-                      <select class="form-select item-type-id" required>
-                        <option value="">Select Type</option>
-                        <?php foreach ($stockTypes as $type): ?>
-                          <option value="<?= esc($type['id']) ?>"><?= esc($type['type_name']) ?></option>
-                        <?php endforeach; ?>
-                      </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                      <button type="button" class="btn btn-outline-danger btn-sm remove-item">×</button>
-                    </div>
-                  </div>
-                  <div class="row g-3 mt-2">
-                    <div class="col-md-4">
-                      <label class="form-label">Expiry Date (Optional)</label>
-                      <input type="date" class="form-control item-expiry">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label">Barcode (Optional)</label>
-                      <input type="text" class="form-control item-barcode">
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-secondary" id="addItemBtn">Add Another Item</button>
-                <button type="submit" class="btn btn-primary">Create Delivery</button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="section-card">
-            <h6>Instructions</h6>
-            <ul class="small text-muted">
-              <li>Fill in supplier and delivery details</li>
-              <li>Add one or more items to the delivery</li>
-              <li>All required fields must be filled</li>
-              <li>Barcode and expiry date are optional</li>
-              <li>Delivery will be created as "Pending"</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Delivery Details Modal -->
@@ -256,74 +166,7 @@
       });
     });
 
-    // Add item functionality
-    document.getElementById('addItemBtn').addEventListener('click', () => {
-      const container = document.getElementById('itemsContainer');
-      const firstRow = container.querySelector('.item-row');
-      const newRow = firstRow.cloneNode(true);
-      // Clear inputs
-      newRow.querySelectorAll('input').forEach(input => input.value = '');
-      newRow.querySelector('select').selectedIndex = 0;
-      container.appendChild(newRow);
-    });
 
-    // Remove item functionality
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('remove-item')) {
-        const container = document.getElementById('itemsContainer');
-        if (container.children.length > 1) {
-          e.target.closest('.item-row').remove();
-        }
-      }
-    });
-
-    // Create delivery form
-    document.getElementById('createDeliveryForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const items = [];
-      document.querySelectorAll('.item-row').forEach(row => {
-        items.push({
-          item_name: row.querySelector('.item-name').value,
-          quantity: parseInt(row.querySelector('.item-quantity').value),
-          unit: row.querySelector('.item-unit').value,
-          price: parseFloat(row.querySelector('.item-price').value),
-          expiry_date: row.querySelector('.item-expiry').value || null,
-          barcode: row.querySelector('.item-barcode').value || null,
-          item_type_id: parseInt(row.querySelector('.item-type-id').value),
-        });
-      });
-
-      const data = {
-        supplier_name: document.getElementById('supplier_name').value,
-        branch_id: <?= (int)session()->get('branch_id') ?>,
-        delivery_date: document.getElementById('delivery_date').value,
-        remarks: document.getElementById('remarks').value,
-        items: items,
-      };
-
-      try {
-        const response = await fetch('<?= site_url('deliveries/create') ?>', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert('Delivery created successfully!');
-          location.reload();
-        } else {
-          alert('Error: ' + result.error);
-        }
-      } catch (error) {
-        alert('An error occurred while creating the delivery.');
-      }
-    });
 
     // View delivery details
     async function viewDeliveryDetails(deliveryId) {
