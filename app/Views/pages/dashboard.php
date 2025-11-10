@@ -1,6 +1,4 @@
-<?php
-  include 'app/Views/reusables/sidenav.php';
-?>
+<?= view('reusables/sidenav') ?>
 
 <div class="content">
   <!-- Header -->
@@ -142,8 +140,8 @@
           <div class="card-header d-flex justify-content-between">
             <span class="fw-semibold">Sales</span>
             <div>
-              <button class="btn btn-sm btn-outline-primary active">7d</button>
-              <button class="btn btn-sm btn-outline-secondary">30d</button>
+              <a href="<?= site_url('dashboard?range=7d') ?>" class="btn btn-sm <?= ($range ?? '7d') === '7d' ? 'btn-primary' : 'btn-outline-primary' ?>">7d</a>
+              <a href="<?= site_url('dashboard?range=30d') ?>" class="btn btn-sm <?= ($range ?? '7d') === '30d' ? 'btn-primary' : 'btn-outline-secondary' ?>">30d</a>
             </div>
           </div>
           <div class="card-body d-flex align-items-center">
@@ -172,8 +170,8 @@
           <div class="card-header d-flex justify-content-between">
             <span class="fw-semibold">Branches Performance</span>
             <div>
-              <button class="btn btn-sm btn-outline-primary active">7d</button>
-              <button class="btn btn-sm btn-outline-secondary">30d</button>
+              <a href="<?= site_url('dashboard?range=7d') ?>" class="btn btn-sm <?= ($range ?? '7d') === '7d' ? 'btn-primary' : 'btn-outline-primary' ?>">7d</a>
+              <a href="<?= site_url('dashboard?range=30d') ?>" class="btn btn-sm <?= ($range ?? '7d') === '30d' ? 'btn-primary' : 'btn-outline-secondary' ?>">30d</a>
             </div>
           </div>
           <div class="card-body">
@@ -190,6 +188,12 @@
         </div>
 
         <div class="dashboard-box mb-3">
+          <i class="bi bi-check2-circle"></i>
+          <h6>Top Branches by Approvals</h6>
+          <?= $top_approvals ?? '<p>No approval data.</p>' ?>
+        </div>
+
+        <div class="dashboard-box mb-3">
           <i class="bi bi-file-earmark-bar-graph"></i>
           <h6>Reports</h6>
           <?= $reports_section ?? '<p>No reports available.</p>' ?>
@@ -199,6 +203,12 @@
           <i class="bi bi-truck"></i>
           <h6>Delivery Status</h6>
           <?= $delivery_status ?? '<p>No deliveries at this time.</p>' ?>
+        </div>
+
+        <div class="dashboard-box mt-3">
+          <i class="bi bi-alarm"></i>
+          <h6>Late Deliveries</h6>
+          <?= $late_deliveries ?? '<p>No late deliveries.</p>' ?>
         </div>
       </div>
     </div>
