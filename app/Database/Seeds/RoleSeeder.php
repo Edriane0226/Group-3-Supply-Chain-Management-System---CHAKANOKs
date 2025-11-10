@@ -23,6 +23,11 @@ class RoleSeeder extends Seeder
                 'role_name' => 'Inventory Staff',
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
+            ],
+            [
+                'role_name' => 'Logistics Coordinator',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ]
         ];
 

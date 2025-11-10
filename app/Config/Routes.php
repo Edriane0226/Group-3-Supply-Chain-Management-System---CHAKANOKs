@@ -62,4 +62,13 @@ $routes->get('branches/edit/(:num)', 'BranchManagement::edit/$1');
 $routes->post('branches/update/(:num)', 'BranchManagement::update/$1');
 $routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 
+// Logistics Coordinator routes
+$routes->get('logistics-coordinator', 'LogisticsCoordinator::index');
+$routes->post('logistics-coordinator/schedule-deliveries', 'LogisticsCoordinator::scheduleDeliveries');
+$routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateDeliveryStatus/$1');
+$routes->get('logistics-coordinator/get-calendar-data', 'LogisticsCoordinator::getCalendarData');
+$routes->get('logistics-coordinator/get-delivery-details/(:num)', 'LogisticsCoordinator::getDeliveryDetails/$1');
+$routes->get('logistics-coordinator/get-notifications', 'LogisticsCoordinator::getNotifications');
+$routes->post('logistics-coordinator/mark-notification-read/(:num)', 'LogisticsCoordinator::markNotificationRead/$1');
+
 // Removed duplicate/invalid Branch routes for dashboard and inventory
