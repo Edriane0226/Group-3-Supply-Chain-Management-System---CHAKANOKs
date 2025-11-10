@@ -13,8 +13,10 @@ class DeliveryScheduleModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'delivery_id',
-        'logistics_coordinator_id',
+        'po_id',
+        'coordinator_id',
+        'driver_id',
+        'vehicle_id',
         'scheduled_date',
         'scheduled_time',
         'route_sequence',
@@ -59,8 +61,10 @@ class DeliveryScheduleModel extends Model
     public function createSchedule(array $data): int
     {
         $scheduleData = [
-            'delivery_id' => $data['delivery_id'],
-            'logistics_coordinator_id' => $data['logistics_coordinator_id'],
+            'po_id' => $data['po_id'],
+            'coordinator_id' => $data['coordinator_id'],
+            'driver_id' => $data['driver_id'] ?? null,
+            'vehicle_id' => $data['vehicle_id'] ?? null,
             'scheduled_date' => $data['scheduled_date'],
             'scheduled_time' => $data['scheduled_time'],
             'route_sequence' => $data['route_sequence'] ?? 1,
@@ -77,16 +81,17 @@ class DeliveryScheduleModel extends Model
     // Get schedules for a date range
     public function getSchedulesByDateRange(string $startDate, string $endDate, ?int $coordinatorId = null): array
     {
-        $builder = $this->select('delivery_schedules.*, deliveries.supplier_name, deliveries.delivery_date, branches.branch_name')
-                        ->join('deliveries', 'deliveries.id = delivery_schedules.delivery_id')
-                        ->join('branches', 'branches.id = deliveries.branch_id')
+        $builder = $this->select('delivery_schedules.*, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+                        ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                        ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                        ->join('branches', 'branches.id = purchase_orders.branch_id')
                         ->where('delivery_schedules.scheduled_date >=', $startDate)
                         ->where('delivery_schedules.scheduled_date <=', $endDate)
                         ->orderBy('delivery_schedules.scheduled_date', 'ASC')
                         ->orderBy('delivery_schedules.scheduled_time', 'ASC');
 
         if ($coordinatorId) {
-            $builder->where('delivery_schedules.logistics_coordinator_id', $coordinatorId);
+            $builder->where('delivery_schedules.coordinator_id', $coordinatorId);
         }
 
         return $builder->findAll();
@@ -95,10 +100,11 @@ class DeliveryScheduleModel extends Model
     // Get schedules for logistics coordinator
     public function getCoordinatorSchedules(int $coordinatorId, ?string $status = null): array
     {
-        $builder = $this->select('delivery_schedules.*, deliveries.supplier_name, deliveries.delivery_date, branches.branch_name')
-                        ->join('deliveries', 'deliveries.id = delivery_schedules.delivery_id')
-                        ->join('branches', 'branches.id = deliveries.branch_id')
-                        ->where('delivery_schedules.logistics_coordinator_id', $coordinatorId)
+        $builder = $this->select('delivery_schedules.*, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+                        ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                        ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                        ->join('branches', 'branches.id = purchase_orders.branch_id')
+                        ->where('delivery_schedules.coordinator_id', $coordinatorId)
                         ->orderBy('delivery_schedules.scheduled_date', 'ASC')
                         ->orderBy('delivery_schedules.scheduled_time', 'ASC');
 
@@ -122,26 +128,26 @@ class DeliveryScheduleModel extends Model
     }
 
     // Optimize routes for multiple deliveries (simplified algorithm)
-    public function optimizeRoutes(array $deliveryIds, int $coordinatorId): array
+    public function optimizeRoutes(array $poIds, int $coordinatorId): array
     {
         // Simple route optimization - sort by branch location (placeholder)
         // In real implementation, would use Google Maps API for actual optimization
 
-        $deliveries = $this->db->table('deliveries')
-                              ->select('deliveries.*, branches.branch_name')
-                              ->join('branches', 'branches.id = deliveries.branch_id')
-                              ->whereIn('deliveries.id', $deliveryIds)
-                              ->orderBy('branches.branch_name', 'ASC') // Simple sorting
-                              ->get()
-                              ->getResultArray();
+        $purchaseOrders = $this->db->table('purchase_orders')
+                                  ->select('purchase_orders.*, branches.branch_name')
+                                  ->join('branches', 'branches.id = purchase_orders.branch_id')
+                                  ->whereIn('purchase_orders.id', $poIds)
+                                  ->orderBy('branches.branch_name', 'ASC') // Simple sorting
+                                  ->get()
+                                  ->getResultArray();
 
         $schedules = [];
         $sequence = 1;
 
-        foreach ($deliveries as $delivery) {
+        foreach ($purchaseOrders as $po) {
             $scheduleData = [
-                'delivery_id' => $delivery['id'],
-                'logistics_coordinator_id' => $coordinatorId,
+                'po_id' => $po['id'],
+                'coordinator_id' => $coordinatorId,
                 'scheduled_date' => date('Y-m-d'), // Today
                 'scheduled_time' => date('H:i:s', strtotime('+'.($sequence * 2).' hours')), // 2 hours apart
                 'route_sequence' => $sequence,
@@ -160,9 +166,10 @@ class DeliveryScheduleModel extends Model
     // Get delivery calendar data
     public function getCalendarData(string $startDate, string $endDate): array
     {
-        return $this->select('delivery_schedules.*, deliveries.supplier_name, branches.branch_name')
-                    ->join('deliveries', 'deliveries.id = delivery_schedules.delivery_id')
-                    ->join('branches', 'branches.id = deliveries.branch_id')
+        return $this->select('delivery_schedules.*, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+                    ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                    ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                    ->join('branches', 'branches.id = purchase_orders.branch_id')
                     ->where('delivery_schedules.scheduled_date >=', $startDate)
                     ->where('delivery_schedules.scheduled_date <=', $endDate)
                     ->orderBy('delivery_schedules.scheduled_date', 'ASC')

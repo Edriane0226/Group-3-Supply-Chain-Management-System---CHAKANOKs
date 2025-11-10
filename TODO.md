@@ -1,50 +1,50 @@
-# Supplier & Delivery Module Implementation TODO
+# Logistics Coordinator Workflow Implementation
 
-## 1. Supplier Management Enhancements
-- [ ] Create migration to add performance metrics fields to suppliers table (on_time_delivery_rate, quality_rating, total_orders, total_deliveries)
-- [ ] Update SupplierModel with methods for CRUD operations by Central Office Admin
-- [ ] Add supplier performance calculation methods
-- [ ] Update supplier views for admin management
+## Tasks to Complete
 
-## 2. Purchase Order Integration
-- [ ] Update purchase_orders table migration if needed (add tracking fields)
-- [ ] Create PurchaseOrderModel with methods for creating from approved requests
-- [ ] Update PurchaseRequest controller to generate purchase orders on approval
-- [ ] Add purchase order tracking statuses
+### 1. Modify Purchase Request Approval
+- [ ] Update `PurchaseRequestModel::approveRequest()` to notify Logistics Coordinators when a PO is created
+- [ ] Add notification logic for logistics coordinators
 
-## 3. Delivery Tracking Enhancements
-- [ ] Update deliveries table migration to include new statuses (Approved, In Transit, Delivered)
-- [ ] Add tracking fields (estimated_eta, actual_delivery_time, logistics_coordinator_id)
-- [ ] Update InventoryModel delivery methods for new statuses
-- [ ] Add real-time status updates
+### 2. Enhance Purchase Order Creation
+- [ ] Update `PurchaseOrderModel::createFromPurchaseRequest()` to set appropriate status for logistics review
+- [ ] Add logistics coordinator assignment
 
-## 4. Logistics Coordinator Role
-- [ ] Add Logistics Coordinator to roles table seeder
-- [ ] Update role-based access in controllers
-- [ ] Create LogisticsController for scheduling and route management
+### 3. Add Workflow Methods to LogisticsCoordinator Controller
+- [x] Implement `reviewApprovedPO()` method for Step 1
+- [x] Implement `coordinateWithSupplier()` method for Step 2
+- [x] Implement `createDeliverySchedule()` method for Step 3
+- [x] Implement `updateDeliveryStatus()` method for Step 4 (enhance existing)
+- [x] Implement `coordinateWithBranch()` method for Step 5
+- [x] Implement `closeDeliveryRecord()` method for Step 6
 
-## 5. Delivery Scheduling & Route Optimization
-- [ ] Create delivery_schedules table migration
-- [ ] Add Google Maps API integration for routes
-- [ ] Implement route optimization logic
-- [ ] Add delivery calendar view
+### 4. Update Dashboard View
+- [ ] Modify logistics dashboard to show workflow steps and actions
+- [ ] Add workflow progress indicators
+- [ ] Update action buttons for each step
 
-## 6. Notifications System
-- [ ] Create notifications table migration
-- [ ] Implement email/SMS API integration (placeholder for now)
-- [ ] Add notification triggers for status changes
+### 5. Enhance Notifications
+- [ ] Add specific notifications for each workflow step
+- [ ] Update `NotificationModel::notifyStatusChange()` for logistics workflow
 
-## 7. Branch & Central Office Interaction
-- [ ] Update delivery views for branch managers (confirm receipt, report issues)
-- [ ] Add central office monitoring dashboard
-- [ ] Update deliveries page with new features
+### 6. Testing and Verification
+- [ ] Test complete workflow from approval to delivery completion
+- [ ] Verify notifications are sent to appropriate users
+- [ ] Ensure status updates trigger next workflow steps
 
-## 8. Audit Logs & Security
-- [ ] Create audit_logs table migration
-- [ ] Implement logging for all order/delivery activities
-- [ ] Update role-based access controls
+### 7. Database Schema Updates
+- [x] Update delivery_schedules table to use po_id instead of delivery_id
+- [x] Add new columns: po_id, coordinator_id, driver_id, vehicle_id
+- [x] Update foreign keys accordingly
+- [x] Run migration to apply schema changes
 
-## 9. Testing & Validation
-- [ ] Test all new functionalities
-- [ ] Validate role-based permissions
-- [ ] Ensure data integrity
+### 8. Model Updates
+- [x] Update DeliveryScheduleModel to work with PO-based schedules
+- [x] Update joins in getCalendarData() and other methods
+- [x] Update optimizeRoutes() to work with PO IDs
+- [x] Update performance metrics calculation
+
+### 9. Controller Updates
+- [x] Update LogisticsCoordinator controller methods to use po_ids instead of delivery_ids
+- [x] Update scheduleDeliveries() method
+- [x] Update getCoordinatorPerformanceMetrics() to use PO actual_delivery_date
