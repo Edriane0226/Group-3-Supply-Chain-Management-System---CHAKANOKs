@@ -87,7 +87,7 @@ class Auth extends Controller
         // Redirect by role
         switch ($user['role_name']) {
             case 'Central Office Admin':
-                return redirect()->to(site_url('central'));
+                return redirect()->to(site_url('dashboard'));
             case 'Branch Manager':
                 return redirect()->to(site_url('dashboard'));
             case 'Inventory Staff':
@@ -132,7 +132,8 @@ class Auth extends Controller
         }
 
         if (session()->get('role') === 'Central Office Admin') {
-            return view('pages/central');
+            // Unified dashboard is now handled by Dashboard::index
+            return redirect()->to(site_url('dashboard'));
         }
 
         session()->setFlashdata('error', 'Unauthorized access.');
