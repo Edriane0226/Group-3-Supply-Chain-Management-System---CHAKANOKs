@@ -25,34 +25,17 @@ class PurchaseRequest extends Controller
         $branchModel = new BranchModel();
 
         if ($session->get('role') === 'Central Office Admin') {
-            // Optional filters from dashboard links
-            $filterBranch = (int) ($this->request->getGet('branch') ?? 0);
-            $filterStatus = (string) ($this->request->getGet('status') ?? '');
-
-            $builder = $purchModel->withRelations();
-            if ($filterBranch > 0) {
-                $builder->where('purchase_requests.branch_id', $filterBranch);
-            }
-            if ($filterStatus !== '') {
-                $builder->where('purchase_requests.status', $filterStatus);
-            }
-
             $data = [
                 'role' => $session->get('role'),
                 'title' => 'Purchase Request',
                 'branches' => $branchModel->findAll(),
-                'requests' => $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll()
+                'requests' => $purchModel->findAllWithRelations()
             ];
         } elseif ($session->get('role') === 'Inventory Staff') {
-            $filterStatus = (string) ($this->request->getGet('status') ?? '');
-            $builder = $purchModel->withRelations();
-            if ($filterStatus !== '') {
-                $builder->where('purchase_requests.status', $filterStatus);
-            }
             $data = [
                 'role' => $session->get('role'),
                 'title' => 'Purchase Request',
-                'requests' => $builder->orderBy('purchase_requests.created_at', 'DESC')->findAll()
+                'requests' => $purchModel->findAllWithRelations()
             ];
         } else { // Branch Manager
             $data = [

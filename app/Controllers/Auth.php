@@ -132,7 +132,8 @@ class Auth extends Controller
         }
 
         if (session()->get('role') === 'Central Office Admin') {
-            return view('pages/central');
+            // Include sidenav for Central Office Admin
+            return view('reusables/sidenav') . view('pages/central');
         }
 
         session()->setFlashdata('error', 'Unauthorized access.');
