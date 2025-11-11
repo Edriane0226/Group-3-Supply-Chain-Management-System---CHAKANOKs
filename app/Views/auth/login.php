@@ -30,6 +30,14 @@
       max-width: 60%;
       height: auto;
     }
+    a {
+      color: #0d6efd;
+      transition: color 0.3s;
+    }
+    a:hover {
+      color: #0a58ca;
+      text-decoration: underline;
+    }
 	  .login-right img {
     max-width: 300px;
     height: auto;
@@ -67,7 +75,7 @@
           <input type="password" class="form-control" id="password" name="password" placeholder="Enter your Password" required>
         </div>
         <button type="submit" class="btn btn-primary w-100">Login</button>
-        <p class="mt-3">Cant Login? <a href="#">Contact Us</a></p>
+        <p class="mt-3">Can't Login? <a href="<?= site_url('contact') ?>" class="text-decoration-none">Contact Support</a></p>
       </form>
     </div>
     

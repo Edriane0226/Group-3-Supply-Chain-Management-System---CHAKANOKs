@@ -80,4 +80,8 @@ $routes->post('logistics-coordinator/coordinate-branch/(:num)', 'LogisticsCoordi
 $routes->post('logistics-coordinator/close-delivery/(:num)', 'LogisticsCoordinator::closeDeliveryRecord/$1');
 $routes->get('logistics-coordinator/po-details/(:num)', 'LogisticsCoordinator::getPODetails/$1');
 
+// Contact Form Routes
+$routes->get('contact', 'Contact::index');
+$routes->post('contact/send', 'Contact::send');
+
 // Removed duplicate/invalid Branch routes for dashboard and inventory
