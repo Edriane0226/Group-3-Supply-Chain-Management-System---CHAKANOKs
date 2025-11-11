@@ -65,19 +65,11 @@ $routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 // Logistics Coordinator routes
 $routes->get('logistics-coordinator', 'LogisticsCoordinator::index');
 $routes->post('logistics-coordinator/schedule-deliveries', 'LogisticsCoordinator::scheduleDeliveries');
-// Use PO-based status update to match the view's call
-$routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateLogisticsDeliveryStatus/$1');
+$routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateDeliveryStatus/$1');
 $routes->get('logistics-coordinator/get-calendar-data', 'LogisticsCoordinator::getCalendarData');
 $routes->get('logistics-coordinator/get-delivery-details/(:num)', 'LogisticsCoordinator::getDeliveryDetails/$1');
 $routes->get('logistics-coordinator/get-notifications', 'LogisticsCoordinator::getNotifications');
 $routes->post('logistics-coordinator/mark-notification-read/(:num)', 'LogisticsCoordinator::markNotificationRead/$1');
-// Additional endpoints used by the dashboard view
-$routes->get('logistics-coordinator/po-details/(:num)', 'LogisticsCoordinator::getPODetails/$1');
-$routes->post('logistics-coordinator/review-po/(:num)', 'LogisticsCoordinator::reviewApprovedPO/$1');
-$routes->post('logistics-coordinator/coordinate-supplier/(:num)', 'LogisticsCoordinator::coordinateWithSupplier/$1');
-$routes->post('logistics-coordinator/create-delivery-schedule/(:num)', 'LogisticsCoordinator::createDeliverySchedule/$1');
-$routes->post('logistics-coordinator/coordinate-branch/(:num)', 'LogisticsCoordinator::coordinateWithBranch/$1');
-$routes->post('logistics-coordinator/close-delivery/(:num)', 'LogisticsCoordinator::closeDeliveryRecord/$1');
 
 // Logistics Workflow routes
 $routes->post('logistics-coordinator/review-po/(:num)', 'LogisticsCoordinator::reviewApprovedPO/$1');
