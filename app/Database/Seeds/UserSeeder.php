@@ -74,6 +74,28 @@ class UserSeeder extends Seeder
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
+            [
+                'first_Name'      => 'Ana',
+                'last_Name'       => 'Lopez',
+                'middle_Name'     => '',
+                'email'           => 'ana@example.com',
+                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'role_id'         => $roleIds['Franchise Manager'] ?? null,
+                'branch_id'       => $mainBranch->id ?? null,
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ],
+            [
+                'first_Name'      => 'Luis',
+                'last_Name'       => 'Garcia',
+                'middle_Name'     => '',
+                'email'           => 'luis@example.com',
+                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'role_id'         => $roleIds['Supplier'] ?? null,
+                'branch_id'       => $mainBranch->id ?? null,
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
+            ]
         ];
 
         $usersTable = $this->db->table('users');

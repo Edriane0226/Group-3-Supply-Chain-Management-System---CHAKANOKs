@@ -87,7 +87,7 @@ class Auth extends Controller
         // Redirect by role
         switch ($user['role_name']) {
             case 'Central Office Admin':
-                return redirect()->to(site_url('central'));
+                return redirect()->to(site_url('dashboard'));
             case 'Branch Manager':
                 return redirect()->to(site_url('dashboard'));
             case 'Inventory Staff':
