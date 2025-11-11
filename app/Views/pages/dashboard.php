@@ -140,11 +140,7 @@
       <div class="col-lg-8">
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between">
-            <span class="fw-semibold">Sales</span>
-            <div>
-              <button class="btn btn-sm btn-outline-primary active">7d</button>
-              <button class="btn btn-sm btn-outline-secondary">30d</button>
-            </div>
+            <span class="fw-semibold">Total Inventory Value</span>
           </div>
           <div class="card-body d-flex align-items-center">
             <div class="metric-icon"><i class="fa-solid fa-peso-sign"></i></div>
@@ -153,18 +149,37 @@
         </div>
 
         <div class="card mb-3">
+          <div class="card-header d-flex justify-content-between">
+            <span class="fw-semibold">Total Wastage</span>
+          </div>
           <div class="card-body d-flex">
-            <div class="metric-icon supply-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div class="metric-icon supply-icon"></div>
             <div class="flex-grow-1">
-              <?= esc(session()->get('branch_name') ?? 'All Branches') ?>
+              <?= esc($total_wastage ?? 'No data available') ?>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
+        <div class="card mb-3 shadow-sm border-0">
           <div class="card-body">
-            <h6 class="fw-semibold mb-3">Branches</h6>
-            <?= $branches_list ?? '<p>No branch data available.</p>' ?>
+            <h6 class="fw-semibold mb-3 text-primary">
+              <i class="bi bi-building me-2"></i>Branches
+            </h6>
+
+            <?php if (!empty($AllBranches)): ?>
+              <div class="row g-2">
+                <?php foreach ($AllBranches as $branch): ?>
+                  <div class="col-12 col-md-6">
+                    <div class="p-2 border rounded d-flex align-items-center">
+                      <i class="bi bi-geo-alt text-warning me-2"></i>
+                      <span><?= esc($branch['branch_name']) ?></span>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <p class="text-muted fst-italic mb-0">No branches available.</p>
+            <?php endif; ?>
           </div>
         </div>
 

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\UserModel;
+use App\Models\BranchModel;
 
 
 class Dashboard extends Controller
@@ -19,6 +20,9 @@ class Dashboard extends Controller
 
         $branchName = $session->get('branch_name');
         $userModel = new UserModel();
+        $branchModel = new BranchModel();
+        $AllBranches = $branchModel->findAll();
+        
 
         if ($session->get('role') == 'Branch Manager') {
 
@@ -41,10 +45,13 @@ class Dashboard extends Controller
 
             // Get all users kay Central Office
             $allUsers = $userModel->findAll();
+
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
                 'role' => $session->get('role'),
+                'AllBranches' => $AllBranches,
+                
             ];
             
             return view('reusables/sidenav', $data) . view('pages/dashboard');
