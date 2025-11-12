@@ -73,28 +73,29 @@
                     <td><?= esc($po['expected_delivery_date']) ?></td>
                     <td>
                       <?php
-                      $workflowStep = $po['logistics_status'] ?? 'pending_review';
-                      $stepLabels = [
-                        'pending_review' => '1. Review PO',
-                        'supplier_coordination' => '2. Coordinate Supplier',
-                        'supplier_coordinated' => '2. Supplier Coordinated',
-                        'delivery_scheduled' => '3. Delivery Scheduled',
-                        'delivery_started' => '4. Delivery Started',
-                        'branch_notified' => '5. Branch Notified',
-                        'completed' => '6. Completed'
-                      ];
-                      $stepClass = [
-                        'pending_review' => 'badge bg-warning',
-                        'supplier_coordination' => 'badge bg-info',
-                        'supplier_coordinated' => 'badge bg-primary',
-                        'delivery_scheduled' => 'badge bg-secondary',
-                        'delivery_started' => 'badge bg-info',
-                        'branch_notified' => 'badge bg-success',
-                        'completed' => 'badge bg-success'
-                      ];
+                      $supplierStatus = $po['status'] ?? 'Pending';
+                      $logisticsStatus = $po['logistics_status'] ?? 'pending_review';
+
+                      // Determine workflow step based on supplier status and logistics status
+                      if ($supplierStatus === 'Pending') {
+                        $stepLabel = 'Supplier: Pending Confirmation';
+                        $stepClass = 'badge bg-warning';
+                      } elseif ($supplierStatus === 'Confirmed') {
+                        $stepLabel = 'Supplier: Confirmed';
+                        $stepClass = 'badge bg-info';
+                      } elseif ($supplierStatus === 'Preparing') {
+                        $stepLabel = 'Supplier: Preparing';
+                        $stepClass = 'badge bg-primary';
+                      } elseif ($supplierStatus === 'Ready for Pickup') {
+                        $stepLabel = 'Ready for Logistics';
+                        $stepClass = 'badge bg-success';
+                      } else {
+                        $stepLabel = 'Status: ' . $supplierStatus;
+                        $stepClass = 'badge bg-secondary';
+                      }
                       ?>
-                      <span class="badge <?= $stepClass[$workflowStep] ?? 'badge bg-secondary' ?>">
-                        <?= $stepLabels[$workflowStep] ?? 'Unknown' ?>
+                      <span class="badge <?= $stepClass ?>">
+                        <?= $stepLabel ?>
                       </span>
                     </td>
                     <td>
@@ -105,29 +106,21 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="viewPODetails(<?= $po['id'] ?>)">
                           <i class="bi bi-eye"></i> View
                         </button>
-                        <?php if (($po['logistics_status'] ?? 'pending_review') === 'pending_review'): ?>
-                          <button class="btn btn-outline-success btn-sm" onclick="reviewPO(<?= $po['id'] ?>)">
-                            <i class="bi bi-check-circle"></i> Review
+                        <?php if ($supplierStatus === 'Ready for Pickup'): ?>
+                          <button class="btn btn-outline-success btn-sm" onclick="startLogisticsProcess(<?= $po['id'] ?>)">
+                            <i class="bi bi-play-circle"></i> Start Logistics
                           </button>
-                        <?php elseif (($po['logistics_status'] ?? 'pending_review') === 'supplier_coordination'): ?>
-                          <button class="btn btn-outline-info btn-sm" onclick="coordinateSupplier(<?= $po['id'] ?>)">
-                            <i class="bi bi-truck"></i> Supplier
+                        <?php elseif ($supplierStatus === 'Preparing'): ?>
+                          <button class="btn btn-outline-info btn-sm" onclick="monitorSupplier(<?= $po['id'] ?>)">
+                            <i class="bi bi-eye"></i> Monitor
                           </button>
-                        <?php elseif (($po['logistics_status'] ?? 'pending_review') === 'supplier_coordinated'): ?>
-                          <button class="btn btn-outline-secondary btn-sm" onclick="scheduleDelivery(<?= $po['id'] ?>)">
-                            <i class="bi bi-calendar-plus"></i> Schedule
+                        <?php elseif ($supplierStatus === 'Confirmed'): ?>
+                          <button class="btn btn-outline-warning btn-sm" onclick="contactSupplier(<?= $po['id'] ?>)">
+                            <i class="bi bi-telephone"></i> Contact
                           </button>
-                        <?php elseif (($po['logistics_status'] ?? 'pending_review') === 'delivery_scheduled'): ?>
-                          <button class="btn btn-outline-warning btn-sm" onclick="startDelivery(<?= $po['id'] ?>)">
-                            <i class="bi bi-play-circle"></i> Start
-                          </button>
-                        <?php elseif (($po['logistics_status'] ?? 'pending_review') === 'delivery_started'): ?>
-                          <button class="btn btn-outline-info btn-sm" onclick="notifyBranch(<?= $po['id'] ?>)">
-                            <i class="bi bi-bell"></i> Notify
-                          </button>
-                        <?php elseif (($po['logistics_status'] ?? 'pending_review') === 'branch_notified'): ?>
-                          <button class="btn btn-outline-success btn-sm" onclick="closeDelivery(<?= $po['id'] ?>)">
-                            <i class="bi bi-check2-circle"></i> Close
+                        <?php else: ?>
+                          <button class="btn btn-outline-secondary btn-sm" onclick="viewPODetails(<?= $po['id'] ?>)">
+                            <i class="bi bi-info-circle"></i> Info
                           </button>
                         <?php endif; ?>
                       </div>
@@ -352,6 +345,43 @@ function viewPODetails(poId) {
     .then(response => response.json())
     .then(data => {
       if (data.id) {
+        let itemsHtml = '';
+        if (data.items && data.items.length > 0) {
+          itemsHtml = `
+            <div class="row mt-3">
+              <div class="col-12">
+                <h6>Order Items</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Unit</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+          `;
+          data.items.forEach(item => {
+            itemsHtml += `
+              <tr>
+                <td>${item.item_name || 'N/A'}</td>
+                <td>${item.quantity || 0}</td>
+                <td>${item.unit || 'N/A'}</td>
+                <td>${item.description || 'No description'}</td>
+              </tr>
+            `;
+          });
+          itemsHtml += `
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
         let content = `
           <div class="row">
             <div class="col-md-6">
@@ -360,14 +390,17 @@ function viewPODetails(poId) {
               <p><strong>Branch:</strong> ${data.branch_name || 'N/A'}</p>
               <p><strong>Supplier:</strong> ${data.supplier_name || 'N/A'}</p>
               <p><strong>Status:</strong> ${data.status}</p>
+              <p><strong>Total Amount:</strong> ₱${parseFloat(data.total_amount || 0).toLocaleString()}</p>
             </div>
             <div class="col-md-6">
               <h6>Workflow Status</h6>
               <p><strong>Current Step:</strong> ${data.workflow_status ? data.workflow_status.name : 'Unknown'}</p>
               <p><strong>Step Number:</strong> ${data.workflow_status ? data.workflow_status.step : 'N/A'}</p>
               <p><strong>Expected Delivery:</strong> ${data.expected_delivery_date || 'N/A'}</p>
+              <p><strong>Logistics Status:</strong> ${data.logistics_status || 'N/A'}</p>
             </div>
           </div>
+          ${itemsHtml}
           <div class="row mt-3">
             <div class="col-12">
               <h6>Delivery Notes</h6>
@@ -457,6 +490,43 @@ function notifyBranch(poId) {
 function closeDelivery(poId) {
   document.getElementById('closePoId').value = poId;
   new bootstrap.Modal(document.getElementById('closeModal')).show();
+}
+
+function createDelivery(poId) {
+  window.location.href = `<?= site_url('logistics-coordinator/create-delivery/') ?>${poId}`;
+}
+
+function startLogisticsProcess(poId) {
+  if (confirm('Start the logistics process for this order? This will begin delivery coordination.')) {
+    fetch(`<?= site_url('logistics-coordinator/review-po/') ?>${poId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Logistics process started successfully');
+        location.reload();
+      } else {
+        alert('Failed to start logistics process: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to start logistics process');
+    });
+  }
+}
+
+function monitorSupplier(poId) {
+  alert('Monitoring supplier progress. The supplier is currently preparing the order.');
+}
+
+function contactSupplier(poId) {
+  alert('Contact supplier functionality - to be implemented. You can reach out to the supplier directly.');
 }
 
 // Form submissions

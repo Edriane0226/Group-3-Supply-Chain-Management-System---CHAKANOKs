@@ -7,6 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <style>
   body {
@@ -126,7 +127,14 @@
   <img src="<?= base_url('public/images/2.jpg') ?>" alt="Logo">
   <h5>
     ChakaNoks<br>
-    <?= esc(session()->get('branch_name')) ?>
+    <?php
+    $role = session()->get('role');
+    if ($role === 'Supplier') {
+      echo esc(session()->get('supplier_name'));
+    } else {
+      echo esc(session()->get('branch_name'));
+    }
+    ?>
   </h5>
   <?php $role = session()->get('role'); ?>
 
@@ -175,6 +183,26 @@
           <i class="bi bi-graph-up me-2"></i> Performance Reports
       </a>
 
+  <?php elseif ($role === 'Supplier'): ?>
+      <a href="<?= site_url('supplier/dashboard') ?>" class="<?= (uri_string() == 'supplier/dashboard') ? 'active' : '' ?>">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      </a>
+      <a href="<?= site_url('supplier/orders') ?>" class="<?= (uri_string() == 'supplier/orders') ? 'active' : '' ?>">
+          <i class="bi bi-list-check me-2"></i> Purchase Orders
+      </a>
+      <a href="<?= site_url('supplier/deliveries') ?>" class="<?= (uri_string() == 'supplier/deliveries') ? 'active' : '' ?>">
+          <i class="bi bi-truck me-2"></i> Delivery Management
+      </a>
+      <a href="<?= site_url('supplier/invoices') ?>" class="<?= (uri_string() == 'supplier/invoices') ? 'active' : '' ?>">
+          <i class="bi bi-receipt me-2"></i> Invoices & Payments
+      </a>
+      <a href="<?= site_url('supplier/notifications') ?>" class="<?= (uri_string() == 'supplier/notifications') ? 'active' : '' ?>">
+          <i class="bi bi-bell me-2"></i> Notifications
+      </a>
+      <a href="<?= site_url('supplier/profile') ?>" class="<?= (uri_string() == 'supplier/profile') ? 'active' : '' ?>">
+          <i class="bi bi-person me-2"></i> Profile & Settings
+      </a>
+
   <?php else: ?>
 
       <!-- Branch Manager -->
@@ -194,3 +222,7 @@
 
   <a href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
 </div>
+
+<!-- Content will be inserted here by controller -->
+</body>
+</html>
