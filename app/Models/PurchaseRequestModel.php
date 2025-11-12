@@ -80,14 +80,14 @@ class PurchaseRequestModel extends Model
             $poId = $purchaseOrderModel->createFromPurchaseRequest($requestId, $approvedBy);
 
             // Notify relevant users
-            $this->notifyApproval($requestId, $approvedBy);
+            $this->notifyApproval($requestId, $approvedBy, $poId);
         }
 
         return $result;
     }
 
     // Notify users about approval
-    private function notifyApproval(int $requestId, int $approvedBy): void
+    private function notifyApproval(int $requestId, int $approvedBy, ?int $poId = null): void
     {
         $notificationModel = new \App\Models\NotificationModel();
 
@@ -120,6 +120,17 @@ class PurchaseRequestModel extends Model
                                          ->getResultArray();
 
         $coordinatorIds = array_column($logisticsCoordinators, 'id');
+
+        // Notify supplier about new purchase order
+        $supplierNotification = [
+            'user_id' => $request['supplier_id'], // Supplier ID is used as user_id for suppliers
+            'type' => 'in_app',
+            'title' => 'New Purchase Order Assigned',
+            'message' => 'A new purchase order has been assigned to you from ' . $request['branch_name'] ?? 'Branch',
+            'reference_type' => 'purchase_order',
+            'reference_id' => $poId,
+        ];
+        $notificationModel->createNotification($supplierNotification);
 
         $notificationModel->notifyStatusChange('purchase_request', $requestId, 'pending', 'approved', $userIds);
 

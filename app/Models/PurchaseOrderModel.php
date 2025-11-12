@@ -15,6 +15,7 @@ class PurchaseOrderModel extends Model
     protected $allowedFields    = [
         'branch_id',
         'supplier_id',
+        'purchase_request_id',
         'status',
         'logistics_status',
         'total_amount',
@@ -67,7 +68,8 @@ class PurchaseOrderModel extends Model
         $poData = [
             'branch_id' => $request['branch_id'],
             'supplier_id' => $request['supplier_id'],
-            'status' => 'approved', // Changed from 'approved' to 'pending_logistics' to trigger logistics workflow
+            'purchase_request_id' => $requestId,
+            'status' => 'Pending', // Supplier workflow starts with Pending status
             'total_amount' => 0.00, // Will be calculated based on items
             'approved_by' => $approvedBy,
             'approved_at' => date('Y-m-d H:i:s'),
@@ -78,15 +80,21 @@ class PurchaseOrderModel extends Model
         $this->insert($poData);
         $poId = $this->insertID();
 
-        // Create purchase order items from request (placeholder - would need actual itemization)
-        // For now, create a single item based on the request
+        // Create purchase order items from request with actual item details
+        $unitPrice = 1.00; // Placeholder unit price to reflect quantity in total_amount
         $this->db->table('purchase_order_items')->insert([
             'purchase_order_id' => $poId,
-            'stock_in_id' => null, // Would need to link to actual stock item
+            'stock_in_id' => null, // Not linked to existing stock yet
+            'item_name' => $request['item_name'],
             'quantity' => $request['quantity'],
-            'unit_price' => 0.00, // Would need pricing logic
-            'subtotal' => 0.00,
+            'unit' => $request['unit'] ?? 'pcs',
+            'description' => $request['description'] ?? '',
+            'unit_price' => $unitPrice,
+            'subtotal' => ($request['quantity'] ?? 0) * $unitPrice,
         ]);
+
+        // Recalculate total_amount based on items
+        $this->recalculateTotalAmount($poId);
 
         return $poId;
     }
@@ -136,9 +144,8 @@ class PurchaseOrderModel extends Model
             return null;
         }
 
+        // Get items from purchase_order_items table
         $items = $this->db->table('purchase_order_items')
-                          ->select('purchase_order_items.*, stock_in.item_name, stock_in.unit')
-                          ->join('stock_in', 'stock_in.id = purchase_order_items.stock_in_id', 'left')
                           ->where('purchase_order_id', $poId)
                           ->get()
                           ->getResultArray();
@@ -164,9 +171,22 @@ class PurchaseOrderModel extends Model
         return $this->select('purchase_orders.*, branches.branch_name, suppliers.supplier_name, suppliers.contact_info')
                     ->join('branches', 'branches.id = purchase_orders.branch_id')
                     ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
-                    ->where('purchase_orders.status', 'approved')
-                    ->whereIn('purchase_orders.logistics_status', ['pending_review', 'supplier_coordination', 'supplier_coordinated', 'delivery_scheduled', 'delivery_started', 'branch_notified'])
+                    ->whereIn('purchase_orders.status', ['Pending', 'Confirmed', 'Preparing', 'Ready for Pickup'])
+                    ->whereIn('purchase_orders.logistics_status', ['pending_review', 'supplier_coordination', 'supplier_coordinated', 'supplier_confirmed', 'supplier_preparing', 'ready_for_pickup', 'delivery_scheduled', 'delivery_started', 'branch_notified'])
                     ->orderBy('purchase_orders.created_at', 'ASC')
                     ->findAll();
+    }
+
+    // Recalculate total_amount based on items subtotals
+    public function recalculateTotalAmount(int $poId): bool
+    {
+        $total = $this->db->table('purchase_order_items')
+                          ->selectSum('subtotal')
+                          ->where('purchase_order_id', $poId)
+                          ->get()
+                          ->getRow()
+                          ->subtotal ?? 0;
+
+        return $this->update($poId, ['total_amount' => $total]);
     }
 }

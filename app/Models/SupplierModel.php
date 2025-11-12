@@ -14,6 +14,7 @@ class SupplierModel extends Model
         'contact_info',
         'address',
         'terms',
+        'password',
         'status',
         'created_at',
         'updated_at'
