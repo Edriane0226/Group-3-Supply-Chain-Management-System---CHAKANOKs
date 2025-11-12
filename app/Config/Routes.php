@@ -80,6 +80,21 @@ $routes->post('logistics-coordinator/coordinate-branch/(:num)', 'LogisticsCoordi
 $routes->post('logistics-coordinator/close-delivery/(:num)', 'LogisticsCoordinator::closeDeliveryRecord/$1');
 $routes->get('logistics-coordinator/po-details/(:num)', 'LogisticsCoordinator::getPODetails/$1');
 
+// Supplier routes
+$routes->group('supplier', function($routes) {
+    $routes->get('dashboard', 'Supplier::dashboard');
+    $routes->get('orders', 'Supplier::orders');
+    $routes->get('order-details/(:num)', 'Supplier::orderDetails/$1');
+    $routes->post('update-order-status/(:num)', 'Supplier::updateOrderStatus/$1');
+    $routes->get('deliveries', 'Supplier::deliveries');
+    $routes->get('delivery-details/(:num)', 'Supplier::deliveryDetails/$1');
+    $routes->get('invoices', 'Supplier::invoices');
+    $routes->get('notifications', 'Supplier::notifications');
+    $routes->get('profile', 'Supplier::profile');
+    $routes->post('update-profile', 'Supplier::updateProfile');
+    $routes->post('change-password', 'Supplier::changePassword');
+});
+
 // Contact Form Routes
 $routes->get('contact', 'Contact::index');
 $routes->post('contact/send', 'Contact::send');
