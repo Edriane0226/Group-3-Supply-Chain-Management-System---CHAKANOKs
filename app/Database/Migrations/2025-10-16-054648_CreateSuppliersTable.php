@@ -51,6 +51,8 @@ class CreateSuppliersTable extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey('supplier_name');
         $this->forge->createTable('suppliers');
+
+        $this->db->query('ALTER TABLE suppliers AUTO_INCREMENT = 1001;');
     }
 
     public function down()

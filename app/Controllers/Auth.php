@@ -43,6 +43,38 @@ class Auth extends Controller
         $id       = $this->request->getVar('id');
         $password = $this->request->getVar('password');
 
+        // Check if supplier login (id >= 1001)
+        if ($id >= 1001 && $id <= 1008) {
+            $supplierModel = new \App\Models\SupplierModel();
+            $supplier = $supplierModel->where('supplier_code', $id)->first();
+
+            if (!$supplier) {
+                $session->setFlashdata('error', 'Invalid Supplier ID or password');
+                return redirect()->back();
+            }
+
+            // Verify password
+            if (!password_verify($password, $supplier['password'])) {
+                $session->setFlashdata('error', 'Invalid Supplier ID or password');
+                return redirect()->back();
+            }
+
+            // Set session for supplier
+            $session->set([
+                'user_id'     => $supplier['id'],
+                'supplier_name' => $supplier['supplier_name'],
+                'role'        => 'Supplier',
+                'role_id'     => 6, // Assuming Supplier role id is 6
+                'isLoggedIn'  => true
+            ]);
+
+            $session->setFlashdata('success', 'Welcome ' . $supplier['supplier_name'] . '!');
+
+            // Redirect to supplier dashboard
+            return redirect()->to(site_url('supplier/dashboard'));
+        }
+
+        // Regular user login
         // Get user with role info
         $user = $userModel->select('users.*, roles.role_name')
                          ->join('roles', 'roles.id = users.role_id')
