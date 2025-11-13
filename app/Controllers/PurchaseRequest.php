@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\PurchaseRequestModel;
 use App\Models\PurchaseOrderModel;
+use App\Models\SupplierItemModel;
 use App\Models\SupplierModel;
 use App\Models\BranchModel;
 use CodeIgniter\Controller;
@@ -53,50 +54,71 @@ class PurchaseRequest extends Controller
     {
         $supplierModel = new SupplierModel();
         $branchModel   = new BranchModel();
+        $supplierItemModel = new SupplierItemModel();
 
-        $data['suppliers'] = $supplierModel->getActiveSuppliers();
-        $data['branches']  = $branchModel->findAll();
+        $data = [
+        'suppliers' => $supplierModel->getActiveSuppliers(),
+        'supplier_items' => $supplierItemModel->findAll(), // all items
+        'role' => session()->get('role'),
+        'title' => 'New Purchase Request'
+    ];
 
-        return view('purchase_requests/create', $data);
+        $role = session()->get('role');
+
+        return view('reusables/sidenav', ['role' => $role]) . view('purchase_requests/create', $data);
     }
 
     public function store()
-    {
-        $session = session();
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+{
+    $session = session();
+    if (!$session->get('isLoggedIn')) {
+        return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+    }
+
+    $model = new PurchaseRequestModel();
+
+    $itemNames   = $this->request->getPost('item_name');
+    $quantities  = $this->request->getPost('quantity');
+    $suppliers   = $this->request->getPost('supplier_id');
+    $units       = $this->request->getPost('unit');
+    $descriptions = $this->request->getPost('description');
+
+    if (!is_array($itemNames) || count($itemNames) === 0) {
+        return redirect()->back()->withInput()->with('error', 'Please add at least one item.');
+    }
+
+    $records = [];
+    $branchId = (int) ($session->get('branch_id') ?: $this->request->getPost('branch_id'));
+
+    for ($i = 0; $i < count($itemNames); $i++) {
+        if (empty($itemNames[$i]) || empty($quantities[$i]) || empty($suppliers[$i])) {
+            continue; // skip incomplete rows
         }
 
-        $model = new PurchaseRequestModel();
-
-        $rules = [
-            'item_name'   => 'required|string|min_length[2]',
-            'quantity'    => 'required|integer|greater_than_equal_to[1]',
-            'supplier_id' => 'required|integer',
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('error', 'Please correct the form errors.');
-        }
-
-        $data = [
-            'branch_id'    => (int) ($session->get('branch_id') ?: $this->request->getPost('branch_id')),
-            'supplier_id'  => (int) $this->request->getPost('supplier_id'),
-            'item_name'    => $this->request->getPost('item_name'),
-            'quantity'     => (int) $this->request->getPost('quantity'),
-            'unit'         => $this->request->getPost('unit') ?? 'pcs',
-            'description'  => $this->request->getPost('description'),
+        $records[] = [
+            'branch_id'    => $branchId,
+            'supplier_id'  => (int) $suppliers[$i],
+            'item_name'    => $itemNames[$i],
+            'quantity'     => (int) $quantities[$i],
+            'unit'         => $units[$i] ?? 'pcs',
+            'description'  => $descriptions[$i] ?? null,
             'request_date' => date('Y-m-d H:i:s'),
             'status'       => 'pending',
         ];
-
-        if ($model->insert($data)) {
-            return redirect()->to(site_url('purchase-requests'))
-                             ->with('success', 'Purchase request submitted successfully.');
-        }
-
-        return redirect()->back()->withInput()->with('error', 'Failed to create Purchase Request');
     }
+
+    if (empty($records)) {
+        return redirect()->back()->withInput()->with('error', 'No valid items to submit.');
+    }
+
+    if ($model->insertBatch($records)) {
+        return redirect()->to(site_url('purchase-requests'))
+                         ->with('success', 'Purchase request submitted successfully.');
+    }
+
+    return redirect()->back()->withInput()->with('error', 'Failed to create Purchase Request');
+}
+
 
     public function edit($id)
     {

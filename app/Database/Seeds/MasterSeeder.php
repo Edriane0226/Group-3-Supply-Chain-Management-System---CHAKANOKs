@@ -13,5 +13,6 @@ class MasterSeeder extends Seeder
         $this->call('StockTypeSeeder');
         $this->call('StockSeeder');
         $this->call('SupplierSeeder');
+        $this->call('SupplierItemSeeder');
     }
 }
