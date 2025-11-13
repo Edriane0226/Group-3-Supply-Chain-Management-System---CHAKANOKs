@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\PurchaseRequestModel;
+use App\Models\PurchaseOrderModel;
 use App\Models\SupplierModel;
 use App\Models\BranchModel;
 use CodeIgniter\Controller;
@@ -142,22 +143,51 @@ class PurchaseRequest extends Controller
     public function approve($id)
     {
         $session = session();
+
+        // Only Central Office Admin can approve
         if ($session->get('role') !== 'Central Office Admin') {
             return redirect()->back()->with('error', 'Unauthorized');
         }
 
-        $model = new PurchaseRequestModel();
-        $approvedBy = (int)$session->get('user_id');
+        $requestModel = new \App\Models\PurchaseRequestModel();
+        $purchaseOrderModel = new \App\Models\PurchaseOrderModel();
+
+        $approvedBy = (int) $session->get('user_id');
 
         try {
-            if ($model->approveRequest($id, $approvedBy)) {
-                return redirect()->back()->with('success', 'Request approved and purchase order created');
+            // 1️⃣ Find the request first
+            $request = $requestModel->find($id);
+
+            if (!$request) {
+                return redirect()->back()->with('error', 'Purchase request not found.');
             }
 
-            return redirect()->back()->with('error', 'Failed to approve request');
+            // 2️⃣ Prevent double approval
+            if ($request['status'] === 'approved') {
+                return redirect()->back()->with('info', 'This request has already been approved.');
+            }
+
+            // 3️⃣ Update the request to approved
+            $requestModel->update($id, [
+                'status'       => 'approved',
+                'approved_by'  => $approvedBy,
+                'approved_at'  => date('Y-m-d H:i:s'),
+            ]);
+
+            // 4️⃣ Create purchase order from this request
+            $poId = $purchaseOrderModel->createFromPurchaseRequest($id, $approvedBy);
+
+            if (!$poId) {
+                // rollback request status if PO creation failed
+                $requestModel->update($id, ['status' => 'pending']);
+                return redirect()->back()->with('error', 'Failed to create purchase order. Request reverted to pending.');
+            }
+
+            return redirect()->back()
+                            ->with('success', "Request approved successfully. Purchase Order #{$poId} created.");
         } catch (\Exception $e) {
             log_message('error', 'Error approving purchase request: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'An error occurred while approving the request');
+            return redirect()->back()->with('error', 'An unexpected error occurred while approving the request.');
         }
     }
 

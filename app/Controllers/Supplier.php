@@ -209,8 +209,8 @@ class Supplier extends BaseController
         $orders = $this->purchaseOrderModel->select('purchase_orders.*, branches.branch_name')
                                            ->join('branches', 'branches.id = purchase_orders.branch_id')
                                            ->where('supplier_id', $supplierId)
-                                           ->whereIn('status', ['in_transit', 'delivered'])
-                                           ->orderBy('created_at', 'DESC')
+                                           ->whereIn('purchase_orders.status', ['in_transit', 'delivered', 'approved'])
+                                           ->orderBy('purchase_orders.created_at', 'DESC')
                                            ->findAll();
 
         return view('reusables/sidenav', ['title' => 'Delivery Management']) . view('supplier/deliveries', ['deliveries' => $orders]);
@@ -250,7 +250,7 @@ class Supplier extends BaseController
         $invoices = $this->purchaseOrderModel->select('purchase_orders.*, branches.branch_name')
                                              ->join('branches', 'branches.id = purchase_orders.branch_id')
                                              ->where('supplier_id', $supplierId)
-                                             ->where('status', 'Delivered')
+                                             ->where('purchase_orders.status', 'Delivered')
                                              ->findAll();
 
         return view('reusables/sidenav', ['title' => 'Invoices & Payments']) . view('supplier/invoices', ['invoices' => $invoices]);

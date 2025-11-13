@@ -46,7 +46,7 @@ class Auth extends Controller
         // Check if supplier login (id >= 1001)
         if ($id >= 1001 && $id <= 1008) {
             $supplierModel = new \App\Models\SupplierModel();
-            $supplier = $supplierModel->where('supplier_code', $id)->first();
+            $supplier = $supplierModel->where('id', $id)->first();
 
             if (!$supplier) {
                 $session->setFlashdata('error', 'Invalid Supplier ID or password');

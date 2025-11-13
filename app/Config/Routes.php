@@ -32,7 +32,7 @@ $routes->get('/inventory/find', 'Inventory::findByBarcode');
 $routes->get('/inventory/balance', 'Inventory::balance');
 $routes->get('/inventory/export', 'Inventory::export');
 
-// Branch Manager simple pages
+// Purchase Request Routes
 $routes->get('purchase-request', 'PurchaseRequest::index');
 $routes->get('purchase-requests', 'PurchaseRequest::index');
 $routes->get('purchase-requests/create', 'PurchaseRequest::create');
