@@ -235,6 +235,60 @@ class InventoryModel extends Model
 
         return $this->db->query($query, $params)->getResultArray();
     }
+    // By branch total inventory value
+    public function getTotalInventoryValue(int $branchId): float
+    {
+        $query = "
+            SELECT
+                SUM((si.quantity - IFNULL(so.quantity, 0)) * si.price) AS total_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+            WHERE si.branch_id = ?
+            GROUP BY si.branch_id
+        ";
+
+        $result = $this->db->query($query, [$branchId])->getRowArray();
+
+        return $result['total_value'] ?? 0.0;
+    }
+
+    public function getOverallInventoryValue(): float
+    {
+        $query = "
+            SELECT
+                SUM((si.quantity - IFNULL(so.quantity, 0)) * si.price) AS total_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+        ";
+
+        $result = $this->db->query($query)->getRowArray();
+
+        return $result['total_value'] ?? 0.0;
+    }
+
+    public function getOverallExpiredValue(): float
+    {
+        $query = "
+            SELECT
+                SUM((si.quantity - IFNULL(so.quantity, 0)) * si.price) AS expired_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+            WHERE si.expiry_date < CURDATE()
+        ";
+
+        $result = $this->db->query($query)->getRowArray();
+
+        return $result['expired_value'] ?? 0.0;
+    }
 
     // Deliveries methods
 

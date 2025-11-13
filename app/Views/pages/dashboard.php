@@ -143,8 +143,8 @@
             <span class="fw-semibold">Total Inventory Value</span>
           </div>
           <div class="card-body d-flex align-items-center">
-            <div class="metric-icon"><i class="fa-solid fa-peso-sign"></i></div>
-            <div class="flex-grow-1"><?= esc($sales_summary ?? 'No data available') ?></div>
+            <div class="metric-icon p-2"><i class="fa-solid fa-peso-sign"></i></div>
+            <div class="flex-grow-1 p-2"><?= esc($invValues) ?></div>
           </div>
         </div>
 
@@ -153,9 +153,9 @@
             <span class="fw-semibold">Total Wastage</span>
           </div>
           <div class="card-body d-flex">
-            <div class="metric-icon supply-icon"></div>
-            <div class="flex-grow-1">
-              <?= esc($total_wastage ?? 'No data available') ?>
+            <div class="metric-icon p-2"><i class="fa-solid fa-peso-sign"></i></div>
+            <div class="flex-grow-1 p-2">
+              <?= esc($expiredValue) ?>
             </div>
           </div>
         </div>

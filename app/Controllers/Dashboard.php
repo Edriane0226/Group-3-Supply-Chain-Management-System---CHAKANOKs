@@ -4,6 +4,9 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use App\Models\UserModel;
+use App\Models\PurchaseOrderModel;
+use App\Models\PurchaseRequestModel;
+use App\Models\InventoryModel;
 use App\Models\BranchModel;
 
 
@@ -45,12 +48,15 @@ class Dashboard extends Controller
 
             // Get all users kay Central Office
             $allUsers = $userModel->findAll();
+            $Inv = new InventoryModel();
 
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
                 'role' => $session->get('role'),
                 'AllBranches' => $AllBranches,
+                'invValues' => $Inv->getOverallInventoryValue(),
+                'expiredValue' => $Inv->getOverallExpiredValue(),
                 
             ];
             
