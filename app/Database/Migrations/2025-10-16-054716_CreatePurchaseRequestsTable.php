@@ -29,7 +29,7 @@ class CreatePurchaseRequestsTable extends Migration
                 'null'    => false,
             ],
             'status' => [
-                'type'       => 'ENUM("pending","approved","rejected")',
+                'type'       => 'ENUM("pending","approved","rejected","ordered","in_transit","received")',
                 'default'    => 'pending',
             ],
             'created_at' => [

@@ -129,19 +129,32 @@
                   <td><?= esc($req['quantity']) ?></td>
                   <td><?= esc($req['unit']) ?></td>
                   <td>
-                    <span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 'danger') ?>">
+                    <span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 
+                                                                                         ($req['status'] == 'rejected' ? 'danger' : 
+                                                                                         ($req['status'] == 'ordered' ? 'info' : 
+                                                                                         ($req['status'] == 'in_transit' ? 'primary' : 'secondary')))) ?>">
                       <?= esc(ucfirst($req['status'])) ?>
                     </span>
                   </td>
                   <td><?= esc($req['request_date']) ?></td>
                   <td>
                     <div class="btn-group btn-group-sm">
-                      <form action="<?= site_url('purchase-requests/approve/' . $req['id']) ?>" method="post" class="d-inline">
-                        <button class="btn btn-success btn-sm"><i class="bi bi-check2-circle"></i></button>
+                     <?php if ($req['status'] == 'pending'): ?>
+                        <form method="post" action="<?= site_url('purchase-requests/approve/' . $req['id']) ?>" style="display:inline;">
+                        <button type="submit" class="btn btn-success me-1" title="Approve Request">
+                          <i class="bi bi-check-lg"></i>
+                        </button>
                       </form>
-                      <form action="<?= site_url('purchase-requests/cancel/' . $req['id']) ?>" method="post" class="d-inline">
-                        <button class="btn btn-danger btn-sm"><i class="bi bi-x-circle"></i></button>
+
+                      <form method="post" action="<?= site_url('purchase-requests/reject/' . $req['id']) ?>" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" title="Reject Request">
+                          <i class="bi bi-x-lg"></i>
+                        </button>
                       </form>
+
+                      <?php else:; ?>
+                        <span class="text-muted">No actions available</span>
+                      <?php endif; ?>
                     </div>
                   </td>
                 </tr>
