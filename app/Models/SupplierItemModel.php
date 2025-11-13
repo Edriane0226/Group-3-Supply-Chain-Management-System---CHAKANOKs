@@ -15,7 +15,7 @@ class SupplierItemModel extends Model
         'supplier_id',
         'stock_type_id',
         'item_name',
-        'unit_price',
+        'price',
         'price_type',
         'created_at',
         'updated_at'

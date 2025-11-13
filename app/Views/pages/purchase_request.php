@@ -103,6 +103,20 @@
   <!-- 🟣 Central Office Admin View -->
   <div class="content container">
     <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-bag-check-fill me-2 text-warning"></i>Branch Purchase Requests</h5>
+   
+    <?php if(session()->getFlashdata('success')): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= session()->getFlashdata('success') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
+    <?php if(session()->getFlashdata('error')): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= session()->getFlashdata('error') ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
     <div class="card shadow-sm border-0">
       <div class="card-body p-0">
@@ -114,6 +128,7 @@
               <th>Item Name</th>
               <th>Quantity</th>
               <th>Unit</th>
+              <th>Price</th>
               <th>Status</th>
               <th>Request Date</th>
               <th>Action</th>
@@ -128,6 +143,7 @@
                   <td><?= esc($req['item_name']) ?></td>
                   <td><?= esc($req['quantity']) ?></td>
                   <td><?= esc($req['unit']) ?></td>
+                  <td>₱ <?= number_format(esc($req['price']), 2) ?></td>
                   <td>
                     <span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 
                                                                                          ($req['status'] == 'rejected' ? 'danger' : 

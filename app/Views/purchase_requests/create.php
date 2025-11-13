@@ -50,7 +50,7 @@
 
               <div class="col-md-2">
                 <label class="form-label fw-semibold">Unit Price (₱)</label>
-                <input type="text" name="unit_price[]" class="form-control unit-price" readonly>
+                <input type="text" name="price[]" class="form-control unit-price" readonly>
               </div>
 
               <div class="col-12">

@@ -39,6 +39,7 @@ $routes->get('purchase-requests/create', 'PurchaseRequest::create');
 $routes->post('purchase-requests', 'PurchaseRequest::store');
 $routes->post('purchase-requests/approve/(:num)', 'PurchaseRequest::approve/$1');
 $routes->post('purchase-requests/cancel/(:num)', 'PurchaseRequest::cancel/$1');
+$routes->post('purchase-requests/reject/(:num)', 'PurchaseRequest::reject/$1');
 $routes->get('orders', 'Orders::index'); // legacy link, can be removed later
 $routes->get('deliveries', 'Deliveries::index');
 

@@ -57,7 +57,7 @@ class PurchaseOrderModel extends Model
     protected $afterFind      = [];
 
     // Create purchase order from approved purchase request
-    public function createFromPurchaseRequest(int $requestId, int $approvedBy): ?int
+    public function createFromPurchaseRequest(int $requestId, int $approvedBy, int $price): ?int
     {
         $purchaseRequestModel = new PurchaseRequestModel();
         $request = $purchaseRequestModel->find($requestId);
@@ -71,7 +71,7 @@ class PurchaseOrderModel extends Model
             'supplier_id' => $request['supplier_id'],
             'purchase_request_id' => $requestId,
             'status' => 'Pending', // Supplier workflow starts with Pending status
-            'total_amount' => 0.00, // Will be calculated based on items
+            'total_amount' => $price, // Will be calculated after adding items
             'approved_by' => $approvedBy,
             'approved_at' => date('Y-m-d H:i:s'),
             'expected_delivery_date' => date('Y-m-d', strtotime('+7 days')), // Default 7 days
@@ -81,21 +81,21 @@ class PurchaseOrderModel extends Model
         $this->insert($poData);
         $poId = $this->insertID();
 
-        // Create purchase order items from request with actual item details
-        $unitPrice = 1.00; // Placeholder unit price to reflect quantity in total_amount
-        $this->db->table('purchase_order_items')->insert([
-            'purchase_order_id' => $poId,
-            'stock_in_id' => null, // Not linked to existing stock yet
-            'item_name' => $request['item_name'],
-            'quantity' => $request['quantity'],
-            'unit' => $request['unit'] ?? 'pcs',
-            'description' => $request['description'] ?? '',
-            'unit_price' => $unitPrice,
-            'subtotal' => ($request['quantity'] ?? 0) * $unitPrice,
-        ]);
+        // // Create purchase order items from request with actual item details
+        // $unitPrice = 1.00; // Placeholder unit price to reflect quantity in total_amount
+        // $this->db->table('purchase_order_items')->insert([
+        //     'purchase_order_id' => $poId,
+        //     'stock_in_id' => null, // Not linked to existing stock yet
+        //     'item_name' => $request['item_name'],
+        //     'quantity' => $request['quantity'],
+        //     'unit' => $request['unit'] ?? 'pcs',
+        //     'description' => $request['description'] ?? '',
+        //     'unit_price' => $unitPrice,
+        //     'subtotal' => ($request['quantity'] ?? 0) * $unitPrice,
+        // ]);
 
-        // Recalculate total_amount based on items
-        $this->recalculateTotalAmount($poId);
+        // // Recalculate total_amount based on items
+        // $this->recalculateTotalAmount($poId);
 
         return $poId;
     }

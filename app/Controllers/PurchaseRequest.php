@@ -81,6 +81,7 @@ class PurchaseRequest extends Controller
     $quantities  = $this->request->getPost('quantity');
     $suppliers   = $this->request->getPost('supplier_id');
     $units       = $this->request->getPost('unit');
+    $prices      = $this->request->getPost('price');
     $descriptions = $this->request->getPost('description');
 
     if (!is_array($itemNames) || count($itemNames) === 0) {
@@ -101,6 +102,7 @@ class PurchaseRequest extends Controller
             'item_name'    => $itemNames[$i],
             'quantity'     => (int) $quantities[$i],
             'unit'         => $units[$i] ?? 'pcs',
+            'price'        => $quantities[$i] * $prices[$i],
             'description'  => $descriptions[$i] ?? null,
             'request_date' => date('Y-m-d H:i:s'),
             'status'       => 'pending',
@@ -197,7 +199,7 @@ class PurchaseRequest extends Controller
             ]);
 
             // 4️⃣ Create purchase order from this request
-            $poId = $purchaseOrderModel->createFromPurchaseRequest($id, $approvedBy);
+            $poId = $purchaseOrderModel->createFromPurchaseRequest($id, $approvedBy, $request['price']);
 
             if (!$poId) {
                 // rollback request status if PO creation failed
@@ -207,7 +209,7 @@ class PurchaseRequest extends Controller
 
             return redirect()->back()
                             ->with('success', "Request approved successfully. Purchase Order #{$poId} created.");
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             log_message('error', 'Error approving purchase request: ' . $e->getMessage());
             return redirect()->back()->with('error', 'An unexpected error occurred while approving the request.');
         }
@@ -229,6 +231,28 @@ class PurchaseRequest extends Controller
         } catch (\Exception $e) {
             log_message('error', 'Error cancelling purchase request: ' . $e->getMessage());
             return redirect()->back()->with('error', 'An error occurred while cancelling the request');
+        }
+    }
+
+    public function reject($id)
+    {
+        $session = session();
+        if ($session->get('role') !== 'Central Office Admin') {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $model = new PurchaseRequestModel();
+
+        try {
+            $success = $model->rejectRequest($id);
+            if ($success) {
+                return redirect()->back()->with('success', 'Purchase request rejected successfully.');
+            } else {
+                return redirect()->back()->with('error', 'Failed to reject request.');
+            }
+        } catch (Exception $e) {
+            log_message('error', 'Error rejecting purchase request: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'An unexpected error occurred.');
         }
     }
 }

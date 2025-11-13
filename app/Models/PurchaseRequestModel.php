@@ -19,6 +19,7 @@ class PurchaseRequestModel extends Model
         'item_name',
         'quantity',
         'unit',
+        'price',
         'description',
         'remarks',
         'request_date',
@@ -136,5 +137,20 @@ class PurchaseRequestModel extends Model
 
         // Send specific notification to logistics coordinators
         $notificationModel->notifyLogisticsCoordinator('new_po_ready', $requestId, $coordinatorIds);
+    }
+
+    public function rejectRequest(int $requestId, ?int $rejectedBy = null): bool
+    {
+        $data = [
+            'status' => 'rejected',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($rejectedBy !== null) {
+            $data['rejected_by'] = $rejectedBy;
+            $data['rejected_at'] = date('Y-m-d H:i:s');
+        }
+
+        return $this->update($requestId, $data);
     }
 }

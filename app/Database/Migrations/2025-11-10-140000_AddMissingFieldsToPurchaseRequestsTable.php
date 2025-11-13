@@ -33,6 +33,13 @@ class AddMissingFieldsToPurchaseRequestsTable extends Migration
                 'null' => true,
                 'after' => 'unit',
             ],
+            'price' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '10,2',
+                'default'    => 0.00,
+                'null'       => false,
+                'after'      => 'unit',
+            ],
         ]);
     }
 
