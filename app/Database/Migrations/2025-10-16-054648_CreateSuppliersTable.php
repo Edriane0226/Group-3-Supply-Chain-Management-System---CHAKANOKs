@@ -38,6 +38,16 @@ class CreateSuppliersTable extends Migration
                 'constraint' => ['active', 'inactive'],
                 'default'    => 'active',
             ],
+            'password' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 255,
+                'null'       => false,
+            ],
+            'role_id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
+                'null'       => false,
+            ],
             'created_at' => [
                 'type'    => 'DATETIME',
                 'null'    => false,
@@ -50,6 +60,7 @@ class CreateSuppliersTable extends Migration
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey('supplier_name');
+        $this->forge->addForeignKey('role_id', 'roles', 'id', 'CASCADE', 'CASCADE');
         $this->forge->createTable('suppliers');
 
         $this->db->query('ALTER TABLE suppliers AUTO_INCREMENT = 1001;');
