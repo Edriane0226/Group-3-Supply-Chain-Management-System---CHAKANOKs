@@ -3,15 +3,22 @@
 namespace App\Controllers;
 
 use App\Models\InventoryModel;
+use App\Models\DeliveryScheduleModel;
+use App\Models\PurchaseOrderModel;
+use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class Inventory extends BaseController
 {
     protected InventoryModel $inventoryModel;
+    protected DeliveryScheduleModel $deliveryScheduleModel;
+    protected PurchaseOrderModel $purchaseOrderModel;
 
     public function __construct()
     {
         $this->inventoryModel = new InventoryModel();
+        $this->deliveryScheduleModel = new DeliveryScheduleModel();
+        $this->purchaseOrderModel = new PurchaseOrderModel();
         helper(['form']);
     }
 
@@ -307,5 +314,125 @@ class Inventory extends BaseController
         $branchId = (int)(session()->get('branch_id') ?? 0);
         $data['balance'] = $this->inventoryModel->getBalance($branchId);
         return view('pages/inventory_reports', $data);
+    }
+
+    public function confirmDelivery(int $scheduleId): ResponseInterface
+    {
+        if (!session()->get('isLoggedIn')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        $role = (string) (session()->get('role') ?? '');
+        if (!in_array($role, ['Inventory Staff', 'Branch Manager', 'Central Office Admin'], true)) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        $schedule = $this->deliveryScheduleModel->getScheduleWithRelations($scheduleId);
+        if (!$schedule) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Delivery schedule not found']);
+        }
+
+        $branchId = (int)($schedule['branch_id'] ?? 0);
+        $userBranchId = (int)(session()->get('branch_id') ?? 0);
+
+        if ($role !== 'Central Office Admin' && $branchId !== $userBranchId) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'You cannot confirm deliveries for other branches']);
+        }
+
+        if (($schedule['status'] ?? '') === 'Completed') {
+            return $this->response->setJSON(['success' => true, 'message' => 'Delivery already confirmed']);
+        }
+
+        $poId = (int)($schedule['po_id'] ?? 0);
+        if ($poId <= 0) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid purchase order reference']);
+        }
+
+        $po = $this->purchaseOrderModel->find($poId);
+        if (!$po) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Purchase order not found']);
+        }
+
+        if (($po['logistics_status'] ?? '') === 'completed') {
+            return $this->response->setJSON(['success' => true, 'message' => 'Delivery already completed']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $stockInserted = $this->recordStockFromPurchaseOrder($po, $db);
+
+        if (!$stockInserted) {
+            $db->transRollback();
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to update inventory for this purchase order']);
+        }
+
+        $this->purchaseOrderModel->update($poId, [
+            'status' => 'Delivered',
+            'logistics_status' => 'completed',
+            'actual_delivery_date' => date('Y-m-d'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->deliveryScheduleModel->update($scheduleId, [
+            'status' => 'Completed',
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $db->transComplete();
+
+        if (!$db->transStatus()) {
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to confirm delivery']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Delivery confirmed and inventory updated',
+        ]);
+    }
+
+    private function recordStockFromPurchaseOrder(array $po, BaseConnection $db): bool
+    {
+        if (empty($po['purchase_request_id'])) {
+            return false;
+        }
+
+        $request = $db->table('purchase_requests')
+                      ->where('id', $po['purchase_request_id'])
+                      ->get()
+                      ->getRowArray();
+
+        if (!$request) {
+            return false;
+        }
+
+        $stockType = $db->table('stock_types')->orderBy('id', 'ASC')->get()->getRowArray();
+
+        if (!$stockType) {
+            $db->table('stock_types')->insert(['type_name' => 'General']);
+            $itemTypeId = $db->insertID();
+        } else {
+            $itemTypeId = $stockType['id'];
+        }
+
+        $quantity = (int)($request['quantity'] ?? 0);
+        if ($quantity <= 0) {
+            $quantity = 1;
+        }
+
+        $insertData = [
+            'item_type_id' => $itemTypeId,
+            'branch_id' => $po['branch_id'],
+            'item_name' => $request['item_name'] ?? ('PO #' . $po['id']),
+            'category' => null,
+            'quantity' => $quantity,
+            'unit' => $request['unit'] ?? 'pcs',
+            'price' => $request['price'] ?? ($po['total_amount'] ?? 0),
+            'expiry_date' => null,
+            'barcode' => null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+
+        return $db->table('stock_in')->insert($insertData);
     }
 }

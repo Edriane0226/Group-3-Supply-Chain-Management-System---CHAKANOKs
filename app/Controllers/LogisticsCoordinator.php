@@ -15,6 +15,7 @@ class LogisticsCoordinator extends BaseController
     protected PurchaseOrderModel $purchaseOrderModel;
     protected InventoryModel $inventoryModel;
     protected NotificationModel $notificationModel;
+    protected $db;
 
     public function __construct()
     {
@@ -22,6 +23,7 @@ class LogisticsCoordinator extends BaseController
         $this->purchaseOrderModel = new PurchaseOrderModel();
         $this->inventoryModel = new InventoryModel();
         $this->notificationModel = new NotificationModel();
+        $this->db = \Config\Database::connect();
         helper(['form', 'url']);
     }
 
@@ -263,17 +265,48 @@ class LogisticsCoordinator extends BaseController
         }
 
         $po = $this->purchaseOrderModel->find($poId);
-        if (!$po || $po['logistics_status'] !== 'pending_review') {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found or not ready for review']);
+        if (!$po) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found']);
         }
 
-        // Mark as reviewed and move to supplier coordination
+        $currentLogisticsStatus = $po['logistics_status'] ?? 'pending_review';
+        $supplierStatus = $po['status'] ?? 'Pending';
+
+        // Determine next logistics status based on current state
+        $nextLogisticsStatus = 'supplier_coordination';
+        
+        // If supplier has already confirmed or is preparing, move to coordination
+        if (in_array($currentLogisticsStatus, ['supplier_confirmed', 'supplier_preparing'])) {
+            $nextLogisticsStatus = 'supplier_coordination';
+        }
+        // If ready for pickup, move directly to delivery scheduling stage
+        elseif ($currentLogisticsStatus === 'ready_for_pickup' || $supplierStatus === 'Ready for Pickup') {
+            $nextLogisticsStatus = 'supplier_coordinated'; // Skip coordination, ready for scheduling
+        }
+        // If already in coordination or coordinated, don't change
+        elseif (in_array($currentLogisticsStatus, ['supplier_coordination', 'supplier_coordinated'])) {
+            $nextLogisticsStatus = $currentLogisticsStatus;
+        }
+        // Default: pending_review -> supplier_coordination
+        elseif ($currentLogisticsStatus === 'pending_review') {
+            $nextLogisticsStatus = 'supplier_coordination';
+        }
+        // If already in later stages, don't change
+        else {
+            return $this->response->setJSON(['success' => true, 'message' => 'PO is already in logistics workflow']);
+        }
+
+        // Update PO logistics status
         $this->purchaseOrderModel->update($poId, [
-            'logistics_status' => 'supplier_coordination',
+            'logistics_status' => $nextLogisticsStatus,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
-        return $this->response->setJSON(['success' => true, 'message' => 'PO reviewed and ready for supplier coordination']);
+        $message = $nextLogisticsStatus === 'supplier_coordinated' 
+            ? 'PO reviewed and ready for delivery scheduling' 
+            : 'PO reviewed and ready for supplier coordination';
+
+        return $this->response->setJSON(['success' => true, 'message' => $message]);
     }
 
     // Step 2: Coordinate with Supplier
@@ -284,20 +317,35 @@ class LogisticsCoordinator extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
+        $po = $this->purchaseOrderModel->find($poId);
+        if (!$po) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found']);
+        }
+
         $data = $this->request->getJSON(true);
         $supplierConfirmed = $data['supplier_confirmed'] ?? false;
         $pickupDate = $data['pickup_date'] ?? null;
         $notes = $data['notes'] ?? null;
 
-        if (!$supplierConfirmed || !$pickupDate) {
+        // If supplier has already confirmed (status is Confirmed, Preparing, or Ready for Pickup), 
+        // we can skip the confirmation check
+        $currentStatus = $po['status'] ?? 'Pending';
+        $isSupplierAlreadyConfirmed = in_array($currentStatus, ['Confirmed', 'Preparing', 'Ready for Pickup']);
+
+        if (!$isSupplierAlreadyConfirmed && (!$supplierConfirmed || !$pickupDate)) {
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Supplier confirmation and pickup date required']);
+        }
+
+        // If supplier already confirmed, use existing expected_delivery_date or require pickup date
+        if ($isSupplierAlreadyConfirmed && !$pickupDate) {
+            $pickupDate = $po['expected_delivery_date'] ?? date('Y-m-d', strtotime('+3 days'));
         }
 
         // Update PO with supplier coordination details
         $this->purchaseOrderModel->update($poId, [
             'logistics_status' => 'supplier_coordinated',
             'expected_delivery_date' => $pickupDate,
-            'delivery_notes' => $notes,
+            'delivery_notes' => ($po['delivery_notes'] ?? '') . ($notes ? "\n" . $notes : ''),
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
@@ -316,44 +364,116 @@ class LogisticsCoordinator extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
-        $data = $this->request->getJSON(true);
-        $scheduledDate = $data['scheduled_date'] ?? null;
-        $scheduledTime = $data['scheduled_time'] ?? null;
-        $driverId = $data['driver_id'] ?? null;
-        $vehicleId = $data['vehicle_id'] ?? null;
+        try {
+            $po = $this->purchaseOrderModel->find($poId);
+            if (!$po) {
+                return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found']);
+            }
 
-        if (!$scheduledDate || !$scheduledTime || !$driverId || !$vehicleId) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'All schedule details required']);
+            $data = $this->request->getJSON(true);
+            if ($data === null) {
+                // Try to get data from POST if JSON is null
+                $data = $this->request->getPost();
+            }
+            
+            $scheduledDate = $data['scheduled_date'] ?? null;
+            $scheduledTime = $data['scheduled_time'] ?? null;
+
+            if (!$scheduledDate || !$scheduledTime) {
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'Scheduled date and time are required']);
+            }
+
+            // Check if PO is ready for scheduling (supplier confirmed or ready for pickup)
+            $currentLogisticsStatus = $po['logistics_status'] ?? 'pending_review';
+            $supplierStatus = $po['status'] ?? 'Pending';
+
+            $allowedLogisticsStatuses = [
+                'pending_review',
+                'supplier_coordination',
+                'supplier_coordinated',
+                'supplier_confirmed',
+                'supplier_preparing',
+                'ready_for_pickup',
+                'delivery_scheduled'
+            ];
+
+            $allowedSupplierStatuses = [
+                'Approved',
+                'Confirmed',
+                'Preparing',
+                'Ready for Pickup',
+                'In_Transit'
+            ];
+
+            $canSchedule = in_array($currentLogisticsStatus, $allowedLogisticsStatuses, true)
+                        || in_array($supplierStatus, $allowedSupplierStatuses, true);
+
+            if (!$canSchedule) {
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'PO is not ready for delivery scheduling. Please coordinate with supplier first.']);
+            }
+
+            // Get database connection
+            $db = \Config\Database::connect();
+
+            // Check if schedule already exists for this PO
+            $existingSchedule = $db->table('delivery_schedules')
+                ->where('po_id', $poId)
+                ->get()
+                ->getRowArray();
+            
+            if ($existingSchedule) {
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'A delivery schedule already exists for this PO']);
+            }
+
+            // Get the next route sequence number
+            $maxSequence = $db->table('delivery_schedules')
+                ->selectMax('route_sequence')
+                ->where('scheduled_date', $scheduledDate)
+                ->get()
+                ->getRow();
+            $nextSequence = ($maxSequence->route_sequence ?? 0) + 1;
+
+            // Create delivery schedule
+            $scheduleData = [
+                'po_id' => $poId,
+                'coordinator_id' => (int)$session->get('user_id'),
+                'driver_id' => null,
+                'vehicle_id' => null,
+                'scheduled_date' => $scheduledDate,
+                'scheduled_time' => $scheduledTime,
+                'route_sequence' => $nextSequence,
+                'status' => 'Scheduled',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $db->table('delivery_schedules')->insert($scheduleData);
+            $scheduleId = $db->insertID();
+
+            if (!$scheduleId) {
+                return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to create delivery schedule']);
+            }
+
+            // Update PO status
+            $this->purchaseOrderModel->update($poId, [
+                'logistics_status' => 'delivery_scheduled',
+                'status' => 'In_Transit',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            // Notify logistics coordinators (optional, don't fail if notification fails)
+            try {
+                $coordinatorIds = [(int)$session->get('user_id')];
+                $this->notificationModel->notifyLogisticsCoordinator('delivery_scheduled', $poId, $coordinatorIds);
+            } catch (\Exception $e) {
+                log_message('error', 'Failed to send notification: ' . $e->getMessage());
+            }
+
+            return $this->response->setJSON(['success' => true, 'message' => 'Delivery schedule created', 'schedule_id' => $scheduleId]);
+        } catch (\Exception $e) {
+            log_message('error', 'Create delivery schedule error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to create schedule: ' . $e->getMessage()]);
         }
-
-        // Create delivery schedule
-        $scheduleData = [
-            'po_id' => $poId,
-            'coordinator_id' => (int)$session->get('user_id'),
-            'driver_id' => $driverId,
-            'vehicle_id' => $vehicleId,
-            'scheduled_date' => $scheduledDate,
-            'scheduled_time' => $scheduledTime,
-            'status' => 'Scheduled',
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        $this->db->table('delivery_schedules')->insert($scheduleData);
-        $scheduleId = $this->db->insertID();
-
-        // Update PO status
-        $this->purchaseOrderModel->update($poId, [
-            'logistics_status' => 'delivery_scheduled',
-            'status' => 'in_transit',
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
-
-        // Notify logistics coordinators
-        $coordinatorIds = [(int)$session->get('user_id')];
-        $this->notificationModel->notifyLogisticsCoordinator('delivery_scheduled', $poId, $coordinatorIds);
-
-        return $this->response->setJSON(['success' => true, 'message' => 'Delivery schedule created', 'schedule_id' => $scheduleId]);
     }
 
     // Step 4: Update Delivery Status (Enhanced)
@@ -374,14 +494,14 @@ class LogisticsCoordinator extends BaseController
 
         $logisticsStatus = match($status) {
             'in_transit' => 'delivery_started',
-            'delivered' => 'delivered',
+            'delivered' => 'completed',
             default => 'delivery_scheduled'
         };
 
         // Update PO logistics status
         $this->purchaseOrderModel->update($poId, [
             'logistics_status' => $logisticsStatus,
-            'status' => $status === 'delivered' ? 'delivered' : 'in_transit',
+            'status' => $status === 'delivered' ? 'Delivered' : 'In_Transit',
             'actual_delivery_date' => $status === 'delivered' ? date('Y-m-d') : null,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
@@ -476,7 +596,7 @@ class LogisticsCoordinator extends BaseController
         // Update PO to completed
         $this->purchaseOrderModel->update($poId, [
             'logistics_status' => 'completed',
-            'status' => 'delivered',
+            'status' => 'Delivered',
             'delivery_notes' => ($this->purchaseOrderModel->find($poId)['delivery_notes'] ?? '') . "\nFinal Notes: {$finalNotes}",
             'updated_at' => date('Y-m-d H:i:s')
         ]);
@@ -531,5 +651,273 @@ class LogisticsCoordinator extends BaseController
         ];
 
         return $steps[$status] ?? ['step' => 1, 'name' => 'Unknown Status', 'completed' => false];
+    }
+
+    // Delivery Schedules Page
+    public function deliverySchedules()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if ($session->get('role') !== 'Logistics Coordinator') {
+            $session->setFlashdata('error', 'Unauthorized access.');
+            return redirect()->to(site_url('login'));
+        }
+
+        $coordinatorId = (int)$session->get('user_id');
+
+        // Get filter parameters
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-d');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-d', strtotime('+30 days'));
+        $status = $this->request->getGet('status') ?? null;
+
+        // Get all schedules for this coordinator
+        $schedules = $this->deliveryScheduleModel->getSchedulesByDateRange($startDate, $endDate, $coordinatorId);
+
+        // Filter by status if provided
+        if ($status) {
+            $schedules = array_filter($schedules, function($schedule) use ($status) {
+                return $schedule['status'] === $status;
+            });
+        }
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Delivery Schedules',
+            'schedules' => $schedules,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'status' => $status,
+        ];
+
+        return view('reusables/sidenav', $data) . view('logistics_coordinator/delivery_schedules', $data);
+    }
+
+    // Get schedule details
+    public function getScheduleDetails(int $scheduleId): ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Logistics Coordinator') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        // Get schedule with related PO, supplier, and branch info
+        $schedule = $this->deliveryScheduleModel->select('delivery_schedules.*, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+            ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+            ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+            ->join('branches', 'branches.id = purchase_orders.branch_id')
+            ->where('delivery_schedules.id', $scheduleId)
+            ->first();
+
+        if (!$schedule) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Schedule not found']);
+        }
+
+        // Get detailed PO information
+        $po = $this->purchaseOrderModel->getDetails($schedule['po_id']);
+        if ($po) {
+            $schedule['po_details'] = $po;
+        }
+
+        return $this->response->setJSON($schedule);
+    }
+
+    // Update schedule status
+    public function updateScheduleStatus(int $scheduleId): ResponseInterface
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Logistics Coordinator') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        $data = $this->request->getJSON(true);
+        $status = $data['status'] ?? null;
+        $notes = $data['notes'] ?? null;
+        $routeSequence = $data['route_sequence'] ?? null;
+
+        $updateData = [];
+        
+        if ($status) {
+            $updateData['status'] = $status;
+        }
+        
+        if ($notes !== null) {
+            $updateData['notes'] = $notes;
+        }
+        
+        if ($routeSequence !== null) {
+            $updateData['route_sequence'] = (int)$routeSequence;
+        }
+
+        if (empty($updateData)) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'At least one field (status, notes, or route_sequence) is required']);
+        }
+
+        try {
+            if (isset($updateData['status'])) {
+                $this->deliveryScheduleModel->updateScheduleStatus($scheduleId, $updateData['status'], $updateData['notes'] ?? null);
+            } else {
+                // Update other fields if status is not being updated
+                $this->deliveryScheduleModel->update($scheduleId, $updateData);
+            }
+            
+            return $this->response->setJSON(['success' => true, 'message' => 'Schedule updated successfully']);
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to update schedule: ' . $e->getMessage()]);
+        }
+    }
+
+    // Route Optimization Page
+    public function routeOptimization()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if ($session->get('role') !== 'Logistics Coordinator') {
+            $session->setFlashdata('error', 'Unauthorized access.');
+            return redirect()->to(site_url('login'));
+        }
+
+        $coordinatorId = (int)$session->get('user_id');
+
+        // Get scheduled deliveries for optimization
+        $today = date('Y-m-d');
+        $nextWeek = date('Y-m-d', strtotime('+7 days'));
+        $scheduledDeliveries = $this->deliveryScheduleModel->getSchedulesByDateRange($today, $nextWeek, $coordinatorId);
+        
+        // Filter only scheduled deliveries
+        $scheduledDeliveries = array_filter($scheduledDeliveries, function($delivery) {
+            return $delivery['status'] === 'Scheduled';
+        });
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Route Optimization',
+            'scheduledDeliveries' => $scheduledDeliveries,
+        ];
+
+        return view('reusables/sidenav', $data) . view('logistics_coordinator/route_optimization', $data);
+    }
+
+    // Active Deliveries Page
+    public function activeDeliveries()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if ($session->get('role') !== 'Logistics Coordinator') {
+            $session->setFlashdata('error', 'Unauthorized access.');
+            return redirect()->to(site_url('login'));
+        }
+
+        $coordinatorId = (int)$session->get('user_id');
+
+        // Get active deliveries (In Progress status)
+        $today = date('Y-m-d');
+        $nextWeek = date('Y-m-d', strtotime('+7 days'));
+        $allDeliveries = $this->deliveryScheduleModel->getSchedulesByDateRange($today, $nextWeek, $coordinatorId);
+        
+        // Filter active deliveries
+        $activeDeliveries = array_filter($allDeliveries, function($delivery) {
+            return in_array($delivery['status'], ['Scheduled', 'In Progress']);
+        });
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Active Deliveries',
+            'activeDeliveries' => $activeDeliveries,
+        ];
+
+        return view('reusables/sidenav', $data) . view('logistics_coordinator/active_deliveries', $data);
+    }
+
+    // Performance Reports Page
+    public function performanceReports()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if ($session->get('role') !== 'Logistics Coordinator') {
+            $session->setFlashdata('error', 'Unauthorized access.');
+            return redirect()->to(site_url('login'));
+        }
+
+        $coordinatorId = (int)$session->get('user_id');
+
+        // Get date range for reports
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-d', strtotime('-30 days'));
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-d');
+
+        // Get all schedules for the period
+        $allSchedules = $this->deliveryScheduleModel->getSchedulesByDateRange($startDate, $endDate, $coordinatorId);
+
+        // Calculate performance metrics
+        $totalSchedules = count($allSchedules);
+        $completedSchedules = count(array_filter($allSchedules, fn($s) => $s['status'] === 'Completed'));
+        $inProgressSchedules = count(array_filter($allSchedules, fn($s) => $s['status'] === 'In Progress'));
+        $cancelledSchedules = count(array_filter($allSchedules, fn($s) => $s['status'] === 'Cancelled'));
+        
+        // Calculate on-time delivery rate (simplified - checking if completed on scheduled date)
+        $onTimeDeliveries = 0;
+        foreach ($allSchedules as $schedule) {
+            if ($schedule['status'] === 'Completed') {
+                $scheduledDate = date('Y-m-d', strtotime($schedule['scheduled_date']));
+                $po = $this->purchaseOrderModel->find($schedule['po_id']);
+                if ($po && $po['actual_delivery_date']) {
+                    $actualDate = date('Y-m-d', strtotime($po['actual_delivery_date']));
+                    if ($actualDate <= $scheduledDate) {
+                        $onTimeDeliveries++;
+                    }
+                }
+            }
+        }
+
+        $completionRate = $totalSchedules > 0 ? round(($completedSchedules / $totalSchedules) * 100, 2) : 0;
+        $onTimeRate = $completedSchedules > 0 ? round(($onTimeDeliveries / $completedSchedules) * 100, 2) : 0;
+
+        // Get schedules by status for chart
+        $statusBreakdown = [
+            'Scheduled' => count(array_filter($allSchedules, fn($s) => $s['status'] === 'Scheduled')),
+            'In Progress' => $inProgressSchedules,
+            'Completed' => $completedSchedules,
+            'Cancelled' => $cancelledSchedules,
+        ];
+
+        // Get daily delivery counts
+        $dailyCounts = [];
+        foreach ($allSchedules as $schedule) {
+            $date = $schedule['scheduled_date'];
+            if (!isset($dailyCounts[$date])) {
+                $dailyCounts[$date] = 0;
+            }
+            $dailyCounts[$date]++;
+        }
+        ksort($dailyCounts);
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Performance Reports',
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'totalSchedules' => $totalSchedules,
+            'completedSchedules' => $completedSchedules,
+            'inProgressSchedules' => $inProgressSchedules,
+            'cancelledSchedules' => $cancelledSchedules,
+            'completionRate' => $completionRate,
+            'onTimeRate' => $onTimeRate,
+            'onTimeDeliveries' => $onTimeDeliveries,
+            'statusBreakdown' => $statusBreakdown,
+            'dailyCounts' => $dailyCounts,
+        ];
+
+        return view('reusables/sidenav', $data) . view('logistics_coordinator/performance_reports', $data);
     }
 }

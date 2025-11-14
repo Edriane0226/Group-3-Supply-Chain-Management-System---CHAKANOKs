@@ -8,6 +8,7 @@ use App\Models\PurchaseOrderModel;
 use App\Models\PurchaseRequestModel;
 use App\Models\InventoryModel;
 use App\Models\BranchModel;
+use App\Models\DeliveryScheduleModel;
 
 
 class Dashboard extends Controller
@@ -21,56 +22,157 @@ class Dashboard extends Controller
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
+        $role = $session->get('role');
         $branchName = $session->get('branch_name');
+        $branchId = (int)($session->get('branch_id') ?? 0);
+
         $userModel = new UserModel();
         $branchModel = new BranchModel();
+        $deliveryScheduleModel = new DeliveryScheduleModel();
+        $inventoryModel = new InventoryModel();
         $AllBranches = $branchModel->findAll();
-        
 
-        if ($session->get('role') == 'Branch Manager') {
+        if ($role === 'Branch Manager') {
+            $allUsers = $userModel->getUserByBranch($branchId);
 
-            //Add dashboard data kung naa i dagdag
+            $windowStart = date('Y-m-d');
+            $windowEnd = date('Y-m-d', strtotime('+14 days'));
+            $upcomingDeliveries = $branchId ? $deliveryScheduleModel->getBranchUpcomingDeliveries($branchId, $windowStart, $windowEnd) : [];
 
-            // Get all user in the same branch sa branch manager na naka login
-            $allUsers = $userModel->getUserByBranch($session->get('branch_id'));
+            $branchDeliveryStatus = [
+                'Scheduled' => 0,
+                'In Progress' => 0,
+                'Completed' => 0,
+            ];
+            foreach ($upcomingDeliveries as $delivery) {
+                $statusLabel = $delivery['status'] ?? 'Scheduled';
+                if (!array_key_exists($statusLabel, $branchDeliveryStatus)) {
+                    $branchDeliveryStatus[$statusLabel] = 0;
+                }
+                $branchDeliveryStatus[$statusLabel]++;
+            }
+
+            $incomingDeliveries = $branchId ? $inventoryModel->getDeliveries($branchId, 'Pending') : [];
+            $incomingDeliveries = array_map(static function ($delivery) {
+                $delivery['source'] = 'delivery_record';
+                return $delivery;
+            }, $incomingDeliveries);
+
+            $scheduleIncoming = array_filter($upcomingDeliveries, static function ($delivery) {
+                return in_array($delivery['status'] ?? 'Scheduled', ['Scheduled', 'In Progress'], true);
+            });
+
+            $scheduleIncoming = array_map(static function ($delivery) {
+                return [
+                    'id' => $delivery['id'],
+                    'supplier_name' => $delivery['supplier_name'] ?? 'N/A',
+                    'delivery_date' => $delivery['scheduled_date'] ?? null,
+                    'delivery_time' => $delivery['scheduled_time'] ?? null,
+                    'total_items' => null,
+                    'remarks' => $delivery['notes'] ?? null,
+                    'status' => $delivery['status'] ?? 'Scheduled',
+                    'source' => 'schedule',
+                ];
+            }, $scheduleIncoming);
+
+            $incomingDeliveries = array_merge($incomingDeliveries, $scheduleIncoming);
+
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
-                'role' => $session->get('role'),
+                'role' => $role,
+                'upcomingDeliveries' => $upcomingDeliveries,
+                'branchDeliveryStatus' => $branchDeliveryStatus,
+                'incomingDeliveries' => array_slice($incomingDeliveries, 0, 5),
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
-        }
-
-        else if ($session->get('role') == 'Central Office Admin') {
-
-             //Add dashboard data kung naa i dagdag
-
-            // Get all users kay Central Office
+        } elseif ($role === 'Central Office Admin') {
             $allUsers = $userModel->findAll();
             $Inv = new InventoryModel();
 
+            $windowStart = date('Y-m-d');
+            $windowEnd = date('Y-m-d', strtotime('+14 days'));
+            $centralDeliveryOverview = $deliveryScheduleModel->getCentralDeliveryOverview($windowStart, $windowEnd);
+
+            $centralDeliveryStatusSummary = [
+                'Scheduled' => 0,
+                'In Progress' => 0,
+                'Completed' => 0,
+                'Cancelled' => 0,
+            ];
+            $centralDelayedDeliveries = [];
+            $supplierPerformance = [];
+            $now = time();
+
+            foreach ($centralDeliveryOverview as $entry) {
+                $status = $entry['status'] ?? 'Scheduled';
+                if (!array_key_exists($status, $centralDeliveryStatusSummary)) {
+                    $centralDeliveryStatusSummary[$status] = 0;
+                }
+                $centralDeliveryStatusSummary[$status]++;
+
+                $scheduledAt = strtotime(($entry['scheduled_date'] ?? $windowStart) . ' ' . ($entry['scheduled_time'] ?? '00:00:00'));
+                if ($scheduledAt !== false && $scheduledAt < $now && ($entry['status'] ?? 'Scheduled') !== 'Completed') {
+                    $centralDelayedDeliveries[] = $entry;
+                }
+
+                $supplierKey = $entry['supplier_name'] ?? 'Unknown Supplier';
+                if (!isset($supplierPerformance[$supplierKey])) {
+                    $supplierPerformance[$supplierKey] = [
+                        'supplier' => $supplierKey,
+                        'total' => 0,
+                        'completed' => 0,
+                        'on_time' => 0,
+                    ];
+                }
+
+                $supplierPerformance[$supplierKey]['total']++;
+                if (($entry['status'] ?? '') === 'Completed') {
+                    $supplierPerformance[$supplierKey]['completed']++;
+                    $expectedDate = $entry['expected_delivery_date'] ?? $entry['scheduled_date'] ?? null;
+                    $actualDate = $entry['actual_delivery_date'] ?? null;
+                    if ($expectedDate && $actualDate && strtotime($actualDate) <= strtotime($expectedDate)) {
+                        $supplierPerformance[$supplierKey]['on_time']++;
+                    }
+                }
+            }
+
+            $supplierPerformance = array_map(static function ($metrics) {
+                $completionRate = $metrics['total'] > 0 ? round(($metrics['completed'] / $metrics['total']) * 100, 1) : 0;
+                $onTimeRate = $metrics['completed'] > 0 ? round(($metrics['on_time'] / $metrics['completed']) * 100, 1) : 0;
+
+                return [
+                    'supplier' => $metrics['supplier'],
+                    'total' => $metrics['total'],
+                    'completion_rate' => $completionRate,
+                    'on_time_rate' => $onTimeRate,
+                ];
+            }, array_values($supplierPerformance));
+
+            usort($supplierPerformance, static function ($a, $b) {
+                return $b['completion_rate'] <=> $a['completion_rate'];
+            });
+
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
-                'role' => $session->get('role'),
+                'role' => $role,
                 'AllBranches' => $AllBranches,
                 'invValues' => $Inv->getOverallInventoryValue(),
                 'expiredValue' => $Inv->getOverallExpiredValue(),
-                
+                'centralDeliveryOverview' => $centralDeliveryOverview,
+                'centralDeliveryStatusSummary' => $centralDeliveryStatusSummary,
+                'centralDelayedDeliveries' => array_slice($centralDelayedDeliveries, 0, 5),
+                'supplierPerformance' => array_slice($supplierPerformance, 0, 5),
             ];
-            
-            return view('reusables/sidenav', $data) . view('pages/dashboard');
-        }
 
-        else if ($session->get('role') == 'Inventory Staff') {
-           
-            $role = $session->get('role');
+            return view('reusables/sidenav', $data) . view('pages/dashboard');
+        } elseif ($role === 'Inventory Staff') {
             $data = [
                 'role' => $role,
             ];
 
-            // Access Lng niya is Inventory Overview
             return view('reusables/sidenav', $data) . view('pages/inventory_overview');
         }
 
