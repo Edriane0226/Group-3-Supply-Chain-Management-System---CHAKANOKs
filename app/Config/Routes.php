@@ -24,6 +24,7 @@ $routes->get('inventory/stockin', 'Inventory::stockInPage');
 $routes->post('inventory/stockin', 'Inventory::stockin');
 $routes->get('inventory/stockout', 'Inventory::stockOutPage');
 $routes->post('inventory/stockout', 'Inventory::stockout');
+$routes->post('inventory/confirm-delivery/(:num)', 'Inventory::confirmDelivery/$1');
 $routes->get('inventory/reports', 'Inventory::reportsPage');
 $routes->get('inventory/scan', 'Inventory::scanPage');
 $routes->get('/inventory/live', 'Inventory::liveInventory');
@@ -65,6 +66,12 @@ $routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 
 // Logistics Coordinator routes
 $routes->get('logistics-coordinator', 'LogisticsCoordinator::index');
+$routes->get('logistics-coordinator/delivery-schedules', 'LogisticsCoordinator::deliverySchedules');
+$routes->get('logistics-coordinator/route-optimization', 'LogisticsCoordinator::routeOptimization');
+$routes->get('logistics-coordinator/active-deliveries', 'LogisticsCoordinator::activeDeliveries');
+$routes->get('logistics-coordinator/performance-reports', 'LogisticsCoordinator::performanceReports');
+$routes->get('logistics-coordinator/schedule-details/(:num)', 'LogisticsCoordinator::getScheduleDetails/$1');
+$routes->post('logistics-coordinator/update-schedule-status/(:num)', 'LogisticsCoordinator::updateScheduleStatus/$1');
 $routes->post('logistics-coordinator/schedule-deliveries', 'LogisticsCoordinator::scheduleDeliveries');
 $routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateDeliveryStatus/$1');
 $routes->get('logistics-coordinator/get-calendar-data', 'LogisticsCoordinator::getCalendarData');
