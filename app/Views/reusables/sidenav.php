@@ -170,16 +170,16 @@
       <a href="<?= site_url('logistics-coordinator') ?>" class="<?= (uri_string() == 'logistics-coordinator') ? 'active' : '' ?>">
           <i class="bi bi-speedometer2 me-2"></i> Dashboard
       </a>
-      <a href="#" onclick="alert('Delivery Schedules - Coming Soon')">
+      <a href="<?= site_url('logistics-coordinator/delivery-schedules') ?>" class="<?= (uri_string() == 'logistics-coordinator/delivery-schedules') ? 'active' : '' ?>">
           <i class="bi bi-calendar-check me-2"></i> Delivery Schedules
       </a>
-      <a href="#" onclick="alert('Route Optimization - Coming Soon')">
+      <a href="<?= site_url('logistics-coordinator/route-optimization') ?>" class="<?= (uri_string() == 'logistics-coordinator/route-optimization') ? 'active' : '' ?>">
           <i class="bi bi-geo-alt me-2"></i> Route Optimization
       </a>
-      <a href="#" onclick="alert('Active Deliveries - Coming Soon')">
+      <a href="<?= site_url('logistics-coordinator/active-deliveries') ?>" class="<?= (uri_string() == 'logistics-coordinator/active-deliveries') ? 'active' : '' ?>">
           <i class="bi bi-truck me-2"></i> Active Deliveries
       </a>
-      <a href="#" onclick="alert('Performance Reports - Coming Soon')">
+      <a href="<?= site_url('logistics-coordinator/performance-reports') ?>" class="<?= (uri_string() == 'logistics-coordinator/performance-reports') ? 'active' : '' ?>">
           <i class="bi bi-graph-up me-2"></i> Performance Reports
       </a>
 

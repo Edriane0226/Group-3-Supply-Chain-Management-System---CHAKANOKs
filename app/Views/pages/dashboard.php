@@ -132,6 +132,111 @@
         </div>
       </div>
     </div>
+
+    <div class="dashboard-section">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="dashboard-box h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <h6 class="mb-0">Upcoming Deliveries</h6>
+                <small class="text-muted">Next 14 days</small>
+              </div>
+              <div class="d-flex flex-wrap gap-1">
+                <?php $statusColors = ['Scheduled' => 'secondary', 'In Progress' => 'warning', 'Completed' => 'success', 'Cancelled' => 'danger']; ?>
+                <?php foreach (($branchDeliveryStatus ?? []) as $label => $count): ?>
+                  <span class="badge bg-<?= esc($statusColors[$label] ?? 'secondary') ?>"><?= esc($label) ?>: <?= esc($count) ?></span>
+                <?php endforeach; ?>
+              </div>
+            </div>
+            <?php if (!empty($upcomingDeliveries)): ?>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Supplier</th>
+                      <th>Logistics Contact</th>
+                      <th>Driver</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($upcomingDeliveries as $delivery): ?>
+                      <?php
+                        $coordName = trim(($delivery['coordinator_first_name'] ?? '') . ' ' . ($delivery['coordinator_last_name'] ?? '')) ?: 'Unassigned';
+                        $driverName = trim(($delivery['driver_first_name'] ?? '') . ' ' . ($delivery['driver_last_name'] ?? '')) ?: 'TBD';
+                        $status = $delivery['status'] ?? 'Scheduled';
+                      ?>
+                      <tr>
+                        <td>
+                          <strong><?= esc(date('M d', strtotime($delivery['scheduled_date']))) ?></strong><br>
+                          <small class="text-muted"><?= esc(date('h:i A', strtotime($delivery['scheduled_time']))) ?></small>
+                        </td>
+                        <td><?= esc($delivery['supplier_name'] ?? 'N/A') ?></td>
+                        <td><?= esc($coordName) ?></td>
+                        <td><?= esc($driverName) ?></td>
+                        <td><span class="badge bg-<?= esc($statusColors[$status] ?? 'secondary') ?>"><?= esc($status) ?></span></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php else: ?>
+              <p class="text-muted mb-0">No upcoming deliveries scheduled yet.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="dashboard-box h-100">
+            <h6>Incoming Items Tracking</h6>
+            <p class="text-muted small mb-3">Deliveries awaiting receipt at the branch.</p>
+            <?php if (!empty($incomingDeliveries)): ?>
+              <div class="list-group list-group-flush">
+                <?php foreach ($incomingDeliveries as $incoming): ?>
+                  <div class="list-group-item px-0">
+                    <div class="d-flex justify-content-between">
+                      <strong><?= esc($incoming['supplier_name']) ?></strong>
+                      <?php $incomingStatus = $incoming['status'] ?? 'Pending'; ?>
+                      <span class="badge bg-<?= esc($incomingStatus === 'Completed' ? 'success' : ($incomingStatus === 'In Progress' ? 'warning text-dark' : 'warning text-dark')) ?>">
+                        <?= esc($incomingStatus) ?>
+                      </span>
+                    </div>
+                    <small class="text-muted d-block">
+                      ETA <?= esc($incoming['delivery_date'] ? date('M d, Y', strtotime($incoming['delivery_date'])) : 'TBD') ?>
+                      <?php if (!empty($incoming['delivery_time'])): ?>
+                        · <?= esc(date('h:i A', strtotime($incoming['delivery_time']))) ?>
+                      <?php endif; ?>
+                      <?php if (!empty($incoming['total_items'])): ?>
+                        · <?= esc($incoming['total_items']) ?> items
+                      <?php endif; ?>
+                    </small>
+                    <?php if (!empty($incoming['remarks'])): ?>
+                      <small class="text-muted d-block fst-italic"><?= esc($incoming['remarks']) ?></small>
+                    <?php endif; ?>
+                    <div class="mt-2">
+                      <?php if (($incoming['source'] ?? '') === 'schedule'): ?>
+                        <button class="btn btn-sm btn-success"
+                          onclick="confirmScheduledDelivery(<?= esc($incoming['id']) ?>)">
+                          <i class="bi bi-check2-circle me-1"></i>Mark Received
+                        </button>
+                      <?php else: ?>
+                        <button class="btn btn-sm btn-success"
+                          onclick="markIncomingDelivery(<?= esc($incoming['id']) ?>)">
+                          <i class="bi bi-check2-circle me-1"></i>Mark Received
+                        </button>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            <?php else: ?>
+              <p class="text-muted mb-0">No pending deliveries at this time.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
     
 
   <!-- Central Office Admin Dashboard -->
@@ -210,10 +315,93 @@
           <?= $reports_section ?? '<p>No reports available.</p>' ?>
         </div>
 
-        <div class="dashboard-box">
+        <div class="dashboard-box mb-3">
           <i class="bi bi-truck"></i>
-          <h6>Delivery Status</h6>
-          <?= $delivery_status ?? '<p>No deliveries at this time.</p>' ?>
+          <h6>Delivery Pipeline (Next 14 Days)</h6>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <?php $statusColors = ['Scheduled' => 'secondary', 'In Progress' => 'warning', 'Completed' => 'success', 'Cancelled' => 'danger']; ?>
+            <?php foreach (($centralDeliveryStatusSummary ?? []) as $label => $count): ?>
+              <span class="badge bg-<?= esc($statusColors[$label] ?? 'secondary') ?>"><?= esc($label) ?>: <?= esc($count) ?></span>
+            <?php endforeach; ?>
+          </div>
+          <?php if (!empty($centralDeliveryOverview)): ?>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Branch</th>
+                    <th>Supplier</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach (array_slice($centralDeliveryOverview, 0, 5) as $delivery): ?>
+                    <?php $status = $delivery['status'] ?? 'Scheduled'; ?>
+                    <tr>
+                      <td><?= esc($delivery['branch_name'] ?? 'N/A') ?></td>
+                      <td><?= esc($delivery['supplier_name'] ?? 'N/A') ?></td>
+                      <td>
+                        <strong><?= esc(date('M d', strtotime($delivery['scheduled_date']))) ?></strong><br>
+                        <small class="text-muted"><?= esc(date('h:i A', strtotime($delivery['scheduled_time']))) ?></small>
+                      </td>
+                      <td><span class="badge bg-<?= esc($statusColors[$status] ?? 'secondary') ?>"><?= esc($status) ?></span></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php else: ?>
+            <p class="text-muted mb-0">No scheduled deliveries within the selected window.</p>
+          <?php endif; ?>
+        </div>
+
+        <div class="dashboard-box mb-3">
+          <i class="bi bi-exclamation-triangle"></i>
+          <h6>Delayed / At-Risk Deliveries</h6>
+          <?php if (!empty($centralDelayedDeliveries)): ?>
+            <ul class="list-group list-group-flush">
+              <?php foreach ($centralDelayedDeliveries as $delayed): ?>
+                <li class="list-group-item px-0">
+                  <strong><?= esc($delayed['branch_name'] ?? 'Branch') ?></strong> · <?= esc($delayed['supplier_name'] ?? 'Supplier') ?><br>
+                  <small class="text-muted">Scheduled <?= esc(date('M d, h:i A', strtotime($delayed['scheduled_date'] . ' ' . $delayed['scheduled_time']))) ?></small>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php else: ?>
+            <p class="text-muted mb-0">No delayed deliveries detected.</p>
+          <?php endif; ?>
+        </div>
+
+        <div class="dashboard-box">
+          <i class="bi bi-people"></i>
+          <h6>Supplier Delivery Performance</h6>
+          <?php if (!empty($supplierPerformance)): ?>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Supplier</th>
+                    <th>Orders</th>
+                    <th>Completion</th>
+                    <th>On-Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($supplierPerformance as $supplier): ?>
+                    <tr>
+                      <td><?= esc($supplier['supplier']) ?></td>
+                      <td><?= esc($supplier['total']) ?></td>
+                      <td><?= esc($supplier['completion_rate']) ?>%</td>
+                      <td><?= esc($supplier['on_time_rate']) ?>%</td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php else: ?>
+            <p class="text-muted mb-0">No supplier metrics available for this period.</p>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -221,3 +409,54 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php if (in_array(($role ?? ''), ['Branch Manager', 'Inventory Staff'])): ?>
+<script>
+async function markIncomingDelivery(deliveryId) {
+  if (!confirm('Mark this delivery as received? This will update the branch inventory.')) {
+    return;
+  }
+  try {
+    const response = await fetch(`<?= site_url('deliveries/receive/') ?>${deliveryId}`, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert('Delivery received and inventory updated.');
+      location.reload();
+    } else {
+      alert(result.error ?? 'Failed to receive delivery.');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('An error occurred while receiving the delivery.');
+  }
+}
+
+async function confirmScheduledDelivery(scheduleId) {
+  if (!confirm('Confirm that this scheduled delivery has been received and update inventory?')) {
+    return;
+  }
+  try {
+    const response = await fetch(`<?= site_url('inventory/confirm-delivery/') ?>${scheduleId}`, {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    const result = await response.json();
+    if (result.success) {
+      alert(result.message || 'Delivery confirmed.');
+      location.reload();
+    } else {
+      alert(result.error ?? 'Failed to confirm delivery.');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('An error occurred while confirming the delivery.');
+  }
+}
+</script>
+<?php endif; ?>

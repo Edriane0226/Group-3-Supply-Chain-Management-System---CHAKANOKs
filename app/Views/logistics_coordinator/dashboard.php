@@ -76,8 +76,29 @@
                       $supplierStatus = $po['status'] ?? 'Pending';
                       $logisticsStatus = $po['logistics_status'] ?? 'pending_review';
 
-                      // Determine workflow step based on supplier status and logistics status
-                      if ($supplierStatus === 'Pending') {
+                      // Determine workflow step based on logistics status (priority) or supplier status
+                      if ($logisticsStatus === 'pending_review') {
+                        $stepLabel = 'Step 1: Pending Review';
+                        $stepClass = 'badge bg-secondary';
+                      } elseif ($logisticsStatus === 'supplier_coordination') {
+                        $stepLabel = 'Step 2: Supplier Coordination';
+                        $stepClass = 'badge bg-info';
+                      } elseif ($logisticsStatus === 'supplier_coordinated' || $logisticsStatus === 'ready_for_pickup') {
+                        $stepLabel = 'Step 3: Ready to Schedule';
+                        $stepClass = 'badge bg-primary';
+                      } elseif ($logisticsStatus === 'delivery_scheduled') {
+                        $stepLabel = 'Step 4: Delivery Scheduled';
+                        $stepClass = 'badge bg-warning';
+                      } elseif ($logisticsStatus === 'delivery_started') {
+                        $stepLabel = 'Step 5: In Transit';
+                        $stepClass = 'badge bg-info';
+                      } elseif ($logisticsStatus === 'branch_notified') {
+                        $stepLabel = 'Step 6: Branch Notified';
+                        $stepClass = 'badge bg-success';
+                      } elseif ($logisticsStatus === 'completed') {
+                        $stepLabel = 'Completed';
+                        $stepClass = 'badge bg-success';
+                      } elseif ($supplierStatus === 'Pending') {
                         $stepLabel = 'Supplier: Pending Confirmation';
                         $stepClass = 'badge bg-warning';
                       } elseif ($supplierStatus === 'Confirmed') {
@@ -106,9 +127,31 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="viewPODetails(<?= $po['id'] ?>)">
                           <i class="bi bi-eye"></i> View
                         </button>
-                        <?php if ($supplierStatus === 'Ready for Pickup'): ?>
+                        <?php
+                        // Show actions based on logistics_status (workflow stage)
+                        if ($logisticsStatus === 'pending_review' || ($logisticsStatus === 'supplier_confirmed' && $supplierStatus === 'Ready for Pickup')): ?>
                           <button class="btn btn-outline-success btn-sm" onclick="startLogisticsProcess(<?= $po['id'] ?>)">
                             <i class="bi bi-play-circle"></i> Start Logistics
+                          </button>
+                        <?php elseif ($logisticsStatus === 'supplier_coordination'): ?>
+                          <button class="btn btn-outline-info btn-sm" onclick="coordinateSupplier(<?= $po['id'] ?>)">
+                            <i class="bi bi-handshake"></i> Coordinate Supplier
+                          </button>
+                        <?php elseif ($logisticsStatus === 'supplier_coordinated' || $logisticsStatus === 'ready_for_pickup'): ?>
+                          <button class="btn btn-outline-success btn-sm" onclick="scheduleDelivery(<?= $po['id'] ?>)">
+                            <i class="bi bi-calendar-check"></i> Schedule Delivery
+                          </button>
+                        <?php elseif ($logisticsStatus === 'delivery_scheduled'): ?>
+                          <button class="btn btn-outline-warning btn-sm" onclick="startDelivery(<?= $po['id'] ?>)">
+                            <i class="bi bi-truck"></i> Start Delivery
+                          </button>
+                        <?php elseif ($logisticsStatus === 'delivery_started'): ?>
+                          <button class="btn btn-outline-info btn-sm" onclick="notifyBranch(<?= $po['id'] ?>)">
+                            <i class="bi bi-bell"></i> Notify Branch
+                          </button>
+                        <?php elseif ($logisticsStatus === 'branch_notified'): ?>
+                          <button class="btn btn-outline-success btn-sm" onclick="updateDeliveryStatus(<?= $po['id'] ?>)">
+                            <i class="bi bi-check-circle"></i> Mark Delivered
                           </button>
                         <?php elseif ($supplierStatus === 'Preparing'): ?>
                           <button class="btn btn-outline-info btn-sm" onclick="monitorSupplier(<?= $po['id'] ?>)">
@@ -152,6 +195,7 @@
             <thead class="table-light">
               <tr>
                 <th>Time</th>
+                <th>PO ID</th>
                 <th>Supplier</th>
                 <th>Branch</th>
                 <th>Status</th>
@@ -163,8 +207,9 @@
                 <?php foreach ($todaySchedules as $schedule): ?>
                   <tr>
                     <td><?= esc(date('H:i', strtotime($schedule['scheduled_time']))) ?></td>
-                    <td><?= esc($schedule['supplier_name']) ?></td>
-                    <td><?= esc($schedule['branch_name']) ?></td>
+                    <td><strong>#<?= esc($schedule['po_id'] ?? 'N/A') ?></strong></td>
+                    <td><?= esc($schedule['supplier_name'] ?? 'N/A') ?></td>
+                    <td><?= esc($schedule['branch_name'] ?? 'N/A') ?></td>
                     <td>
                       <span class="badge bg-<?= $schedule['status'] == 'Completed' ? 'success' : ($schedule['status'] == 'In Progress' ? 'warning' : 'secondary') ?>">
                         <?= esc($schedule['status']) ?>
@@ -178,7 +223,65 @@
                   </tr>
                 <?php endforeach; ?>
               <?php else: ?>
-                <tr><td colspan="5" class="text-center text-muted py-4">No schedules for today</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">No schedules for today</td></tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Deliveries -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-success text-white">
+        <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Upcoming Deliveries (Next 7 Days)</h6>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>PO ID</th>
+                <th>Supplier</th>
+                <th>Branch</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!empty($upcomingDeliveries)): ?>
+                <?php foreach ($upcomingDeliveries as $schedule): ?>
+                  <?php 
+                  $scheduleDate = strtotime($schedule['scheduled_date']);
+                  $isToday = date('Y-m-d', $scheduleDate) === date('Y-m-d');
+                  ?>
+                  <?php if (!$isToday): ?>
+                    <tr>
+                      <td><?= esc(date('M d, Y', $scheduleDate)) ?></td>
+                      <td><?= esc(date('H:i', strtotime($schedule['scheduled_time']))) ?></td>
+                      <td><strong>#<?= esc($schedule['po_id'] ?? 'N/A') ?></strong></td>
+                      <td><?= esc($schedule['supplier_name'] ?? 'N/A') ?></td>
+                      <td><?= esc($schedule['branch_name'] ?? 'N/A') ?></td>
+                      <td>
+                        <span class="badge bg-<?= $schedule['status'] == 'Completed' ? 'success' : ($schedule['status'] == 'In Progress' ? 'warning' : 'secondary') ?>">
+                          <?= esc($schedule['status']) ?>
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewScheduleDetails(<?= $schedule['id'] ?>)">
+                          <i class="bi bi-eye"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  <?php endif; ?>
+                <?php endforeach; ?>
+                <?php if (empty(array_filter($upcomingDeliveries, function($s) { return date('Y-m-d', strtotime($s['scheduled_date'])) !== date('Y-m-d'); }))): ?>
+                  <tr><td colspan="7" class="text-center text-muted py-4">No upcoming deliveries scheduled</td></tr>
+                <?php endif; ?>
+              <?php else: ?>
+                <tr><td colspan="7" class="text-center text-muted py-4">No upcoming deliveries scheduled</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -255,20 +358,6 @@
             <label for="scheduledTime" class="form-label">Scheduled Time</label>
             <input type="time" class="form-control" id="scheduledTime" name="scheduled_time" required>
           </div>
-          <div class="mb-3">
-            <label for="driverId" class="form-label">Driver</label>
-            <select class="form-control" id="driverId" name="driver_id" required>
-              <option value="">Select Driver</option>
-              <!-- Driver options will be populated dynamically -->
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="vehicleId" class="form-label">Vehicle</label>
-            <select class="form-control" id="vehicleId" name="vehicle_id" required>
-              <option value="">Select Vehicle</option>
-              <!-- Vehicle options will be populated dynamically -->
-            </select>
-          </div>
           <button type="submit" class="btn btn-primary">Create Delivery Schedule</button>
         </form>
       </div>
@@ -333,6 +422,21 @@
           </div>
           <button type="submit" class="btn btn-success">Close Delivery Record</button>
         </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Details Modal -->
+<div class="modal fade" id="scheduleDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Schedule Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="scheduleDetailsContent">
+        <!-- Content will be loaded dynamically -->
       </div>
     </div>
   </div>
@@ -452,7 +556,6 @@ function coordinateSupplier(poId) {
 
 function scheduleDelivery(poId) {
   document.getElementById('schedulePoId').value = poId;
-  // Here you would populate driver and vehicle options dynamically
   new bootstrap.Modal(document.getElementById('scheduleModal')).show();
 }
 
@@ -560,15 +663,20 @@ document.getElementById('supplierForm').addEventListener('submit', function(e) {
 
 document.getElementById('scheduleForm').addEventListener('submit', function(e) {
   e.preventDefault();
-  const formData = new FormData(this);
-  const poId = formData.get('po_id');
+  const poId = document.getElementById('schedulePoId').value;
+  const scheduledDate = document.getElementById('scheduledDate').value;
+  const scheduledTime = document.getElementById('scheduledTime').value;
 
   fetch(`<?= site_url('logistics-coordinator/create-delivery-schedule/') ?>${poId}`, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     },
-    body: formData
+    body: JSON.stringify({
+      scheduled_date: scheduledDate,
+      scheduled_time: scheduledTime
+    })
   })
   .then(response => response.json())
   .then(data => {
@@ -642,10 +750,83 @@ document.getElementById('closeForm').addEventListener('submit', function(e) {
   });
 });
 
+function updateDeliveryStatus(poId) {
+  if (confirm('Mark this delivery as completed?')) {
+    fetch(`<?= site_url('logistics-coordinator/update-delivery-status/') ?>${poId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ status: 'delivered' })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Delivery marked as completed successfully');
+        location.reload();
+      } else {
+        alert('Failed to update delivery status: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to update delivery status');
+    });
+  }
+}
+
 // View schedule details
 function viewScheduleDetails(scheduleId) {
-  // Implementation for viewing schedule details
-  alert('Schedule details view - to be implemented');
+  fetch(`<?= site_url('logistics-coordinator/schedule-details/') ?>${scheduleId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.id) {
+        let poDetails = '';
+        if (data.po_details) {
+          poDetails = `
+            <div class="row mt-3">
+              <div class="col-12">
+                <h6>Purchase Order Details</h6>
+                <p><strong>PO ID:</strong> #${data.po_details.id}</p>
+                <p><strong>Total Amount:</strong> ₱${parseFloat(data.po_details.total_amount || 0).toLocaleString()}</p>
+                <p><strong>PO Status:</strong> ${data.po_details.status}</p>
+                <p><strong>Logistics Status:</strong> ${data.po_details.logistics_status}</p>
+              </div>
+            </div>
+          `;
+        }
+
+        let content = `
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Schedule Information</h6>
+              <p><strong>Schedule ID:</strong> #${data.id}</p>
+              <p><strong>Scheduled Date:</strong> ${new Date(data.scheduled_date).toLocaleDateString()}</p>
+              <p><strong>Scheduled Time:</strong> ${new Date('1970-01-01T' + data.scheduled_time).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</p>
+              <p><strong>Status:</strong> <span class="badge bg-${data.status === 'Completed' ? 'success' : (data.status === 'In Progress' ? 'warning' : 'secondary')}">${data.status}</span></p>
+              <p><strong>Route Sequence:</strong> ${data.route_sequence || 'N/A'}</p>
+            </div>
+            <div class="col-md-6">
+              <h6>Delivery Information</h6>
+              <p><strong>Supplier:</strong> ${data.supplier_name || 'N/A'}</p>
+              <p><strong>Branch:</strong> ${data.branch_name || 'N/A'}</p>
+              <p><strong>Expected Delivery Date:</strong> ${data.po_details?.expected_delivery_date || 'N/A'}</p>
+            </div>
+          </div>
+          ${poDetails}
+          ${data.notes ? `<div class="row mt-3"><div class="col-12"><h6>Notes</h6><p>${data.notes}</p></div></div>` : ''}
+        `;
+        document.getElementById('scheduleDetailsContent').innerHTML = content;
+        new bootstrap.Modal(document.getElementById('scheduleDetailsModal')).show();
+      } else {
+        alert('Failed to load schedule details');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Failed to load schedule details');
+    });
 }
 
 // Update notification count periodically
