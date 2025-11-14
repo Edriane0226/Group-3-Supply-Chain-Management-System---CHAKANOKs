@@ -81,10 +81,24 @@ class DeliveryScheduleModel extends Model
     // Get schedules for a date range
     public function getSchedulesByDateRange(string $startDate, string $endDate, ?int $coordinatorId = null): array
     {
-        $builder = $this->select('delivery_schedules.*, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+        $builder = $this->select([
+                            'delivery_schedules.*',
+                            'purchase_orders.id as po_id',
+                            'purchase_orders.branch_id',
+                            'purchase_orders.expected_delivery_date',
+                            'purchase_orders.actual_delivery_date',
+                            'suppliers.supplier_name',
+                            'branches.branch_name',
+                            'coordinators.first_Name as coordinator_first_name',
+                            'coordinators.last_Name as coordinator_last_name',
+                            'drivers.first_Name as driver_first_name',
+                            'drivers.last_Name as driver_last_name',
+                        ])
                         ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
                         ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
                         ->join('branches', 'branches.id = purchase_orders.branch_id')
+                        ->join('users as coordinators', 'coordinators.id = delivery_schedules.coordinator_id', 'left')
+                        ->join('users as drivers', 'drivers.id = delivery_schedules.driver_id', 'left')
                         ->where('delivery_schedules.scheduled_date >=', $startDate)
                         ->where('delivery_schedules.scheduled_date <=', $endDate)
                         ->orderBy('delivery_schedules.scheduled_date', 'ASC')
@@ -174,5 +188,70 @@ class DeliveryScheduleModel extends Model
                     ->where('delivery_schedules.scheduled_date <=', $endDate)
                     ->orderBy('delivery_schedules.scheduled_date', 'ASC')
                     ->findAll();
+    }
+
+    public function getBranchUpcomingDeliveries(int $branchId, string $startDate, string $endDate): array
+    {
+        return $this->select([
+                        'delivery_schedules.*',
+                        'purchase_orders.branch_id',
+                        'purchase_orders.id as po_id',
+                        'purchase_orders.expected_delivery_date',
+                        'purchase_orders.actual_delivery_date',
+                        'suppliers.supplier_name',
+                        'branches.branch_name',
+                        'coordinators.first_Name as coordinator_first_name',
+                        'coordinators.last_Name as coordinator_last_name',
+                        'drivers.first_Name as driver_first_name',
+                        'drivers.last_Name as driver_last_name',
+                    ])
+                    ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                    ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                    ->join('branches', 'branches.id = purchase_orders.branch_id')
+                    ->join('users as coordinators', 'coordinators.id = delivery_schedules.coordinator_id', 'left')
+                    ->join('users as drivers', 'drivers.id = delivery_schedules.driver_id', 'left')
+                    ->where('purchase_orders.branch_id', $branchId)
+                    ->where('delivery_schedules.scheduled_date >=', $startDate)
+                    ->where('delivery_schedules.scheduled_date <=', $endDate)
+                    ->orderBy('delivery_schedules.scheduled_date', 'ASC')
+                    ->orderBy('delivery_schedules.scheduled_time', 'ASC')
+                    ->findAll();
+    }
+
+    public function getCentralDeliveryOverview(string $startDate, string $endDate): array
+    {
+        return $this->select([
+                        'delivery_schedules.*',
+                        'purchase_orders.branch_id',
+                        'purchase_orders.id as po_id',
+                        'purchase_orders.expected_delivery_date',
+                        'purchase_orders.actual_delivery_date',
+                        'suppliers.supplier_name',
+                        'branches.branch_name',
+                        'coordinators.first_Name as coordinator_first_name',
+                        'coordinators.last_Name as coordinator_last_name',
+                        'drivers.first_Name as driver_first_name',
+                        'drivers.last_Name as driver_last_name',
+                    ])
+                    ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                    ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                    ->join('branches', 'branches.id = purchase_orders.branch_id')
+                    ->join('users as coordinators', 'coordinators.id = delivery_schedules.coordinator_id', 'left')
+                    ->join('users as drivers', 'drivers.id = delivery_schedules.driver_id', 'left')
+                    ->where('delivery_schedules.scheduled_date >=', $startDate)
+                    ->where('delivery_schedules.scheduled_date <=', $endDate)
+                    ->orderBy('delivery_schedules.scheduled_date', 'ASC')
+                    ->orderBy('delivery_schedules.scheduled_time', 'ASC')
+                    ->findAll();
+    }
+
+    public function getScheduleWithRelations(int $scheduleId): ?array
+    {
+        return $this->select('delivery_schedules.*, purchase_orders.branch_id, purchase_orders.purchase_request_id, purchase_orders.id as po_id, suppliers.supplier_name, branches.branch_name')
+                    ->join('purchase_orders', 'purchase_orders.id = delivery_schedules.po_id')
+                    ->join('suppliers', 'suppliers.id = purchase_orders.supplier_id')
+                    ->join('branches', 'branches.id = purchase_orders.branch_id')
+                    ->where('delivery_schedules.id', $scheduleId)
+                    ->first();
     }
 }
