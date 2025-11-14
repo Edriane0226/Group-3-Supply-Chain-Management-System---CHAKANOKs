@@ -1,5 +1,9 @@
 # CodeIgniter 4 Application Starter
 
+This repository contains the CHAKANOKs Supply Chain Management System (Group 3):
+a CodeIgniter 4-based application for managing inventory, purchase requests,
+suppliers, deliveries, and user roles within a supply chain workflow.
+
 ## What is CodeIgniter?
 
 CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
