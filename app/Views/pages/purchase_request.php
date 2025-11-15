@@ -33,7 +33,10 @@
                   <td><?= esc($req['item_name']) ?></td>
                   <td><?= esc($req['quantity']) ?></td>
                   <td><?= esc($req['supplier_name']) ?></td>
-                  <td><span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 'danger') ?>">
+                  <td><span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 
+                                                                                         ($req['status'] == 'rejected' ? 'danger' : 
+                                                                                         ($req['status'] == 'ordered' ? 'info' : 
+                                                                                         ($req['status'] == 'in_transit' ? 'primary' : 'secondary')))) ?>">
                     <?= esc(ucfirst($req['status'])) ?></span>
                   </td>
                   <td><?= esc($req['request_date']) ?></td>
@@ -83,7 +86,10 @@
                   <td><?= esc($req['quantity']) ?></td>
                   <td><?= esc($req['unit']) ?></td>
                   <td>
-                    <span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 'danger') ?>">
+                    <span class="badge bg-<?= $req['status'] == 'approved' ? 'success' : ($req['status'] == 'pending' ? 'warning' : 
+                                                                                         ($req['status'] == 'rejected' ? 'danger' : 
+                                                                                         ($req['status'] == 'ordered' ? 'info' : 
+                                                                                         ($req['status'] == 'in_transit' ? 'primary' : 'secondary')))) ?>">
                       <?= esc(ucfirst($req['status'])) ?>
                     </span>
                   </td>
