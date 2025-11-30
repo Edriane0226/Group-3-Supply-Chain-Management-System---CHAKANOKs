@@ -81,21 +81,32 @@ class PurchaseOrderModel extends Model
         $this->insert($poData);
         $poId = $this->insertID();
 
-        // // Create purchase order items from request with actual item details
-        // $unitPrice = 1.00; // Placeholder unit price to reflect quantity in total_amount
-        // $this->db->table('purchase_order_items')->insert([
-        //     'purchase_order_id' => $poId,
-        //     'stock_in_id' => null, // Not linked to existing stock yet
-        //     'item_name' => $request['item_name'],
-        //     'quantity' => $request['quantity'],
-        //     'unit' => $request['unit'] ?? 'pcs',
-        //     'description' => $request['description'] ?? '',
-        //     'unit_price' => $unitPrice,
-        //     'subtotal' => ($request['quantity'] ?? 0) * $unitPrice,
-        // ]);
+        // Create purchase order items from the approved purchase request
+        try {
+            // Calculate unit price if possible (request price field stores subtotal)
+            $quantity = (int) ($request['quantity'] ?? 1);
+            $subtotal = isset($request['price']) ? floatval($request['price']) : 0.0;
+            $unitPrice = $quantity > 0 ? ($subtotal / $quantity) : 0.0;
 
-        // // Recalculate total_amount based on items
-        // $this->recalculateTotalAmount($poId);
+            $itemData = [
+                'purchase_order_id' => $poId,
+                'stock_in_id' => null,
+                'item_name' => $request['item_name'] ?? null,
+                'quantity' => $quantity,
+                'unit' => $request['unit'] ?? 'pcs',
+                'description' => $request['description'] ?? null,
+                'unit_price' => $unitPrice,
+                'subtotal' => $subtotal,
+            ];
+
+            $this->db->table('purchase_order_items')->insert($itemData);
+
+            // Ensure PO total_amount matches items (recalculate)
+            $this->recalculateTotalAmount($poId);
+        } catch (\Exception $e) {
+            // If item insertion fails, log and continue (PO already created)
+            log_message('error', 'Failed to insert PO items for PO ' . $poId . ': ' . $e->getMessage());
+        }
 
         return $poId;
     }
@@ -151,7 +162,29 @@ class PurchaseOrderModel extends Model
                           ->get()
                           ->getResultArray();
 
-        $po['items'] = $items;
+        // If no items found in purchase_order_items, attempt to fall back to the originating purchase_request
+        if (empty($items) && !empty($po['purchase_request_id'])) {
+            $reqRows = $this->db->table('purchase_requests')
+                                ->where('id', $po['purchase_request_id'])
+                                ->get()
+                                ->getResultArray();
+
+            $fallbackItems = [];
+            foreach ($reqRows as $r) {
+                $fallbackItems[] = [
+                    'item_name' => $r['item_name'] ?? null,
+                    'quantity' => $r['quantity'] ?? null,
+                    'unit' => $r['unit'] ?? null,
+                    'description' => $r['description'] ?? null,
+                    'unit_price' => isset($r['price']) ? floatval($r['price']) / max(1, intval($r['quantity'])) : null,
+                    'subtotal' => $r['price'] ?? null,
+                ];
+            }
+
+            $po['items'] = $fallbackItems;
+        } else {
+            $po['items'] = $items;
+        }
         return $po;
     }
 

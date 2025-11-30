@@ -86,6 +86,12 @@ class LogisticsCoordinator extends BaseController
         $scheduledDate = $data['scheduled_date'];
         $scheduledTime = $data['scheduled_time'] ?? date('H:i:s');
 
+        // Prevent scheduling deliveries in the past (date only)
+        $today = date('Y-m-d');
+        if (strtotime($scheduledDate) < strtotime($today)) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Scheduled date cannot be in the past']);
+        }
+
         try {
             // Create delivery schedules for selected purchase orders (no route optimization)
             $schedules = [];
@@ -418,6 +424,12 @@ class LogisticsCoordinator extends BaseController
 
             if (!$scheduledDate || !$scheduledTime) {
                 return $this->response->setStatusCode(400)->setJSON(['error' => 'Scheduled date and time are required']);
+            }
+
+            // Prevent scheduling deliveries in the past (date only)
+            $today = date('Y-m-d');
+            if (strtotime($scheduledDate) < strtotime($today)) {
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'Scheduled date cannot be in the past']);
             }
 
             // Check if PO is ready for scheduling (supplier confirmed or ready for pickup)

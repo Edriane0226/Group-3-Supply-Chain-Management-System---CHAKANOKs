@@ -144,6 +144,44 @@ function viewScheduleDetails(scheduleId) {
       if (data.id) {
         let poDetails = '';
         if (data.po_details) {
+          // Build items table if available
+          let itemsHtml = '';
+          if (data.po_details.items && data.po_details.items.length > 0) {
+            itemsHtml = `
+              <div class="row mt-2">
+                <div class="col-12">
+                  <h6>Order Items</h6>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Item Name</th>
+                          <th>Quantity</th>
+                          <th>Unit</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+            `;
+            data.po_details.items.forEach(item => {
+              itemsHtml += `
+                <tr>
+                  <td>${item.item_name || 'N/A'}</td>
+                  <td>${item.quantity || 0}</td>
+                  <td>${item.unit || 'N/A'}</td>
+                  <td>${item.description || 'No description'}</td>
+                </tr>
+              `;
+            });
+            itemsHtml += `
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
           poDetails = `
             <div class="row mt-3">
               <div class="col-12">
@@ -154,6 +192,7 @@ function viewScheduleDetails(scheduleId) {
                 <p><strong>Logistics Status:</strong> ${data.po_details.logistics_status}</p>
               </div>
             </div>
+            ${itemsHtml}
           `;
         }
 
