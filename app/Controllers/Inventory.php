@@ -357,6 +357,13 @@ class Inventory extends BaseController
             return $this->response->setJSON(['success' => true, 'message' => 'Delivery already completed']);
         }
 
+        // Only allow confirming delivery on the scheduled date
+        $today = date('Y-m-d');
+        $scheduledDate = isset($schedule['scheduled_date']) ? date('Y-m-d', strtotime($schedule['scheduled_date'])) : null;
+        if ($scheduledDate === null || $scheduledDate !== $today) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Cannot confirm delivery: scheduled date does not match today']);
+        }
+
         $db = \Config\Database::connect();
         $db->transStart();
 

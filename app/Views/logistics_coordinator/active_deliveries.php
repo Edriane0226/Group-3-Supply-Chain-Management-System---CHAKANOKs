@@ -78,7 +78,8 @@
                     <td><?= esc($delivery['branch_name'] ?? 'N/A') ?></td>
                     <td>
                       <span class="badge bg-<?= 
-                        $delivery['status'] === 'In Progress' ? 'warning' : 'secondary'
+                        $delivery['status'] === 'In Progress' ? 'warning' : 
+                        ($delivery['status'] === 'Delivered' || $delivery['status'] === 'Completed' ? 'success' : 'secondary')
                       ?>">
                         <?= esc($delivery['status']) ?>
                       </span>
@@ -94,8 +95,8 @@
                             <i class="bi bi-play-circle"></i> Start
                           </button>
                         <?php elseif ($delivery['status'] === 'In Progress'): ?>
-                          <button class="btn btn-outline-success btn-sm" onclick="updateScheduleStatus(<?= $delivery['id'] ?>, 'Completed')">
-                            <i class="bi bi-check-circle"></i> Complete
+                          <button class="btn btn-outline-success btn-sm" onclick="updateScheduleStatus(<?= $delivery['id'] ?>, 'Delivered')">
+                            <i class="bi bi-check-circle"></i> Mark Delivered
                           </button>
                         <?php endif; ?>
                       </div>

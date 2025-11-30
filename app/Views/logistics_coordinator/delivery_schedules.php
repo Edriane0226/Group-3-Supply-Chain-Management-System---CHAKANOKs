@@ -74,7 +74,7 @@
                     <td><?= esc($schedule['branch_name'] ?? 'N/A') ?></td>
                     <td>
                       <span class="badge bg-<?= 
-                        $schedule['status'] == 'Completed' ? 'success' : 
+                        ($schedule['status'] == 'Completed' || $schedule['status'] == 'Delivered') ? 'success' : 
                         ($schedule['status'] == 'In Progress' ? 'warning' : 
                         ($schedule['status'] == 'Cancelled' ? 'danger' : 'secondary')) 
                       ?>">
@@ -92,8 +92,8 @@
                             <i class="bi bi-play-circle"></i> Start
                           </button>
                         <?php elseif ($schedule['status'] === 'In Progress'): ?>
-                          <button class="btn btn-outline-success btn-sm" onclick="updateScheduleStatus(<?= $schedule['id'] ?>, 'Completed')">
-                            <i class="bi bi-check-circle"></i> Complete
+                          <button class="btn btn-outline-success btn-sm" onclick="updateScheduleStatus(<?= $schedule['id'] ?>, 'Delivered')">
+                            <i class="bi bi-check-circle"></i> Mark Delivered
                           </button>
                         <?php endif; ?>
                         <?php if (in_array($schedule['status'], ['Scheduled', 'In Progress'])): ?>

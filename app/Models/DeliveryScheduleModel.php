@@ -78,6 +78,18 @@ class DeliveryScheduleModel extends Model
         return $this->insertID();
     }
 
+    // Update schedule status (and optional notes)
+    public function updateScheduleStatus(int $scheduleId, string $status, ?string $notes = null): bool
+    {
+        $updateData = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
+
+        if ($notes !== null) {
+            $updateData['notes'] = $notes;
+        }
+
+        return $this->update($scheduleId, $updateData);
+    }
+
     // Get schedules for a date range
     public function getSchedulesByDateRange(string $startDate, string $endDate, ?int $coordinatorId = null): array
     {

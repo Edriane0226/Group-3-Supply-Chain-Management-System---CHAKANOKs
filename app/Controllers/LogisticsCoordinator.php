@@ -181,10 +181,12 @@ class LogisticsCoordinator extends BaseController
                                 ->getRowArray();
 
             if ($schedule) {
+                // Map external delivery status to schedule status, but do NOT mark as Completed here.
+                // Final completion (inventory update / actual delivery confirmation) must be done by the branch via Inventory::confirmDelivery
                 $scheduleStatus = match($status) {
                     'Approved' => 'Scheduled',
                     'In Transit' => 'In Progress',
-                    'Delivered' => 'Completed',
+                    'Delivered' => 'Delivered', // delivered at central/supplier side (pending branch receipt)
                     default => 'Scheduled'
                 };
 
@@ -541,17 +543,18 @@ class LogisticsCoordinator extends BaseController
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Status required']);
         }
 
+        // Map statuses but DO NOT finalize the PO or set actual delivery date here.
+        // The branch's Inventory::confirmDelivery must perform the final completion and inventory update.
         $logisticsStatus = match($status) {
             'in_transit' => 'delivery_started',
-            'delivered' => 'completed',
+            'delivered' => 'delivered',
             default => 'delivery_scheduled'
         };
 
-        // Update PO logistics status
+        // Update PO logistics status to reflect progress, but do NOT mark as completed or set actual_delivery_date
         $this->purchaseOrderModel->update($poId, [
             'logistics_status' => $logisticsStatus,
             'status' => $status === 'delivered' ? 'Delivered' : 'In_Transit',
-            'actual_delivery_date' => $status === 'delivered' ? date('Y-m-d') : null,
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
@@ -564,7 +567,7 @@ class LogisticsCoordinator extends BaseController
         if ($schedule) {
             $scheduleStatus = match($status) {
                 'in_transit' => 'In Progress',
-                'delivered' => 'Completed',
+                'delivered' => 'Delivered', // mark as delivered by logistics side but pending branch confirmation
                 default => 'Scheduled'
             };
 
@@ -642,27 +645,17 @@ class LogisticsCoordinator extends BaseController
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Branch confirmation required']);
         }
 
-        // Update PO to completed
+        // Append final notes but DO NOT mark as completed here. Finalization should be done by branch confirming receipt.
         $this->purchaseOrderModel->update($poId, [
-            'logistics_status' => 'completed',
-            'status' => 'Delivered',
             'delivery_notes' => ($this->purchaseOrderModel->find($poId)['delivery_notes'] ?? '') . "\nFinal Notes: {$finalNotes}",
             'updated_at' => date('Y-m-d H:i:s')
         ]);
 
-        // Update delivery schedule to completed
-        $this->db->table('delivery_schedules')
-                ->where('po_id', $poId)
-                ->update([
-                    'status' => 'Completed',
-                    'updated_at' => date('Y-m-d H:i:s')
-                ]);
-
-        // Notify logistics coordinators
+        // Notify logistics coordinators about the closing notes
         $coordinatorIds = [(int)$session->get('user_id')];
-        $this->notificationModel->notifyLogisticsCoordinator('delivery_completed', $poId, $coordinatorIds);
+        $this->notificationModel->notifyLogisticsCoordinator('delivery_record_updated', $poId, $coordinatorIds);
 
-        return $this->response->setJSON(['success' => true, 'message' => 'Delivery record closed successfully']);
+        return $this->response->setJSON(['success' => true, 'message' => 'Delivery record updated (awaiting branch confirmation)']);
     }
 
     // Get PO details for logistics workflow
