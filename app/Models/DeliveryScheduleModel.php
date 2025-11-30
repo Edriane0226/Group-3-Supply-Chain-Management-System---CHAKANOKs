@@ -129,54 +129,6 @@ class DeliveryScheduleModel extends Model
         return $builder->findAll();
     }
 
-    // Update schedule status
-    public function updateScheduleStatus(int $scheduleId, string $status, ?string $notes = null): bool
-    {
-        $updateData = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
-
-        if ($notes) {
-            $updateData['notes'] = $notes;
-        }
-
-        return $this->update($scheduleId, $updateData);
-    }
-
-    // Optimize routes for multiple deliveries (simplified algorithm)
-    public function optimizeRoutes(array $poIds, int $coordinatorId): array
-    {
-        // Simple route optimization - sort by branch location (placeholder)
-        // In real implementation, would use Google Maps API for actual optimization
-
-        $purchaseOrders = $this->db->table('purchase_orders')
-                                  ->select('purchase_orders.*, branches.branch_name')
-                                  ->join('branches', 'branches.id = purchase_orders.branch_id')
-                                  ->whereIn('purchase_orders.id', $poIds)
-                                  ->orderBy('branches.branch_name', 'ASC') // Simple sorting
-                                  ->get()
-                                  ->getResultArray();
-
-        $schedules = [];
-        $sequence = 1;
-
-        foreach ($purchaseOrders as $po) {
-            $scheduleData = [
-                'po_id' => $po['id'],
-                'coordinator_id' => $coordinatorId,
-                'scheduled_date' => date('Y-m-d'), // Today
-                'scheduled_time' => date('H:i:s', strtotime('+'.($sequence * 2).' hours')), // 2 hours apart
-                'route_sequence' => $sequence,
-                'estimated_duration' => 60, // 1 hour default
-                'status' => 'Scheduled',
-            ];
-
-            $scheduleId = $this->createSchedule($scheduleData);
-            $schedules[] = $this->find($scheduleId);
-            $sequence++;
-        }
-
-        return $schedules;
-    }
-
     // Get delivery calendar data
     public function getCalendarData(string $startDate, string $endDate): array
     {

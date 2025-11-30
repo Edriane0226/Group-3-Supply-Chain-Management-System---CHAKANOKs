@@ -87,16 +87,53 @@ class LogisticsCoordinator extends BaseController
         $scheduledTime = $data['scheduled_time'] ?? date('H:i:s');
 
         try {
-            // Optimize routes for selected purchase orders
-            $schedules = $this->deliveryScheduleModel->optimizeRoutes($poIds, $coordinatorId);
+            // Create delivery schedules for selected purchase orders (no route optimization)
+            $schedules = [];
+            $db = \Config\Database::connect();
 
-            // Update scheduled date/time for created schedules
-            foreach ($schedules as $schedule) {
-                $this->deliveryScheduleModel->update($schedule['id'], [
+            // Get current max route sequence for the scheduled date
+            $maxSequenceRow = $db->table('delivery_schedules')
+                ->selectMax('route_sequence')
+                ->where('scheduled_date', $scheduledDate)
+                ->get()
+                ->getRow();
+
+            $nextSequence = ($maxSequenceRow->route_sequence ?? 0) + 1;
+
+            foreach ($poIds as $poId) {
+                // Skip if a schedule already exists for this PO
+                $existing = $db->table('delivery_schedules')
+                    ->where('po_id', $poId)
+                    ->get()
+                    ->getRowArray();
+
+                if ($existing) {
+                    continue;
+                }
+
+                $scheduleData = [
+                    'po_id' => $poId,
+                    'coordinator_id' => $coordinatorId,
                     'scheduled_date' => $scheduledDate,
                     'scheduled_time' => $scheduledTime,
-                    'updated_at' => date('Y-m-d H:i:s'),
-                ]);
+                    'route_sequence' => $nextSequence,
+                    'status' => 'Scheduled',
+                ];
+
+                $scheduleId = $this->deliveryScheduleModel->createSchedule($scheduleData);
+
+                if ($scheduleId) {
+                    $schedules[] = $this->deliveryScheduleModel->find($scheduleId);
+
+                    // Update PO status to indicate scheduling
+                    $this->purchaseOrderModel->update($poId, [
+                        'logistics_status' => 'delivery_scheduled',
+                        'status' => 'In_Transit',
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ]);
+
+                    $nextSequence++;
+                }
             }
 
             return $this->response->setJSON([
@@ -769,39 +806,7 @@ class LogisticsCoordinator extends BaseController
         }
     }
 
-    // Route Optimization Page
-    public function routeOptimization()
-    {
-        $session = session();
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        if ($session->get('role') !== 'Logistics Coordinator') {
-            $session->setFlashdata('error', 'Unauthorized access.');
-            return redirect()->to(site_url('login'));
-        }
-
-        $coordinatorId = (int)$session->get('user_id');
-
-        // Get scheduled deliveries for optimization
-        $today = date('Y-m-d');
-        $nextWeek = date('Y-m-d', strtotime('+7 days'));
-        $scheduledDeliveries = $this->deliveryScheduleModel->getSchedulesByDateRange($today, $nextWeek, $coordinatorId);
-        
-        // Filter only scheduled deliveries
-        $scheduledDeliveries = array_filter($scheduledDeliveries, function($delivery) {
-            return $delivery['status'] === 'Scheduled';
-        });
-
-        $data = [
-            'role' => $session->get('role'),
-            'title' => 'Route Optimization',
-            'scheduledDeliveries' => $scheduledDeliveries,
-        ];
-
-        return view('reusables/sidenav', $data) . view('logistics_coordinator/route_optimization', $data);
-    }
+    
 
     // Active Deliveries Page
     public function activeDeliveries()

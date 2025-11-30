@@ -67,7 +67,6 @@ $routes->get('branches/delete/(:num)', 'BranchManagement::delete/$1');
 // Logistics Coordinator routes
 $routes->get('logistics-coordinator', 'LogisticsCoordinator::index');
 $routes->get('logistics-coordinator/delivery-schedules', 'LogisticsCoordinator::deliverySchedules');
-$routes->get('logistics-coordinator/route-optimization', 'LogisticsCoordinator::routeOptimization');
 $routes->get('logistics-coordinator/active-deliveries', 'LogisticsCoordinator::activeDeliveries');
 $routes->get('logistics-coordinator/performance-reports', 'LogisticsCoordinator::performanceReports');
 $routes->get('logistics-coordinator/schedule-details/(:num)', 'LogisticsCoordinator::getScheduleDetails/$1');
