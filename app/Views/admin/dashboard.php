@@ -5,7 +5,20 @@
             <h1 class="h5 fw-bold mb-0"><i class="bi bi-gear-wide-connected me-2"></i>System Administration</h1>
             <small class="text-muted">Manage system settings, users, and maintenance</small>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <?php if (($unreadMessages ?? 0) > 0): ?>
+                <a href="<?= site_url('admin/contact-messages') ?>" class="btn btn-danger position-relative">
+                    <i class="bi bi-envelope me-1"></i> Contact Messages
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">
+                        <?= $unreadMessages ?>
+                        <span class="visually-hidden">unread messages</span>
+                    </span>
+                </a>
+            <?php else: ?>
+                <a href="<?= site_url('admin/contact-messages') ?>" class="btn btn-outline-secondary">
+                    <i class="bi bi-envelope me-1"></i> Contact Messages
+                </a>
+            <?php endif; ?>
             <span class="text-muted small"><?= date('l, F d, Y') ?></span>
         </div>
     </div>
@@ -100,6 +113,14 @@
                     <div class="d-grid gap-2">
                         <a href="<?= site_url('admin/users/create') ?>" class="btn btn-primary">
                             <i class="bi bi-person-plus me-2"></i>Add New User
+                        </a>
+                        <a href="<?= site_url('admin/contact-messages') ?>" class="btn btn-outline-danger position-relative">
+                            <i class="bi bi-envelope me-2"></i>Contact Messages
+                            <?php if (($unreadMessages ?? 0) > 0): ?>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    <?= $unreadMessages ?>
+                                </span>
+                            <?php endif; ?>
                         </a>
                         <a href="<?= site_url('admin/backup') ?>" class="btn btn-outline-secondary">
                             <i class="bi bi-cloud-arrow-down me-2"></i>Create Backup

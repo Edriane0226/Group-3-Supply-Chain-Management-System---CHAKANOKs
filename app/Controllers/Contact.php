@@ -4,9 +4,16 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 use CodeIgniter\Email\Email;
+use App\Models\ContactMessageModel;
 
 class Contact extends BaseController
 {
+    protected ContactMessageModel $contactModel;
+
+    public function __construct()
+    {
+        $this->contactModel = new ContactMessageModel();
+    }
     public function index()
     {
         $data = [
@@ -70,33 +77,48 @@ class Contact extends BaseController
         $message = esc($this->request->getPost('message'));
 
         try {
-            $emailService = \Config\Services::email();
-            
-            // Build the email content
-            $emailContent = view('emails/contact_form', [
-                'name' => $name,
-                'email' => $email,
-                'subject' => $subject,
-                'message' => nl2br(htmlspecialchars($message))
-            ]);
-            
-            // Set email parameters
-            $emailService->setTo(config('Email')->recipients);
-            $emailService->setFrom($email, $name);
-            $emailService->setReplyTo($email, $name);
-            $emailService->setSubject("Contact Form: $subject");
-            $emailService->setMessage($emailContent);
+            // Save to database
+            $messageData = [
+                'name'       => $name,
+                'email'      => $email,
+                'subject'    => $subject,
+                'message'    => $message,
+                'status'     => 'unread',
+                'ip_address' => $this->request->getIPAddress(),
+                'user_agent' => $this->request->getUserAgent()->getAgentString(),
+            ];
 
-            // Send email
-            if ($emailService->send()) {
-                return redirect()->to('/contact')
-                    ->with('success', 'Thank you for contacting us! We will get back to you soon.');
-            } else {
-                log_message('error', 'Email sending failed: ' . $emailService->printDebugger(['headers']));
-                return redirect()->back()
-                    ->with('error', 'Failed to send your message. Please try again later.')
-                    ->withInput();
+            if (!$this->contactModel->insert($messageData)) {
+                log_message('error', 'Failed to save contact message: ' . implode(', ', $this->contactModel->errors()));
             }
+
+            // Try to send email (optional, don't fail if email fails)
+            try {
+                $emailService = \Config\Services::email();
+                
+                // Build the email content
+                $emailContent = view('emails/contact_form', [
+                    'name' => $name,
+                    'email' => $email,
+                    'subject' => $subject,
+                    'message' => nl2br(htmlspecialchars($message))
+                ]);
+                
+                // Set email parameters
+                $emailService->setTo(config('Email')->recipients ?? 'admin@chakanoks.com');
+                $emailService->setFrom($email, $name);
+                $emailService->setReplyTo($email, $name);
+                $emailService->setSubject("Contact Form: $subject");
+                $emailService->setMessage($emailContent);
+                $emailService->send();
+            } catch (\Exception $emailError) {
+                // Log but don't fail the request
+                log_message('warning', 'Email sending failed: ' . $emailError->getMessage());
+            }
+
+            return redirect()->to('/contact')
+                ->with('success', 'Your message has been sent successfully! We will get back to you soon.');
+                
         } catch (\Exception $e) {
             log_message('error', 'Contact form error: ' . $e->getMessage());
             return redirect()->back()

@@ -29,6 +29,26 @@
     }
     .alert {
       margin-bottom: 2rem;
+      border-left: 4px solid;
+      animation: slideIn 0.3s ease-out;
+    }
+    .alert-success {
+      border-left-color: #28a745;
+      background-color: #d4edda;
+    }
+    .alert-danger {
+      border-left-color: #dc3545;
+      background-color: #f8d7da;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -39,15 +59,23 @@
   </div>
   
   <?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-      <?= session()->getFlashdata('success') ?>
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
+      <i class="bi bi-check-circle-fill me-3 fs-3 text-success"></i>
+      <div class="flex-grow-1">
+        <h5 class="mb-1 text-success"><i class="bi bi-check-circle me-2"></i>Message Sent Successfully!</h5>
+        <p class="mb-0"><?= session()->getFlashdata('success') ?></p>
+      </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>
   
   <?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-      <?= session()->getFlashdata('error') ?>
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
+      <i class="bi bi-exclamation-circle-fill me-3 fs-3 text-danger"></i>
+      <div class="flex-grow-1">
+        <h5 class="mb-1 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error!</h5>
+        <p class="mb-0"><?= session()->getFlashdata('error') ?></p>
+      </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>

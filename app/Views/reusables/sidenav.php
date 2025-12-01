@@ -250,6 +250,16 @@
       <a href="<?= site_url('admin/activity-logs') ?>" class="<?= (uri_string() == 'admin/activity-logs') ? 'active' : '' ?>">
           <i class="bi bi-list-ul me-2"></i> Activity Logs
       </a>
+      <a href="<?= site_url('admin/contact-messages') ?>" class="<?= (strpos(uri_string(), 'admin/contact-messages') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-envelope me-2"></i> Contact Messages
+          <?php
+          $contactModel = new \App\Models\ContactMessageModel();
+          $unreadCount = $contactModel->getUnreadCount();
+          if ($unreadCount > 0):
+          ?>
+              <span class="badge bg-danger ms-1"><?= $unreadCount ?></span>
+          <?php endif; ?>
+      </a>
       <a href="<?= site_url('admin/settings') ?>" class="<?= (uri_string() == 'admin/settings') ? 'active' : '' ?>">
           <i class="bi bi-gear me-2"></i> System Settings
       </a>

@@ -75,6 +75,15 @@ class AddMissingColumnsToActivityLogs extends Migration
             ];
         }
 
+        // Check and add description
+        if (!$this->db->fieldExists('description', 'activity_logs')) {
+            $fields['description'] = [
+                'type' => 'TEXT',
+                'null' => true,
+                'after' => 'module',
+            ];
+        }
+
         if (!empty($fields)) {
             $this->forge->addColumn('activity_logs', $fields);
         }
@@ -83,7 +92,7 @@ class AddMissingColumnsToActivityLogs extends Migration
     public function down()
     {
         // Remove added columns
-        $columns = ['user_name', 'user_role', 'module', 'ip_address', 'user_agent', 'old_data', 'new_data'];
+        $columns = ['user_name', 'user_role', 'module', 'description', 'ip_address', 'user_agent', 'old_data', 'new_data'];
         
         foreach ($columns as $column) {
             if ($this->db->fieldExists($column, 'activity_logs')) {

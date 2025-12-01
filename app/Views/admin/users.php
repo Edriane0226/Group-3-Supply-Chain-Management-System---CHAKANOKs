@@ -116,11 +116,98 @@
                                                 </button>
                                             </form>
                                             <?php if ($user['id'] != session()->get('user_id')): ?>
-                                                <form action="<?= site_url('admin/users/delete/' . $user['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?')">
-                                                    <button type="submit" class="btn btn-outline-danger" title="Delete">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        title="Delete" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteUserModal<?= $user['id'] ?>">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                
+                                                <!-- Delete Confirmation Modal -->
+                                                <div class="modal fade" id="deleteUserModal<?= $user['id'] ?>" tabindex="-1" aria-labelledby="deleteUserModalLabel<?= $user['id'] ?>" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title" id="deleteUserModalLabel<?= $user['id'] ?>">
+                                                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Delete User
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="alert alert-warning mb-3">
+                                                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                                                    <strong>Warning!</strong> This action cannot be undone.
+                                                                </div>
+                                                                <p>Are you sure you want to delete this user?</p>
+                                                                <div class="bg-light p-3 rounded mb-3">
+                                                                    <strong>User Details:</strong><br>
+                                                                    <span class="text-muted">Name:</span> <strong><?= esc($user['first_Name'] . ' ' . $user['last_Name']) ?></strong><br>
+                                                                    <span class="text-muted">Email:</span> <strong><?= esc($user['email']) ?></strong><br>
+                                                                    <span class="text-muted">Role:</span> <strong><?= esc($user['role_name'] ?? 'N/A') ?></strong>
+                                                                </div>
+                                                                <p class="text-danger mb-0">
+                                                                    <small><i class="bi bi-info-circle me-1"></i>Type <strong>"DELETE"</strong> below to confirm:</small>
+                                                                </p>
+                                                                <input type="text" class="form-control mt-2" id="deleteConfirm<?= $user['id'] ?>" 
+                                                                       placeholder="Type DELETE to confirm" autocomplete="off">
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                                    <i class="bi bi-x-circle me-1"></i> Cancel
+                                                                </button>
+                                                                <form action="<?= site_url('admin/users/delete/' . $user['id']) ?>" method="post" class="d-inline" id="deleteForm<?= $user['id'] ?>">
+                                                                    <?= csrf_field() ?>
+                                                                    <button type="submit" class="btn btn-danger" id="deleteBtn<?= $user['id'] ?>" disabled>
+                                                                        <i class="bi bi-trash me-1"></i> Delete User
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <script>
+                                                (function() {
+                                                    const confirmInput<?= $user['id'] ?> = document.getElementById('deleteConfirm<?= $user['id'] ?>');
+                                                    const deleteBtn<?= $user['id'] ?> = document.getElementById('deleteBtn<?= $user['id'] ?>');
+                                                    const deleteForm<?= $user['id'] ?> = document.getElementById('deleteForm<?= $user['id'] ?>');
+                                                    
+                                                    if (confirmInput<?= $user['id'] ?> && deleteBtn<?= $user['id'] ?>) {
+                                                        confirmInput<?= $user['id'] ?>.addEventListener('input', function() {
+                                                            if (this.value.toUpperCase() === 'DELETE') {
+                                                                deleteBtn<?= $user['id'] ?>.disabled = false;
+                                                                deleteBtn<?= $user['id'] ?>.classList.remove('btn-secondary');
+                                                                deleteBtn<?= $user['id'] ?>.classList.add('btn-danger');
+                                                            } else {
+                                                                deleteBtn<?= $user['id'] ?>.disabled = true;
+                                                                deleteBtn<?= $user['id'] ?>.classList.remove('btn-danger');
+                                                                deleteBtn<?= $user['id'] ?>.classList.add('btn-secondary');
+                                                            }
+                                                        });
+                                                        
+                                                        // Reset on modal close
+                                                        const modal<?= $user['id'] ?> = document.getElementById('deleteUserModal<?= $user['id'] ?>');
+                                                        if (modal<?= $user['id'] ?>) {
+                                                            modal<?= $user['id'] ?>.addEventListener('hidden.bs.modal', function() {
+                                                                confirmInput<?= $user['id'] ?>.value = '';
+                                                                deleteBtn<?= $user['id'] ?>.disabled = true;
+                                                                deleteBtn<?= $user['id'] ?>.classList.remove('btn-danger');
+                                                                deleteBtn<?= $user['id'] ?>.classList.add('btn-secondary');
+                                                            });
+                                                        }
+                                                        
+                                                        // Final confirmation before submit
+                                                        deleteForm<?= $user['id'] ?>.addEventListener('submit', function(e) {
+                                                            if (confirmInput<?= $user['id'] ?>.value.toUpperCase() !== 'DELETE') {
+                                                                e.preventDefault();
+                                                                alert('Please type "DELETE" to confirm.');
+                                                                return false;
+                                                            }
+                                                            return confirm('Final confirmation: Delete user <?= esc($user['first_Name'] . ' ' . $user['last_Name']) ?>?');
+                                                        });
+                                                    }
+                                                })();
+                                                </script>
                                             <?php endif; ?>
                                         </div>
                                     </td>

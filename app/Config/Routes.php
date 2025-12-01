@@ -168,6 +168,12 @@ $routes->group('admin', function($routes) {
     $routes->get('backup/download/(:any)', 'SystemAdmin::downloadBackup/$1');
     $routes->post('backup/delete/(:any)', 'SystemAdmin::deleteBackup/$1');
     $routes->post('cache/clear', 'SystemAdmin::clearCache');
+    
+    // Contact Messages
+    $routes->get('contact-messages', 'SystemAdmin::contactMessages');
+    $routes->get('contact-messages/view/(:num)', 'SystemAdmin::viewContactMessage/$1');
+    $routes->post('contact-messages/status/(:num)', 'SystemAdmin::updateMessageStatus/$1');
+    $routes->post('contact-messages/delete/(:num)', 'SystemAdmin::deleteContactMessage/$1');
 });
 
 // Contact Form Routes

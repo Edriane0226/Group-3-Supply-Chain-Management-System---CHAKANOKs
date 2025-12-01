@@ -7,6 +7,7 @@ use App\Models\RoleModel;
 use App\Models\BranchModel;
 use App\Models\ActivityLogModel;
 use App\Models\SystemSettingModel;
+use App\Models\ContactMessageModel;
 use CodeIgniter\Controller;
 
 class SystemAdmin extends Controller
@@ -16,6 +17,7 @@ class SystemAdmin extends Controller
     protected BranchModel $branchModel;
     protected ActivityLogModel $activityLogModel;
     protected SystemSettingModel $settingModel;
+    protected ContactMessageModel $contactModel;
     protected $session;
 
     public function __construct()
@@ -25,8 +27,9 @@ class SystemAdmin extends Controller
         $this->branchModel = new BranchModel();
         $this->activityLogModel = new ActivityLogModel();
         $this->settingModel = new SystemSettingModel();
+        $this->contactModel = new ContactMessageModel();
         $this->session = session();
-        helper(['form', 'url']);
+        helper(['form', 'url', 'text']);
     }
 
     /**
@@ -71,6 +74,7 @@ class SystemAdmin extends Controller
                 'total_branches' => $this->branchModel->countAll(),
                 'total_roles'    => $this->roleModel->countAll(),
             ],
+            'unreadMessages'   => $this->contactModel->getUnreadCount(),
             'activityStats'    => $this->activityLogModel->getStatistics(),
             'recentActivities' => $this->activityLogModel->getRecentActivities(10),
             'systemHealth'     => $this->getSystemHealth(),
@@ -756,6 +760,125 @@ class SystemAdmin extends Controller
         }
 
         return $deleteDir ? rmdir($dir) : true;
+    }
+
+    /**
+     * Contact Messages - List all messages
+     */
+    public function contactMessages()
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $status = $this->request->getGet('status') ?? 'all';
+        $page = (int)($this->request->getGet('page') ?? 1);
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        $messages = $this->contactModel->getMessages($status === 'all' ? null : $status, $perPage, $offset);
+        $totalMessages = $status === 'all' 
+            ? $this->contactModel->countAll() 
+            : $this->contactModel->where('status', $status)->countAllResults();
+        $unreadCount = $this->contactModel->getUnreadCount();
+
+        $data = [
+            'role'         => $this->session->get('role'),
+            'title'        => 'Contact Messages',
+            'messages'      => $messages,
+            'status'        => $status,
+            'unreadCount'  => $unreadCount,
+            'totalMessages' => $totalMessages,
+            'currentPage'  => $page,
+            'perPage'      => $perPage,
+            'totalPages'   => ceil($totalMessages / $perPage),
+        ];
+
+        return view('reusables/sidenav', $data) . view('admin/contact_messages', $data);
+    }
+
+    /**
+     * View single contact message
+     */
+    public function viewContactMessage($id)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $message = $this->contactModel->getMessage($id);
+
+        if (!$message) {
+            return redirect()->to(site_url('admin/contact-messages'))
+                ->with('error', 'Message not found.');
+        }
+
+        // Mark as read if unread
+        if ($message['status'] === 'unread') {
+            $this->contactModel->markAsRead($id, $this->session->get('user_id'));
+            $this->logActivity('read_message', 'contact', "Read contact message from {$message['name']}");
+        }
+
+        $data = [
+            'role'    => $this->session->get('role'),
+            'title'   => 'View Message',
+            'message' => $message,
+        ];
+
+        return view('reusables/sidenav', $data) . view('admin/view_contact_message', $data);
+    }
+
+    /**
+     * Update message status
+     */
+    public function updateMessageStatus($id)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $status = $this->request->getPost('status');
+        $validStatuses = ['unread', 'read', 'replied', 'archived'];
+
+        if (!in_array($status, $validStatuses)) {
+            return redirect()->back()->with('error', 'Invalid status.');
+        }
+
+        $message = $this->contactModel->find($id);
+        if (!$message) {
+            return redirect()->back()->with('error', 'Message not found.');
+        }
+
+        $this->contactModel->updateStatus($id, $status);
+        
+        if ($status === 'read' && $message['status'] === 'unread') {
+            $this->contactModel->markAsRead($id, $this->session->get('user_id'));
+        }
+
+        $this->logActivity('update_message_status', 'contact', "Updated message status to {$status}");
+
+        return redirect()->back()->with('success', 'Message status updated.');
+    }
+
+    /**
+     * Delete contact message
+     */
+    public function deleteContactMessage($id)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $message = $this->contactModel->find($id);
+        if (!$message) {
+            return redirect()->back()->with('error', 'Message not found.');
+        }
+
+        $this->contactModel->delete($id);
+        $this->logActivity('delete_message', 'contact', "Deleted contact message from {$message['name']}");
+
+        return redirect()->to(site_url('admin/contact-messages'))
+            ->with('success', 'Message deleted successfully.');
     }
 }
 
