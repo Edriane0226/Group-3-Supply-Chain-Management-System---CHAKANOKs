@@ -142,6 +142,8 @@
       echo 'Inventory';
     } elseif ($role === 'Branch Manager') {
       echo esc(session()->get('branch_name') ?? 'Branch');
+    } elseif ($role === 'System Administrator') {
+      echo 'System Admin';
     } else {
       echo 'SCMS';
     }
@@ -230,6 +232,29 @@
       </a>
       <a href="<?= site_url('franchise/reports') ?>" class="<?= (uri_string() == 'franchise/reports') ? 'active' : '' ?>">
           <i class="bi bi-bar-chart me-2"></i> Reports
+      </a>
+
+  <?php elseif ($role === 'System Administrator'): ?>
+      <a href="<?= site_url('admin') ?>" class="<?= (uri_string() == 'admin' || uri_string() == 'admin/dashboard') ? 'active' : '' ?>">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      </a>
+      <a href="<?= site_url('admin/users') ?>" class="<?= (strpos(uri_string(), 'admin/users') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-people me-2"></i> User Management
+      </a>
+      <a href="<?= site_url('admin/roles') ?>" class="<?= (uri_string() == 'admin/roles') ? 'active' : '' ?>">
+          <i class="bi bi-shield-check me-2"></i> Role Management
+      </a>
+      <a href="<?= site_url('admin/branches') ?>" class="<?= (uri_string() == 'admin/branches') ? 'active' : '' ?>">
+          <i class="bi bi-building me-2"></i> Branches
+      </a>
+      <a href="<?= site_url('admin/activity-logs') ?>" class="<?= (uri_string() == 'admin/activity-logs') ? 'active' : '' ?>">
+          <i class="bi bi-list-ul me-2"></i> Activity Logs
+      </a>
+      <a href="<?= site_url('admin/settings') ?>" class="<?= (uri_string() == 'admin/settings') ? 'active' : '' ?>">
+          <i class="bi bi-gear me-2"></i> System Settings
+      </a>
+      <a href="<?= site_url('admin/backup') ?>" class="<?= (uri_string() == 'admin/backup') ? 'active' : '' ?>">
+          <i class="bi bi-cloud-arrow-down me-2"></i> Backup & Maintenance
       </a>
 
   <?php else: ?>

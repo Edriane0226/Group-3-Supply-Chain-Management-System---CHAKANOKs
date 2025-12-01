@@ -38,9 +38,20 @@ class RoleSeeder extends Seeder
                 'role_name' => 'Supplier',
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
+            ],
+            [
+                'role_name' => 'System Administrator',
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ]
         ];
 
-        $this->db->table('roles')->insertBatch($data);
+        // Check if roles already exist, if not insert
+        foreach ($data as $role) {
+            $existing = $this->db->table('roles')->where('role_name', $role['role_name'])->get()->getRow();
+            if (!$existing) {
+                $this->db->table('roles')->insert($role);
+            }
+        }
     }
 }

@@ -131,6 +131,45 @@ $routes->group('franchise', function($routes) {
     $routes->get('search', 'FranchiseManagement::search');
 });
 
+// System Administration Routes
+$routes->group('admin', function($routes) {
+    $routes->get('/', 'SystemAdmin::index');
+    $routes->get('dashboard', 'SystemAdmin::index');
+    
+    // User Management
+    $routes->get('users', 'SystemAdmin::users');
+    $routes->get('users/create', 'SystemAdmin::createUser');
+    $routes->post('users/store', 'SystemAdmin::storeUser');
+    $routes->get('users/edit/(:num)', 'SystemAdmin::editUser/$1');
+    $routes->post('users/update/(:num)', 'SystemAdmin::updateUser/$1');
+    $routes->post('users/delete/(:num)', 'SystemAdmin::deleteUser/$1');
+    $routes->post('users/reset-password/(:num)', 'SystemAdmin::resetPassword/$1');
+    
+    // Role Management
+    $routes->get('roles', 'SystemAdmin::roles');
+    $routes->post('roles/create', 'SystemAdmin::createRole');
+    $routes->post('roles/update/(:num)', 'SystemAdmin::updateRole/$1');
+    $routes->post('roles/delete/(:num)', 'SystemAdmin::deleteRole/$1');
+    
+    // Branch Management
+    $routes->get('branches', 'SystemAdmin::branches');
+    
+    // Activity Logs
+    $routes->get('activity-logs', 'SystemAdmin::activityLogs');
+    $routes->post('activity-logs/clear', 'SystemAdmin::clearLogs');
+    
+    // System Settings
+    $routes->get('settings', 'SystemAdmin::settings');
+    $routes->post('settings/update', 'SystemAdmin::updateSettings');
+    
+    // Backup & Maintenance
+    $routes->get('backup', 'SystemAdmin::backup');
+    $routes->post('backup/create', 'SystemAdmin::createBackup');
+    $routes->get('backup/download/(:any)', 'SystemAdmin::downloadBackup/$1');
+    $routes->post('backup/delete/(:any)', 'SystemAdmin::deleteBackup/$1');
+    $routes->post('cache/clear', 'SystemAdmin::clearCache');
+});
+
 // Contact Form Routes
 $routes->get('contact', 'Contact::index');
 $routes->post('contact/send', 'Contact::send');

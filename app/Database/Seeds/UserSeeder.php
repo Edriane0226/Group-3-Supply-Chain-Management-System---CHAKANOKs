@@ -95,6 +95,17 @@ class UserSeeder extends Seeder
                 'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
+            ],
+            [
+                'first_Name'      => 'Admin',
+                'last_Name'       => 'System',
+                'middle_Name'     => '',
+                'email'           => 'admin@chakanoks.com',
+                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'role_id'         => $roleIds['System Administrator'] ?? null,
+                'branch_id'       => $mainBranch->id ?? null,
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s'),
             ]
         ];
 

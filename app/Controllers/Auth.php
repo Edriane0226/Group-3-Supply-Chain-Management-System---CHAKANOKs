@@ -128,6 +128,8 @@ class Auth extends Controller
                 return redirect()->to(site_url('logistics-coordinator'));
             case 'Franchise Manager':
                 return redirect()->to(site_url('franchise'));
+            case 'System Administrator':
+                return redirect()->to(site_url('admin'));
             default:
                 $session->setFlashdata('error', 'Unauthorized role.');
                 return redirect()->to(site_url('login'));
