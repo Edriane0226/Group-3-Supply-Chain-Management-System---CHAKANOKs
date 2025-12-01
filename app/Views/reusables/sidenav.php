@@ -125,17 +125,29 @@
     <!-- Sidebar -->
 <div class="sidebar">
   <img src="<?= base_url('public/images/2.jpg') ?>" alt="Logo">
-  <h5>
-    ChakaNoks<br>
+  <div class="text-center mb-3">
+    <h5 class="mb-0 fw-bold" style="font-size: 1.3rem;">ChakaNoks</h5>
+    <span style="font-size: 0.85rem; opacity: 0.95;">
     <?php
     $role = session()->get('role');
     if ($role === 'Supplier') {
       echo esc(session()->get('supplier_name'));
+    } elseif ($role === 'Central Office Admin') {
+      echo 'Central Office';
+    } elseif ($role === 'Franchise Manager') {
+      echo 'Franchise Mgmt';
+    } elseif ($role === 'Logistics Coordinator') {
+      echo 'Logistics';
+    } elseif ($role === 'Inventory Staff') {
+      echo 'Inventory';
+    } elseif ($role === 'Branch Manager') {
+      echo esc(session()->get('branch_name') ?? 'Branch');
     } else {
-      echo esc(session()->get('branch_name'));
+      echo 'SCMS';
     }
     ?>
-  </h5>
+    </span>
+  </div>
   <?php $role = session()->get('role'); ?>
 
   <?php if ($role === 'Central Office Admin'): ?>
@@ -198,6 +210,26 @@
       </a>
       <a href="<?= site_url('supplier/profile') ?>" class="<?= (uri_string() == 'supplier/profile') ? 'active' : '' ?>">
           <i class="bi bi-person me-2"></i> Profile & Settings
+      </a>
+
+  <?php elseif ($role === 'Franchise Manager'): ?>
+      <a href="<?= site_url('franchise') ?>" class="<?= (uri_string() == 'franchise' || uri_string() == 'franchise/dashboard') ? 'active' : '' ?>">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+      </a>
+      <a href="<?= site_url('franchise/applications') ?>" class="<?= (strpos(uri_string(), 'franchise/application') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-file-earmark-text me-2"></i> Applications
+      </a>
+      <a href="<?= site_url('franchise/list') ?>" class="<?= (uri_string() == 'franchise/list' || strpos(uri_string(), 'franchise/view') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-shop me-2"></i> Active Franchises
+      </a>
+      <a href="<?= site_url('franchise/payments') ?>" class="<?= (strpos(uri_string(), 'franchise/payment') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-credit-card me-2"></i> Payments
+      </a>
+      <a href="<?= site_url('franchise/allocations') ?>" class="<?= (strpos(uri_string(), 'franchise/allocat') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-box-seam me-2"></i> Supply Allocations
+      </a>
+      <a href="<?= site_url('franchise/reports') ?>" class="<?= (uri_string() == 'franchise/reports') ? 'active' : '' ?>">
+          <i class="bi bi-bar-chart me-2"></i> Reports
       </a>
 
   <?php else: ?>

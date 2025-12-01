@@ -102,6 +102,35 @@ $routes->group('supplier', function($routes) {
     $routes->post('change-password', 'Supplier::changePassword');
 });
 
+// Franchise Management Routes
+$routes->group('franchise', function($routes) {
+    $routes->get('/', 'FranchiseManagement::index');
+    $routes->get('dashboard', 'FranchiseManagement::index');
+    $routes->get('applications', 'FranchiseManagement::applications');
+    $routes->get('application/(:num)', 'FranchiseManagement::viewApplication/$1');
+    $routes->get('create', 'FranchiseManagement::create');
+    $routes->post('store', 'FranchiseManagement::store');
+    $routes->post('approve/(:num)', 'FranchiseManagement::approve/$1');
+    $routes->post('reject/(:num)', 'FranchiseManagement::reject/$1');
+    $routes->post('review/(:num)', 'FranchiseManagement::markUnderReview/$1');
+    $routes->get('list', 'FranchiseManagement::franchises');
+    $routes->get('view/(:num)', 'FranchiseManagement::viewFranchise/$1');
+    $routes->post('activate/(:num)', 'FranchiseManagement::activate/$1');
+    $routes->post('suspend/(:num)', 'FranchiseManagement::suspend/$1');
+    $routes->post('reactivate/(:num)', 'FranchiseManagement::reactivate/$1');
+    $routes->post('terminate/(:num)', 'FranchiseManagement::terminate/$1');
+    $routes->get('payments', 'FranchiseManagement::payments');
+    $routes->get('payments/(:num)', 'FranchiseManagement::payments/$1');
+    $routes->post('payment/(:num)', 'FranchiseManagement::recordPayment/$1');
+    $routes->get('allocations', 'FranchiseManagement::allocations');
+    $routes->get('allocations/(:num)', 'FranchiseManagement::allocations/$1');
+    $routes->get('allocate/(:num)', 'FranchiseManagement::allocateSupply/$1');
+    $routes->post('allocate/(:num)', 'FranchiseManagement::processAllocation/$1');
+    $routes->post('allocation-status/(:num)', 'FranchiseManagement::updateAllocationStatus/$1');
+    $routes->get('reports', 'FranchiseManagement::reports');
+    $routes->get('search', 'FranchiseManagement::search');
+});
+
 // Contact Form Routes
 $routes->get('contact', 'Contact::index');
 $routes->post('contact/send', 'Contact::send');
