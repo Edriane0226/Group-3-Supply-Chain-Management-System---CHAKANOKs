@@ -41,10 +41,46 @@
       </div>
     </div>
 
+    <!-- Route Optimization Button -->
+    <?php if (!empty($schedules) && $startDate == $endDate): ?>
+      <?php 
+      // Group schedules by date
+      $schedulesByDate = [];
+      foreach ($schedules as $schedule) {
+        $date = $schedule['scheduled_date'];
+        if (!isset($schedulesByDate[$date])) {
+          $schedulesByDate[$date] = [];
+        }
+        $schedulesByDate[$date][] = $schedule;
+      }
+      ?>
+      <?php foreach ($schedulesByDate as $date => $dateSchedules): ?>
+        <?php if (count($dateSchedules) > 1): ?>
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6 class="mb-1"><i class="bi bi-geo-alt me-2"></i>Route Optimization</h6>
+                  <small class="text-muted">Optimize delivery route for <?= date('M d, Y', strtotime($date)) ?> (<?= count($dateSchedules) ?> deliveries)</small>
+                </div>
+                <button class="btn btn-success" onclick="optimizeRoute('<?= $date ?>')">
+                  <i class="bi bi-gear me-2"></i>Optimize Route
+                </button>
+              </div>
+              <div id="optimization-result-<?= str_replace('-', '', $date) ?>" class="mt-3"></div>
+            </div>
+          </div>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    <?php endif; ?>
+
     <!-- Delivery Schedules Table -->
     <div class="card shadow-sm mb-4">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>All Delivery Schedules</h6>
+        <?php if (!empty($schedules)): ?>
+          <small class="text-white-50">Route Sequence shows optimized order</small>
+        <?php endif; ?>
       </div>
       <div class="card-body p-0">
         <div class="table-responsive">
@@ -278,6 +314,69 @@ function cancelSchedule(scheduleId) {
       console.error('Error:', error);
       alert('Failed to cancel schedule');
     });
+  }
+}
+
+async function optimizeRoute(scheduledDate) {
+  const dateId = scheduledDate.replace(/-/g, '');
+  const resultDiv = document.getElementById('optimization-result-' + dateId);
+  
+  if (!confirm(`Optimize delivery routes for ${new Date(scheduledDate).toLocaleDateString()}? This will re-sequence deliveries based on shortest distance.`)) {
+    return;
+  }
+
+  resultDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split me-2"></i>Optimizing routes... Please wait.</div>';
+
+  try {
+    const response = await fetch('<?= site_url('logistics-coordinator/optimize-route') ?>', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        scheduled_date: scheduledDate
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      let resultHtml = `
+        <div class="alert alert-success">
+          <h6><i class="bi bi-check-circle me-2"></i>Route Optimized Successfully!</h6>
+          <p class="mb-1"><strong>Total Distance:</strong> ${data.total_distance} km</p>
+          <p class="mb-1"><strong>Estimated Time:</strong> ${Math.floor(data.total_time / 60)} hours ${data.total_time % 60} minutes</p>
+          <p class="mb-0"><strong>Optimized Stops:</strong> ${data.optimized_route.route.length}</p>
+        </div>
+      `;
+      
+      if (data.optimized_route && data.optimized_route.route) {
+        resultHtml += '<div class="table-responsive"><table class="table table-sm table-bordered mt-2">';
+        resultHtml += '<thead><tr><th>Sequence</th><th>Branch</th><th>Distance</th></tr></thead><tbody>';
+        data.optimized_route.route.forEach((stop, index) => {
+          const prevDistance = index > 0 ? data.optimized_route.route[index - 1].distance_from_previous : 0;
+          resultHtml += `<tr>
+            <td>${stop.sequence}</td>
+            <td>${stop.name}</td>
+            <td>${stop.distance_from_previous.toFixed(2)} km</td>
+          </tr>`;
+        });
+        resultHtml += '</tbody></table></div>';
+      }
+      
+      resultDiv.innerHTML = resultHtml;
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      resultDiv.innerHTML = `<div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>${data.error || 'Failed to optimize route'}
+      </div>`;
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    resultDiv.innerHTML = `<div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle me-2"></i>An error occurred while optimizing the route. Please try again.
+    </div>`;
   }
 }
 </script>

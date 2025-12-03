@@ -7,6 +7,8 @@ use App\Models\DeliveryScheduleModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\InventoryModel;
 use App\Models\NotificationModel;
+use App\Models\BranchModel;
+use App\Libraries\RouteOptimizer;
 use CodeIgniter\HTTP\ResponseInterface;
 
 class LogisticsCoordinator extends BaseController
@@ -150,6 +152,114 @@ class LogisticsCoordinator extends BaseController
 
         } catch (\Exception $e) {
             return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to schedule deliveries']);
+        }
+    }
+
+    /**
+     * Optimize route for delivery schedules on a specific date
+     */
+    public function optimizeRoute()
+    {
+        $session = session();
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Logistics Coordinator') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        $data = $this->request->getJSON(true);
+        
+        if (!$data || !isset($data['scheduled_date'])) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Scheduled date is required']);
+        }
+
+        $coordinatorId = (int)$session->get('user_id');
+        $scheduledDate = $data['scheduled_date'];
+        $startLat = $data['start_latitude'] ?? null;
+        $startLon = $data['start_longitude'] ?? null;
+
+        try {
+            // Get all schedules for the specified date
+            $schedules = $this->deliveryScheduleModel->getSchedulesByDateRange($scheduledDate, $scheduledDate, $coordinatorId);
+            
+            if (empty($schedules)) {
+                return $this->response->setStatusCode(404)->setJSON(['error' => 'No delivery schedules found for this date']);
+            }
+
+            // Get branch coordinates for each schedule
+            $branchModel = new BranchModel();
+            $destinations = [];
+            
+            foreach ($schedules as $schedule) {
+                $branchId = $schedule['branch_id'] ?? null;
+                if (!$branchId) {
+                    continue;
+                }
+
+                $branch = $branchModel->find($branchId);
+                if (!$branch) {
+                    continue;
+                }
+
+                // Check if branch has coordinates
+                if (empty($branch['latitude']) || empty($branch['longitude'])) {
+                    continue; // Skip branches without coordinates
+                }
+
+                $destinations[] = [
+                    'id' => $schedule['id'], // Schedule ID
+                    'schedule_id' => $schedule['id'],
+                    'branch_id' => $branchId,
+                    'latitude' => (float)$branch['latitude'],
+                    'longitude' => (float)$branch['longitude'],
+                    'name' => $branch['branch_name'] ?? 'Unknown Branch',
+                    'po_id' => $schedule['po_id'] ?? null
+                ];
+            }
+
+            if (empty($destinations)) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'error' => 'No branches with coordinates found. Please add latitude and longitude to branches first.'
+                ]);
+            }
+
+            // Optimize route using RouteOptimizer
+            $routeOptimizer = new RouteOptimizer();
+            $optimizedRoute = $routeOptimizer->optimizeRoute($destinations, $startLat, $startLon);
+
+            // Update delivery schedules with optimized route sequence
+            $this->db->transStart();
+
+            foreach ($optimizedRoute['route'] as $index => $stop) {
+                $scheduleId = $stop['id'];
+                $routeCoordinates = $routeOptimizer->getRouteCoordinates($optimizedRoute);
+                
+                // Update schedule with new sequence and route coordinates
+                $this->deliveryScheduleModel->update($scheduleId, [
+                    'route_sequence' => $stop['sequence'],
+                    'route_coordinates' => json_encode($routeCoordinates),
+                    'estimated_duration' => round($optimizedRoute['total_time'] / count($optimizedRoute['route'])),
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            $this->db->transComplete();
+
+            if (!$this->db->transStatus()) {
+                return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to update route optimization']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Route optimized successfully',
+                'optimized_route' => $optimizedRoute,
+                'total_distance' => $optimizedRoute['total_distance'],
+                'total_time' => $optimizedRoute['total_time']
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Route optimization error: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'error' => 'Failed to optimize route: ' . $e->getMessage()
+            ]);
         }
     }
 

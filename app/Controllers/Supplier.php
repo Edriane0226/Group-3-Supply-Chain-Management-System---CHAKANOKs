@@ -7,6 +7,8 @@ use App\Models\PurchaseOrderModel;
 use App\Models\InventoryModel;
 use App\Models\NotificationModel;
 use App\Models\SupplierModel;
+use App\Models\AccountsPayableModel;
+use App\Models\SupplierContractModel;
 
 class Supplier extends BaseController
 {
@@ -14,6 +16,8 @@ class Supplier extends BaseController
     protected $inventoryModel;
     protected $notificationModel;
     protected $supplierModel;
+    protected $accountsPayableModel;
+    protected $supplierContractModel;
 
     public function __construct()
     {
@@ -21,6 +25,8 @@ class Supplier extends BaseController
         $this->inventoryModel = new InventoryModel();
         $this->notificationModel = new NotificationModel();
         $this->supplierModel = new SupplierModel();
+        $this->accountsPayableModel = new AccountsPayableModel();
+        $this->supplierContractModel = new SupplierContractModel();
     }
 
     public function dashboard()
@@ -256,6 +262,136 @@ class Supplier extends BaseController
         return view('reusables/sidenav', ['title' => 'Invoices & Payments']) . view('supplier/invoices', ['invoices' => $invoices]);
     }
 
+    /**
+     * Upload invoice document for a purchase order
+     */
+    public function uploadInvoice()
+    {
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'Supplier') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
+        $supplierId = session()->get('user_id');
+        $orderId = (int)$this->request->getPost('order_id');
+
+        // Verify order belongs to this supplier
+        $order = $this->purchaseOrderModel->where('id', $orderId)
+                                          ->where('supplier_id', $supplierId)
+                                          ->first();
+
+        if (!$order) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Order not found']);
+        }
+
+        // Only allow upload for delivered orders
+        if ($order['status'] !== 'Delivered') {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Can only upload invoices for delivered orders']);
+        }
+
+        $file = $this->request->getFile('invoice_file');
+
+        if (!$file || !$file->isValid()) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'No file uploaded or file is invalid']);
+        }
+
+        // Validate file type (PDF, images, Excel, Word)
+        $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'application/vnd.ms-excel',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        
+        if (!in_array($file->getMimeType(), $allowedTypes)) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid file type. Allowed: PDF, Images, Excel, Word']);
+        }
+
+        // Validate file size (max 5MB)
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'File size exceeds 5MB limit']);
+        }
+
+        // Create upload directory if it doesn't exist
+        $uploadPath = WRITEPATH . 'uploads/invoices/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        // Generate unique filename
+        $fileName = 'invoice_' . $orderId . '_' . time() . '.' . $file->getExtension();
+        $filePath = 'invoices/' . $fileName;
+
+        // Move uploaded file
+        if ($file->move(WRITEPATH . 'uploads/invoices/', $fileName)) {
+            // Delete old invoice if exists
+            if (!empty($order['invoice_document_path'])) {
+                $oldFilePath = WRITEPATH . 'uploads/' . $order['invoice_document_path'];
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath);
+                }
+            }
+
+            // Update purchase order with invoice path
+            $this->purchaseOrderModel->update($orderId, [
+                'invoice_document_path' => $filePath,
+                'invoice_uploaded_at' => date('Y-m-d H:i:s')
+            ]);
+
+            // Check if accounts payable entry already exists
+            $existingAP = $this->accountsPayableModel->where('purchase_order_id', $orderId)->first();
+            
+            if (!$existingAP) {
+                // Get payment terms from supplier contract or supplier default
+                $contract = $this->supplierContractModel->where('supplier_id', $supplierId)
+                    ->where('status', 'active')
+                    ->orderBy('created_at', 'DESC')
+                    ->first();
+                
+                $paymentTerms = $contract['payment_terms'] ?? null;
+                
+                // Create accounts payable entry
+                $orderUpdated = $this->purchaseOrderModel->find($orderId);
+                $orderUpdated['invoice_uploaded_at'] = date('Y-m-d H:i:s');
+                
+                $this->accountsPayableModel->createFromPurchaseOrder($orderUpdated, $paymentTerms);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Invoice uploaded successfully',
+                'file_path' => $filePath
+            ]);
+        }
+
+        return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to upload invoice']);
+    }
+
+    /**
+     * Download/view invoice document
+     */
+    public function downloadInvoice(int $orderId)
+    {
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'Supplier') {
+            return redirect()->to(site_url('login'))->with('error', 'Unauthorized');
+        }
+
+        $supplierId = session()->get('user_id');
+        $order = $this->purchaseOrderModel->where('id', $orderId)
+                                          ->where('supplier_id', $supplierId)
+                                          ->first();
+
+        if (!$order || empty($order['invoice_document_path'])) {
+            return redirect()->back()->with('error', 'Invoice document not found');
+        }
+
+        $filePath = WRITEPATH . 'uploads/' . $order['invoice_document_path'];
+
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'Invoice file not found on server');
+        }
+
+        return $this->response->download($filePath, null);
+    }
+
     public function notifications()
     {
         if (!session()->get('isLoggedIn') || session()->get('role') !== 'Supplier') {
@@ -320,5 +456,76 @@ class Supplier extends BaseController
         $this->supplierModel->update($supplierId, ['password' => password_hash($newPassword, PASSWORD_DEFAULT)]);
 
         return redirect()->back()->with('success', 'Password changed.');
+    }
+
+    /**
+     * Accounts Payable - View all invoices/payments due
+     */
+    public function accountsPayable()
+    {
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'Supplier') {
+            return redirect()->to(site_url('login'))->with('error', 'Please login as supplier.');
+        }
+
+        $supplierId = session()->get('user_id');
+        $status = $this->request->getGet('status') ?? null;
+        $startDate = $this->request->getGet('start_date') ?? null;
+        $endDate = $this->request->getGet('end_date') ?? null;
+
+        // Get accounts payable records
+        $accountsPayable = $this->accountsPayableModel->getAccountsPayableWithRelations($supplierId, $status);
+
+        // Filter by date range if provided
+        if ($startDate && $endDate) {
+            $accountsPayable = array_filter($accountsPayable, function($ap) use ($startDate, $endDate) {
+                $invoiceDate = $ap['invoice_date'] ?? $ap['created_at'];
+                return $invoiceDate >= $startDate && $invoiceDate <= $endDate;
+            });
+        }
+
+        // Update overdue status
+        $this->accountsPayableModel->updateOverdueStatus();
+
+        // Get summary statistics
+        $summary = $this->accountsPayableModel->getSupplierSummary($supplierId);
+
+        $data = [
+            'accountsPayable' => $accountsPayable,
+            'summary' => $summary,
+            'status' => $status,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ];
+
+        return view('reusables/sidenav', ['title' => 'Accounts Payable']) . view('supplier/accounts_payable', $data);
+    }
+
+    /**
+     * View individual account payable details
+     */
+    public function viewAccountsPayable(int $id)
+    {
+        if (!session()->get('isLoggedIn') || session()->get('role') !== 'Supplier') {
+            return redirect()->to(site_url('login'))->with('error', 'Please login as supplier.');
+        }
+
+        $supplierId = session()->get('user_id');
+        $ap = $this->accountsPayableModel->find($id);
+
+        if (!$ap || $ap['supplier_id'] != $supplierId) {
+            return redirect()->to(site_url('supplier/accounts-payable'))->with('error', 'Account payable not found.');
+        }
+
+        // Get related purchase order details
+        $purchaseOrder = $this->purchaseOrderModel->select('purchase_orders.*, branches.branch_name')
+            ->join('branches', 'branches.id = purchase_orders.branch_id')
+            ->find($ap['purchase_order_id']);
+
+        $data = [
+            'ap' => $ap,
+            'purchaseOrder' => $purchaseOrder
+        ];
+
+        return view('reusables/sidenav', ['title' => 'Account Payable Details']) . view('supplier/accounts_payable_view', $data);
     }
 }

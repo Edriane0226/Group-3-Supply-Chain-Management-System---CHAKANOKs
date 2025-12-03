@@ -108,6 +108,7 @@ $routes->post('logistics-coordinator/mark-notification-read/(:num)', 'LogisticsC
 $routes->post('logistics-coordinator/review-po/(:num)', 'LogisticsCoordinator::reviewApprovedPO/$1');
 $routes->post('logistics-coordinator/coordinate-supplier/(:num)', 'LogisticsCoordinator::coordinateWithSupplier/$1');
 $routes->post('logistics-coordinator/create-delivery-schedule/(:num)', 'LogisticsCoordinator::createDeliverySchedule/$1');
+$routes->post('logistics-coordinator/optimize-route', 'LogisticsCoordinator::optimizeRoute');
 $routes->post('logistics-coordinator/update-delivery-status/(:num)', 'LogisticsCoordinator::updateLogisticsDeliveryStatus/$1');
 $routes->post('logistics-coordinator/coordinate-branch/(:num)', 'LogisticsCoordinator::coordinateWithBranch/$1');
 $routes->post('logistics-coordinator/close-delivery/(:num)', 'LogisticsCoordinator::closeDeliveryRecord/$1');
@@ -122,6 +123,10 @@ $routes->group('supplier', function($routes) {
     $routes->get('deliveries', 'Supplier::deliveries');
     $routes->get('delivery-details/(:num)', 'Supplier::deliveryDetails/$1');
     $routes->get('invoices', 'Supplier::invoices');
+    $routes->post('upload-invoice', 'Supplier::uploadInvoice');
+    $routes->get('download-invoice/(:num)', 'Supplier::downloadInvoice/$1');
+    $routes->get('accounts-payable', 'Supplier::accountsPayable');
+    $routes->get('accounts-payable/(:num)', 'Supplier::viewAccountsPayable/$1');
     $routes->get('notifications', 'Supplier::notifications');
     $routes->get('profile', 'Supplier::profile');
     $routes->post('update-profile', 'Supplier::updateProfile');

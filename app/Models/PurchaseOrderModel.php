@@ -26,6 +26,8 @@ class PurchaseOrderModel extends Model
         'actual_delivery_date',
         'tracking_number',
         'delivery_notes',
+        'invoice_document_path',
+        'invoice_uploaded_at',
         'created_at',
         'updated_at'
     ];
