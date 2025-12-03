@@ -141,7 +141,7 @@
     } elseif ($role === 'Inventory Staff') {
       echo 'Inventory';
     } elseif ($role === 'Branch Manager') {
-      echo esc(session()->get('branch_name') ?? 'Branch');
+      echo 'Branch Manager';
     } elseif ($role === 'System Administrator') {
       echo 'System Admin';
     } else {
