@@ -31,9 +31,10 @@ class UserSeeder extends Seeder
         // Same Branch for all users for testing lng sa ngayon
         $data = [
             [
+                'id'              => 23116000,
                 'first_Name'      => 'Edriane',
                 'last_Name'       => 'Bangonon',
-                'middle_Name'     => 'Ortiz',
+                'middle_Name'     => 'Ordiz',
                 'email'           => 'Ed@gmail.com',
                 'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Central Office Admin'] ?? null,
@@ -42,10 +43,11 @@ class UserSeeder extends Seeder
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
-                'first_Name'      => 'Maria',
-                'last_Name'       => 'Santos',
+                'id'              => 23116001,
+                'first_Name'      => 'Jasper',
+                'last_Name'       => 'Canitan',
                 'middle_Name'     => '',
-                'email'           => 'maria@example.com',
+                'email'           => 'jaspercanitan@gmail.com',
                 'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Inventory Staff'] ?? null,
                 'branch_id'       => $mainBranch->id ?? null,
@@ -53,44 +55,48 @@ class UserSeeder extends Seeder
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
-                'first_Name'      => 'Pedro',
-                'last_Name'       => 'Reyes',
+                'id'              => 23116002,
+                'first_Name'      => 'Marco',
+                'last_Name'       => 'Batiller',
                 'middle_Name'     => '',
-                'email'           => 'pedro@example.com',
-                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'email'           => 'marcobatiller@gmail.com',
+                'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Branch Manager'] ?? null,
                 'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
-                'first_Name'      => 'Juan',
-                'last_Name'       => 'Dela Cruz',
+                'id'              => 23116003,
+                'first_Name'      => 'Niel Vincent',
+                'last_Name'       => 'Dionio',
                 'middle_Name'     => '',
-                'email'           => 'juan@example.com',
-                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'email'           => 'vincentdionio@gmail.com',
+                'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Logistics Coordinator'] ?? null,
                 'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
-                'first_Name'      => 'Ana',
-                'last_Name'       => 'Lopez',
+                'id'              => 23116004,
+                'first_Name'      => 'Kristine',
+                'last_Name'       => 'Amojallas',
                 'middle_Name'     => '',
-                'email'           => 'ana@example.com',
-                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'email'           => 'kristineamojallas@gmail.com',
+                'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['Franchise Manager'] ?? null,
                 'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
+                'id'              => 23116005,
                 'first_Name'      => 'Admin',
                 'last_Name'       => 'System',
                 'middle_Name'     => '',
                 'email'           => 'admin@chakanoks.com',
-                'password'       => password_hash('password123', PASSWORD_DEFAULT),
+                'password'        => password_hash('password123', PASSWORD_DEFAULT),
                 'role_id'         => $roleIds['System Administrator'] ?? null,
                 'branch_id'       => $mainBranch->id ?? null,
                 'created_at'      => date('Y-m-d H:i:s'),
@@ -100,12 +106,24 @@ class UserSeeder extends Seeder
 
         $usersTable = $this->db->table('users');
         foreach ($data as $user) {
-            $existing = $usersTable->where('email', $user['email'])->get()->getRowArray();
-            if ($existing) {
-                // Update existing user to ensure seeder is idempotent
-                $usersTable->where('email', $user['email'])->update($user);
+            $userId = $user['id'];
+            
+            // Check if user exists by ID
+            $existingById = $usersTable->where('id', $userId)->get()->getRowArray();
+            
+            if ($existingById) {
+                // Update existing user by ID (keep the ID)
+                $usersTable->where('id', $userId)->update($user);
             } else {
-                $usersTable->insert($user);
+                // Check if user exists by email
+                $existingByEmail = $usersTable->where('email', $user['email'])->get()->getRowArray();
+                if ($existingByEmail) {
+                    // Update existing user by email and set the ID
+                    $usersTable->where('email', $user['email'])->update($user);
+                } else {
+                    // Insert new user with explicit ID
+                    $usersTable->insert($user);
+                }
             }
         }
     }

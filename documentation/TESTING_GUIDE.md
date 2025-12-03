@@ -10,17 +10,17 @@
 
 ## 🔐 Default Login Credentials
 
-### **Regular Users** (ID: 1-7)
+### **Regular Users** (ID: 23116000-23116005)
 Lahat ng regular users ay may **password: `password123`**
 
 | Role | User ID | Email | Name |
 |------|---------|-------|------|
-| **Central Office Admin** | 1 | Ed@gmail.com | Edriane Bangonon |
-| **Inventory Staff** | 2 | maria@example.com | Maria Santos |
-| **Branch Manager** | 3 | pedro@example.com | Pedro Reyes |
-| **Logistics Coordinator** | 4 | juan@example.com | Juan Dela Cruz |
-| **Franchise Manager** | 5 | ana@example.com | Ana Lopez |
-| **System Administrator** | 7 | admin@chakanoks.com | Admin System |
+| **Central Office Admin** | 23116000 | Ed@gmail.com | Edriane Bangonon Ordiz |
+| **Inventory Staff** | 23116001 | jaspercanitan@gmail.com | Jasper Canitan |
+| **Branch Manager** | 23116002 | marcobatiller@gmail.com | Marco Batiller |
+| **Logistics Coordinator** | 23116003 | vincentdionio@gmail.com | Niel Vincent Dionio |
+| **Franchise Manager** | 23116004 | kristineamojallas@gmail.com | Kristine Amojallas |
+| **System Administrator** | 23116005 | admin@chakanoks.com | Admin System |
 
 ### **Suppliers** (ID: 1001-1008)
 Lahat ng suppliers ay may **password: `password123`**
@@ -40,7 +40,7 @@ Lahat ng suppliers ay may **password: `password123`**
 
 ## 👥 Role Functions & Workflows
 
-### 1️⃣ **System Administrator** (ID: 7)
+### 1️⃣ **System Administrator** (ID: 23116005)
 **Access:** `/admin`
 
 **Functions:**
@@ -53,7 +53,7 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ Backup & Maintenance (Database backup, Clear cache)
 
 **Testing Flow:**
-1. Login as System Admin (ID: 7)
+1. Login as System Admin (ID: 23116005)
 2. Check Dashboard - dapat may statistics
 3. Go to **User Management** - try mag-create ng bagong user
 4. Go to **Contact Messages** - dapat may notification badge kung may unread
@@ -62,7 +62,7 @@ Lahat ng suppliers ay may **password: `password123`**
 
 ---
 
-### 2️⃣ **Central Office Admin** (ID: 1)
+### 2️⃣ **Central Office Admin** (ID: 23116000)
 **Access:** `/dashboard`
 
 **Functions:**
@@ -70,16 +70,17 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ User Management
 - ✅ Branch Management
 - ✅ Purchase Request Approval
+- ✅ Supplier Contract Management
 
 **Testing Flow:**
-1. Login as Central Office Admin (ID: 1)
+1. Login as Central Office Admin (ID: 23116000)
 2. View Dashboard - dapat may overview ng lahat ng branches
 3. Check **Purchase Request** - dapat makita ang pending requests
 4. Try mag-approve/reject ng purchase request
 
 ---
 
-### 3️⃣ **Branch Manager** (ID: 3)
+### 3️⃣ **Branch Manager** (ID: 23116002)
 **Access:** `/dashboard`
 
 **Functions:**
@@ -89,7 +90,7 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ Deliveries (View delivery status)
 
 **Testing Flow:**
-1. Login as Branch Manager (ID: 3)
+1. Login as Branch Manager (ID: 23116002)
 2. View Dashboard - dapat may branch-specific data
 3. Go to **Purchase Request** - create ng bagong request
 4. Check **Deliveries** - view delivery schedules
@@ -97,7 +98,7 @@ Lahat ng suppliers ay may **password: `password123`**
 
 ---
 
-### 4️⃣ **Inventory Staff** (ID: 2)
+### 4️⃣ **Inventory Staff** (ID: 23116001)
 **Access:** `/inventory/overview`
 
 **Functions:**
@@ -109,7 +110,7 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ Scan (Barcode scanning)
 
 **Testing Flow:**
-1. Login as Inventory Staff (ID: 2)
+1. Login as Inventory Staff (ID: 23116001)
 2. View **Overview** - check inventory summary
 3. Go to **Stock In** - add items to inventory
 4. Go to **Stock Out** - remove items
@@ -118,7 +119,7 @@ Lahat ng suppliers ay may **password: `password123`**
 
 ---
 
-### 5️⃣ **Logistics Coordinator** (ID: 4)
+### 5️⃣ **Logistics Coordinator** (ID: 23116003)
 **Access:** `/logistics-coordinator`
 
 **Functions:**
@@ -128,7 +129,7 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ Performance Reports (View delivery performance)
 
 **Testing Flow:**
-1. Login as Logistics Coordinator (ID: 4)
+1. Login as Logistics Coordinator (ID: 23116003)
 2. View Dashboard - check logistics statistics
 3. Go to **Delivery Schedules** - create new delivery schedule
 4. Check **Active Deliveries** - track ongoing deliveries
@@ -136,7 +137,7 @@ Lahat ng suppliers ay may **password: `password123`**
 
 ---
 
-### 6️⃣ **Franchise Manager** (ID: 5)
+### 6️⃣ **Franchise Manager** (ID: 23116004)
 **Access:** `/franchise`
 
 **Functions:**
@@ -148,7 +149,7 @@ Lahat ng suppliers ay may **password: `password123`**
 - ✅ Reports (Generate franchise reports)
 
 **Testing Flow:**
-1. Login as Franchise Manager (ID: 5)
+1. Login as Franchise Manager (ID: 23116004)
 2. View Dashboard - check franchise statistics
 3. Go to **Applications** - create new franchise application
 4. Try mag-approve/reject ng application

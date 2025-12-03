@@ -4,33 +4,33 @@
 
 | Role | ID | Email |
 |------|-----|-------|
-| System Admin | 7 | admin@chakanoks.com |
-| Central Office Admin | 1 | Ed@gmail.com |
-| Branch Manager | 3 | pedro@example.com |
-| Inventory Staff | 2 | maria@example.com |
-| Logistics Coordinator | 4 | juan@example.com |
-| Franchise Manager | 5 | ana@example.com |
+| System Admin | 23116005 | admin@chakanoks.com |
+| Central Office Admin | 23116000 | Ed@gmail.com |
+| Branch Manager | 23116002 | marcobatiller@gmail.com |
+| Inventory Staff | 23116001 | jaspercanitan@gmail.com |
+| Logistics Coordinator | 23116003 | vincentdionio@gmail.com |
+| Franchise Manager | 23116004 | kristineamojallas@gmail.com |
 | Supplier | 1001 | (San Miguel Foods - use Supplier ID) |
 
 ---
 
 ## 🎯 Quick Test Flow (5 Minutes)
 
-### 1. **System Admin** (ID: 7)
+### 1. **System Admin** (ID: 23116005)
 - ✅ Login → Check Dashboard
 - ✅ Go to **User Management** → Create User
 - ✅ Go to **Contact Messages** → Check notifications
 - ✅ Try **Delete User** → Test secure confirmation
 
-### 2. **Branch Manager** (ID: 3)
+### 2. **Branch Manager** (ID: 23116002)
 - ✅ Login → View Dashboard
 - ✅ Go to **Purchase Request** → Create Request
 
-### 3. **Inventory Staff** (ID: 2)
+### 3. **Inventory Staff** (ID: 23116001)
 - ✅ Login → View Overview
 - ✅ Go to **Stock In** → Add items
 
-### 4. **Franchise Manager** (ID: 5)
+### 4. **Franchise Manager** (ID: 23116004)
 - ✅ Login → View Dashboard
 - ✅ Go to **Applications** → Create Application
 

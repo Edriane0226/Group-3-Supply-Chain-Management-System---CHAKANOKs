@@ -173,7 +173,7 @@ class SystemAdmin extends Controller
             'password'    => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'role_id'     => $this->request->getPost('role_id'),
             'branch_id'   => $this->request->getPost('branch_id') ?: null,
-            'status'      => $this->request->getPost('status') ?? 'active',
+            'created_at'  => date('Y-m-d H:i:s'),
         ];
 
         $userId = $this->userModel->insert($userData);
@@ -247,7 +247,6 @@ class SystemAdmin extends Controller
             'email'       => $this->request->getPost('email'),
             'role_id'     => $this->request->getPost('role_id'),
             'branch_id'   => $this->request->getPost('branch_id') ?: null,
-            'status'      => $this->request->getPost('status') ?? 'active',
         ];
 
         // Update password if provided
