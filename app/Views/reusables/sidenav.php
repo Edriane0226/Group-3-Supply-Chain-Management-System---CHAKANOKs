@@ -159,6 +159,9 @@
       <a href="<?= site_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>
       <a href="<?= site_url('branches') ?>"><i class="bi bi-building me-2"></i> Branches</a>
       <a href="<?= site_url('purchase-request') ?>"><i class="bi bi-journal-text me-2"></i> Purchase Request</a>
+      <a href="<?= site_url('branch-transfers') ?>" class="<?= (strpos(uri_string(), 'branch-transfers') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-arrow-left-right me-2"></i> Branch Transfers
+      </a>
       <a href="<?= site_url('supplier-contracts') ?>" class="<?= (strpos(uri_string(), 'supplier-contracts') !== false) ? 'active' : '' ?>">
           <i class="bi bi-file-earmark-text me-2"></i> Supplier Contracts
       </a>
@@ -281,6 +284,14 @@
       </a>
       <a href="<?= site_url('purchase-request') ?>" class="<?= (uri_string() == 'purchase-request') ? 'active' : '' ?>">
           <i class="bi bi-journal-text me-2"></i> Purchase Request
+      </a>
+      <a href="<?= site_url('branch-transfers') ?>" class="<?= (strpos(uri_string(), 'branch-transfers') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-arrow-left-right me-2"></i> Branch Transfers
+          <?php
+          if (isset($pendingCount) && $pendingCount > 0):
+          ?>
+              <span class="badge bg-warning text-dark ms-1"><?= $pendingCount ?></span>
+          <?php endif; ?>
       </a>
       <a href="<?= site_url('deliveries') ?>" class="<?= (uri_string() == 'deliveries') ? 'active' : '' ?>">
           <i class="bi bi-truck me-2"></i> Deliveries

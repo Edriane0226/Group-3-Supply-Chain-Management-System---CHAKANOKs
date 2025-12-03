@@ -33,7 +33,7 @@
  database.default.hostname = localhost
  database.default.database = chakanoks
  database.default.username = root
- database.default.password = admin
+ database.default.password = 
  database.default.DBDriver = MySQLi
 # database.default.DBPrefix =
  database.default.port = 3306

@@ -62,6 +62,18 @@ $routes->get('deliveries/details/(:num)', 'Deliveries::details/$1');
 $routes->post('deliveries/receive/(:num)', 'Deliveries::receive/$1');
 $routes->post('deliveries/cancel/(:num)', 'Deliveries::cancel/$1');
 
+// Branch Transfer Routes
+$routes->group('branch-transfers', function($routes) {
+    $routes->get('/', 'BranchTransfer::index');
+    $routes->get('create', 'BranchTransfer::create');
+    $routes->post('store', 'BranchTransfer::store');
+    $routes->get('view/(:num)', 'BranchTransfer::view/$1');
+    $routes->post('approve/(:num)', 'BranchTransfer::approve/$1');
+    $routes->post('reject/(:num)', 'BranchTransfer::reject/$1');
+    $routes->post('complete/(:num)', 'BranchTransfer::complete/$1');
+    $routes->get('get-item-details', 'BranchTransfer::getItemDetails');
+});
+
 //Para sa User Management CRUD ug Page
 $routes->get('users', 'UserManagement::index');
 $routes->get('create', 'UserManagement::create');
