@@ -86,17 +86,6 @@ class UserSeeder extends Seeder
                 'updated_at'      => date('Y-m-d H:i:s'),
             ],
             [
-                'first_Name'      => 'Luis',
-                'last_Name'       => 'Garcia',
-                'middle_Name'     => '',
-                'email'           => 'luis@example.com',
-                'password'       => password_hash('password123', PASSWORD_DEFAULT),
-                'role_id'         => $roleIds['Supplier'] ?? null,
-                'branch_id'       => $mainBranch->id ?? null,
-                'created_at'      => date('Y-m-d H:i:s'),
-                'updated_at'      => date('Y-m-d H:i:s'),
-            ],
-            [
                 'first_Name'      => 'Admin',
                 'last_Name'       => 'System',
                 'middle_Name'     => '',

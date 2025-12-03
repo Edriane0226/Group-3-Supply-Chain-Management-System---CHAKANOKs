@@ -43,16 +43,11 @@ class Auth extends Controller
         $id       = $this->request->getVar('id');
         $password = $this->request->getVar('password');
 
-        // Check if supplier login (id >= 1001)
-        if ($id >= 1001 && $id <= 1008) {
-            $supplierModel = new \App\Models\SupplierModel();
-            $supplier = $supplierModel->where('id', $id)->first();
+        // Check if supplier login - first check if ID exists in suppliers table
+        $supplierModel = new \App\Models\SupplierModel();
+        $supplier = $supplierModel->where('id', $id)->first();
 
-            if (!$supplier) {
-                $session->setFlashdata('error', 'Invalid Supplier ID or password');
-                return redirect()->back();
-            }
-
+        if ($supplier) {
             // Verify password
             if (!password_verify($password, $supplier['password'])) {
                 $session->setFlashdata('error', 'Invalid Supplier ID or password');

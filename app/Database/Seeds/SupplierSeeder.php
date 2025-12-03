@@ -8,8 +8,12 @@ class SupplierSeeder extends Seeder
 {
     public function run()
     {
+        // Ensure AUTO_INCREMENT is set to 1001
+        $this->db->query('ALTER TABLE suppliers AUTO_INCREMENT = 1001;');
+        
         $data = [
             [
+                'id'            => 1001,
                 'supplier_name' => 'San Miguel Foods Inc.',
                 'contact_info'  => 'orders@smfoods.com | +63 917 555 1001',
                 'address'       => 'Ortigas Center, Pasig City',
@@ -24,6 +28,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1002,
                 'supplier_name' => 'Bounty Fresh Chicken Supply',
                 'contact_info'  => 'sales@bountyfresh.com | +63 918 333 2002',
                 'address'       => 'San Fernando, Pampanga',
@@ -38,6 +43,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1003,
                 'supplier_name' => 'NutriAsia Condiments Distributor',
                 'contact_info'  => 'support@nutriasia.com | +63 917 222 3456',
                 'address'       => 'Taguig City, Metro Manila',
@@ -52,6 +58,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1004,
                 'supplier_name' => 'Mega Packaging Solutions',
                 'contact_info'  => 'info@megapack.com | +63 925 667 4589',
                 'address'       => 'Mandaue City, Cebu',
@@ -66,6 +73,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1005,
                 'supplier_name' => 'PureOil Philippines',
                 'contact_info'  => 'orders@pureoil.ph | +63 927 452 6879',
                 'address'       => 'Calamba, Laguna',
@@ -80,6 +88,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1006,
                 'supplier_name' => 'FastServe Kitchen Equipment Corp.',
                 'contact_info'  => 'sales@fastserve.com | +63 928 122 9988',
                 'address'       => 'Quezon City, Metro Manila',
@@ -94,6 +103,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1007,
                 'supplier_name' => 'CleanPro Janitorial Supplies',
                 'contact_info'  => 'sales@cleanpro.com.ph | +63 926 778 1203',
                 'address'       => 'Iloilo City',
@@ -108,6 +118,7 @@ class SupplierSeeder extends Seeder
                 'updated_at'    => null,
             ],
             [
+                'id'            => 1008,
                 'supplier_name' => 'FreshVeg Produce Supplier',
                 'contact_info'  => 'freshveg@produce.ph | +63 915 444 7890',
                 'address'       => 'Baguio City',
@@ -123,6 +134,18 @@ class SupplierSeeder extends Seeder
             ],
         ];
 
-        $this->db->table('suppliers')->insertBatch($data);
+        // Check if suppliers already exist, if not insert with explicit ID
+        $suppliersTable = $this->db->table('suppliers');
+        foreach ($data as $supplier) {
+            $supplierId = $supplier['id'];
+            $supplierName = $supplier['supplier_name'];
+            
+            $existing = $suppliersTable->where('supplier_name', $supplierName)->get()->getRowArray();
+            if (!$existing) {
+                // Insert with explicit ID
+                $suppliersTable->insert($supplier);
+            }
+            // If supplier already exists, skip (to avoid duplicate)
+        }
     }
 }

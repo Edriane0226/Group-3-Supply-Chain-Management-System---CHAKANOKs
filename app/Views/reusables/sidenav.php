@@ -159,6 +159,9 @@
       <a href="<?= site_url('users') ?>"><i class="bi bi-people me-2"></i> User Management</a>
       <a href="<?= site_url('branches') ?>"><i class="bi bi-building me-2"></i> Branches</a>
       <a href="<?= site_url('purchase-request') ?>"><i class="bi bi-journal-text me-2"></i> Purchase Request</a>
+      <a href="<?= site_url('supplier-contracts') ?>" class="<?= (strpos(uri_string(), 'supplier-contracts') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-file-earmark-text me-2"></i> Supplier Contracts
+      </a>
 
   <?php elseif ($role === 'Inventory Staff'): ?>
       <a href="<?= site_url('inventory/overview') ?>" class="<?= (uri_string() == 'inventory/overview') ? 'active' : '' ?>">

@@ -41,6 +41,20 @@ $routes->post('purchase-requests', 'PurchaseRequest::store');
 $routes->post('purchase-requests/approve/(:num)', 'PurchaseRequest::approve/$1');
 $routes->post('purchase-requests/cancel/(:num)', 'PurchaseRequest::cancel/$1');
 $routes->post('purchase-requests/reject/(:num)', 'PurchaseRequest::reject/$1');
+
+// Supplier Contract Routes (Central Office Admin only)
+$routes->group('supplier-contracts', function($routes) {
+    $routes->get('/', 'SupplierContract::index');
+    $routes->get('create', 'SupplierContract::create');
+    $routes->post('store', 'SupplierContract::store');
+    $routes->get('view/(:num)', 'SupplierContract::view/$1');
+    $routes->get('edit/(:num)', 'SupplierContract::edit/$1');
+    $routes->post('update/(:num)', 'SupplierContract::update/$1');
+    $routes->post('delete/(:num)', 'SupplierContract::delete/$1');
+    $routes->post('activate/(:num)', 'SupplierContract::activate/$1');
+    $routes->get('renew/(:num)', 'SupplierContract::renew/$1');
+    $routes->post('renew/(:num)', 'SupplierContract::processRenewal/$1');
+});
 $routes->get('orders', 'Orders::index'); // legacy link, can be removed later
 $routes->get('deliveries', 'Deliveries::index');
 

@@ -170,6 +170,17 @@ class SupplierItemSeeder extends Seeder
             ],
         ];
 
-        $this->db->table('supplier_items')->insertBatch($data);
+        // Check if supplier items already exist, if not insert
+        $supplierItemsTable = $this->db->table('supplier_items');
+        foreach ($data as $item) {
+            $existing = $supplierItemsTable
+                ->where('supplier_id', $item['supplier_id'])
+                ->where('item_name', $item['item_name'])
+                ->get()
+                ->getRowArray();
+            if (!$existing) {
+                $supplierItemsTable->insert($item);
+            }
+        }
     }
 }
