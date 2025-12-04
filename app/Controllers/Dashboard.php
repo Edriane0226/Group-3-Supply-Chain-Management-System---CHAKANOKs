@@ -90,6 +90,29 @@ class Dashboard extends Controller
         } elseif ($role === 'Central Office Admin') {
             $allUsers = $userModel->findAll();
             $Inv = new InventoryModel();
+            $purchaseRequestModel = new PurchaseRequestModel();
+            $purchaseOrderModel = new PurchaseOrderModel();
+
+            // Get Purchase Request Statistics
+            $prStatistics = $purchaseRequestModel->getStatisticsSummary();
+            $prByBranch = $purchaseRequestModel->getStatisticsByBranch();
+            $prBySupplier = array_slice($purchaseRequestModel->getStatisticsBySupplier(), 0, 5); // Top 5 suppliers
+            $prAvgProcessingTime = $purchaseRequestModel->getAverageProcessingTime();
+            $prTrends = $purchaseRequestModel->getRequestTrends(30); // Last 30 days
+
+            // Get Cost Analysis Data
+            $costSummary = $purchaseOrderModel->getCostSummary(); // Overall summary
+            $costByBranch = $purchaseOrderModel->getCostBreakdownByBranch(); // Cost by branch
+            $costBySupplier = array_slice($purchaseOrderModel->getCostBreakdownBySupplier(), 0, 5); // Top 5 suppliers by cost
+            $costTrends = $purchaseOrderModel->getCostTrends(30); // Last 30 days cost trends
+            $apSummary = $purchaseOrderModel->getAccountsPayableSummary(); // Accounts payable summary
+
+            // Get Wastage Analysis Data
+            $wastageSummary = $Inv->getWastageSummary(); // Overall wastage summary
+            $wastageByBranch = $Inv->getWastageByBranch(); // Wastage by branch
+            $wastageByItem = array_slice($Inv->getWastageByItem(null, 10), 0, 10); // Top 10 items with wastage
+            $wastageByReason = $Inv->getWastageByReason(); // Wastage by reason (expired, damaged)
+            $wastageTrends = $Inv->getWastageTrends(6); // Last 6 months wastage trends
 
             $windowStart = date('Y-m-d');
             $windowEnd = date('Y-m-d', strtotime('+14 days'));
@@ -165,6 +188,24 @@ class Dashboard extends Controller
                 'centralDeliveryStatusSummary' => $centralDeliveryStatusSummary,
                 'centralDelayedDeliveries' => array_slice($centralDelayedDeliveries, 0, 5),
                 'supplierPerformance' => array_slice($supplierPerformance, 0, 5),
+                // Purchase Request Statistics
+                'prStatistics' => $prStatistics,
+                'prByBranch' => $prByBranch,
+                'prBySupplier' => $prBySupplier,
+                'prAvgProcessingTime' => $prAvgProcessingTime,
+                'prTrends' => $prTrends,
+                // Cost Analysis Data
+                'costSummary' => $costSummary,
+                'costByBranch' => $costByBranch,
+                'costBySupplier' => $costBySupplier,
+                'costTrends' => $costTrends,
+                'apSummary' => $apSummary,
+                // Wastage Analysis Data
+                'wastageSummary' => $wastageSummary,
+                'wastageByBranch' => $wastageByBranch,
+                'wastageByItem' => $wastageByItem,
+                'wastageByReason' => $wastageByReason,
+                'wastageTrends' => $wastageTrends,
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
@@ -188,5 +229,42 @@ class Dashboard extends Controller
         //     'branch_name' => $session->get('branch_name'),
             
         // ]);
+    }
+
+    /**
+     * Test endpoint to verify new data is available
+     * Access: /dashboard/test-data
+     */
+    public function testData()
+    {
+        $session = session();
+        
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Central Office Admin') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized. Please login as Central Office Admin.']);
+        }
+
+        $purchaseRequestModel = new PurchaseRequestModel();
+        $purchaseOrderModel = new PurchaseOrderModel();
+        $inventoryModel = new InventoryModel();
+
+        $data = [
+            'status' => 'success',
+            'message' => 'All new methods are working!',
+            'data' => [
+                'purchase_request_statistics' => $purchaseRequestModel->getStatisticsSummary(),
+                'purchase_request_by_branch' => $purchaseRequestModel->getStatisticsByBranch(),
+                'purchase_request_by_supplier' => array_slice($purchaseRequestModel->getStatisticsBySupplier(), 0, 3),
+                'purchase_request_avg_processing_time' => $purchaseRequestModel->getAverageProcessingTime(),
+                'cost_summary' => $purchaseOrderModel->getCostSummary(),
+                'cost_by_branch' => $purchaseOrderModel->getCostBreakdownByBranch(),
+                'cost_by_supplier' => array_slice($purchaseOrderModel->getCostBreakdownBySupplier(), 0, 3),
+                'accounts_payable_summary' => $purchaseOrderModel->getAccountsPayableSummary(),
+                'wastage_summary' => $inventoryModel->getWastageSummary(),
+                'wastage_by_branch' => $inventoryModel->getWastageByBranch(),
+                'wastage_by_reason' => $inventoryModel->getWastageByReason(),
+            ]
+        ];
+
+        return $this->response->setJSON($data);
     }
 }

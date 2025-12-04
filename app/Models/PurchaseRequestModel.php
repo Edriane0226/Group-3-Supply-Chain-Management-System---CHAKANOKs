@@ -24,6 +24,8 @@ class PurchaseRequestModel extends Model
         'remarks',
         'request_date',
         'status',
+        'approved_by',
+        'approved_at',
         'created_at',
         'updated_at'
     ];
@@ -152,5 +154,108 @@ class PurchaseRequestModel extends Model
         }
 
         return $this->update($requestId, $data);
+    }
+
+    /**
+     * Get purchase request statistics summary
+     * Returns counts by status
+     */
+    public function getStatisticsSummary(): array
+    {
+        $total = $this->countAllResults(false);
+        $pending = $this->where('status', 'pending')->countAllResults(false);
+        $approved = $this->where('status', 'approved')->countAllResults(false);
+        $rejected = $this->where('status', 'rejected')->countAllResults(false);
+        $cancelled = $this->where('status', 'cancelled')->countAllResults(false);
+
+        $approvalRate = $total > 0 ? round(($approved / $total) * 100, 2) : 0;
+
+        return [
+            'total' => $total,
+            'pending' => $pending,
+            'approved' => $approved,
+            'rejected' => $rejected,
+            'cancelled' => $cancelled,
+            'approval_rate' => $approvalRate,
+        ];
+    }
+
+    /**
+     * Get purchase request statistics by branch
+     */
+    public function getStatisticsByBranch(): array
+    {
+        $query = "
+            SELECT
+                branches.id,
+                branches.branch_name,
+                COUNT(purchase_requests.id) as total_requests,
+                SUM(CASE WHEN purchase_requests.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN purchase_requests.status = 'approved' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN purchase_requests.status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                SUM(CASE WHEN purchase_requests.status = 'cancelled' THEN 1 ELSE 0 END) as cancelled
+            FROM purchase_requests
+            JOIN branches ON branches.id = purchase_requests.branch_id
+            GROUP BY branches.id, branches.branch_name
+            ORDER BY total_requests DESC
+        ";
+
+        return $this->db->query($query)->getResultArray();
+    }
+
+    /**
+     * Get purchase request statistics by supplier
+     */
+    public function getStatisticsBySupplier(): array
+    {
+        $query = "
+            SELECT
+                suppliers.id,
+                suppliers.supplier_name,
+                COUNT(purchase_requests.id) as total_requests,
+                SUM(CASE WHEN purchase_requests.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN purchase_requests.status = 'approved' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN purchase_requests.status = 'rejected' THEN 1 ELSE 0 END) as rejected
+            FROM purchase_requests
+            JOIN suppliers ON suppliers.id = purchase_requests.supplier_id
+            GROUP BY suppliers.id, suppliers.supplier_name
+            ORDER BY total_requests DESC
+        ";
+
+        return $this->db->query($query)->getResultArray();
+    }
+
+    /**
+     * Calculate average processing time for approved requests
+     * Returns average time in hours
+     */
+    public function getAverageProcessingTime(): float
+    {
+        $query = "
+            SELECT
+                AVG(TIMESTAMPDIFF(HOUR, created_at, approved_at)) as avg_hours
+            FROM purchase_requests
+            WHERE status = 'approved'
+                AND approved_at IS NOT NULL
+        ";
+
+        $result = $this->db->query($query)->getRowArray();
+        return (float)($result['avg_hours'] ?? 0);
+    }
+
+    /**
+     * Get purchase request trends (daily count for last 30 days)
+     */
+    public function getRequestTrends(int $days = 30): array
+    {
+        $startDate = date('Y-m-d', strtotime("-{$days} days"));
+        
+        $query = $this->select('DATE(created_at) as date, COUNT(*) as count')
+                    ->where('created_at >=', $startDate)
+                    ->groupBy('DATE(created_at)')
+                    ->orderBy('date', 'ASC')
+                    ->get();
+
+        return $query->getResultArray();
     }
 }

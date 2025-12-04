@@ -300,6 +300,107 @@
             <?= $branch_performance_chart ?? '<p>No performance data available.</p>' ?>
           </div>
         </div>
+
+        <!-- NEW: Purchase Request Statistics Card -->
+        <div class="card mb-3 border-primary">
+          <div class="card-header bg-primary text-white">
+            <span class="fw-semibold"><i class="bi bi-clipboard-check me-2"></i>Purchase Request Statistics</span>
+          </div>
+          <div class="card-body">
+            <?php if (isset($prStatistics)): ?>
+              <div class="row text-center">
+                <div class="col-4">
+                  <div class="mb-2">
+                    <strong class="text-primary"><?= esc($prStatistics['total'] ?? 0) ?></strong>
+                    <small class="d-block text-muted">Total</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="mb-2">
+                    <strong class="text-warning"><?= esc($prStatistics['pending'] ?? 0) ?></strong>
+                    <small class="d-block text-muted">Pending</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="mb-2">
+                    <strong class="text-success"><?= esc($prStatistics['approved'] ?? 0) ?></strong>
+                    <small class="d-block text-muted">Approved</small>
+                  </div>
+                </div>
+              </div>
+              <hr>
+              <div class="text-center">
+                <small class="text-muted">Approval Rate: <strong><?= esc($prStatistics['approval_rate'] ?? 0) ?>%</strong></small>
+                <?php if (isset($prAvgProcessingTime) && $prAvgProcessingTime > 0): ?>
+                  <br><small class="text-muted">Avg Processing Time: <strong><?= esc(round($prAvgProcessingTime, 1)) ?> hours</strong></small>
+                <?php endif; ?>
+              </div>
+            <?php else: ?>
+              <p class="text-muted mb-0">No purchase request data available.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <!-- NEW: Cost Analysis Card -->
+        <div class="card mb-3 border-success">
+          <div class="card-header bg-success text-white">
+            <span class="fw-semibold"><i class="bi bi-cash-stack me-2"></i>Cost Analysis</span>
+          </div>
+          <div class="card-body">
+            <?php if (isset($costSummary)): ?>
+              <div class="mb-2">
+                <strong>Total Cost:</strong> 
+                <span class="text-success">₱<?= number_format($costSummary['total_cost'] ?? 0, 2) ?></span>
+              </div>
+              <div class="mb-2">
+                <strong>Total Orders:</strong> <?= esc($costSummary['total_orders'] ?? 0) ?>
+              </div>
+              <div class="mb-2">
+                <strong>Avg Order Value:</strong> 
+                <span>₱<?= number_format($costSummary['avg_order_value'] ?? 0, 2) ?></span>
+              </div>
+              <?php if (isset($apSummary)): ?>
+                <hr>
+                <small class="text-muted">
+                  <strong>Outstanding:</strong> ₱<?= number_format($apSummary['total_pending'] ?? 0, 2) ?><br>
+                  <strong>Overdue:</strong> ₱<?= number_format($apSummary['total_overdue'] ?? 0, 2) ?>
+                </small>
+              <?php endif; ?>
+            <?php else: ?>
+              <p class="text-muted mb-0">No cost data available.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <!-- NEW: Wastage Analysis Card -->
+        <div class="card mb-3 border-danger">
+          <div class="card-header bg-danger text-white">
+            <span class="fw-semibold"><i class="bi bi-exclamation-triangle me-2"></i>Wastage Analysis</span>
+          </div>
+          <div class="card-body">
+            <?php if (isset($wastageSummary)): ?>
+              <div class="mb-2">
+                <strong>Total Wastage:</strong> 
+                <span class="text-danger">₱<?= number_format($wastageSummary['total_wastage_value'] ?? 0, 2) ?></span>
+              </div>
+              <div class="mb-2">
+                <small class="text-muted">
+                  Expired: ₱<?= number_format($wastageSummary['expired_value'] ?? 0, 2) ?><br>
+                  Damaged: ₱<?= number_format($wastageSummary['damaged_value'] ?? 0, 2) ?>
+                </small>
+              </div>
+              <?php if (isset($wastageByReason)): ?>
+                <hr>
+                <small class="text-muted">
+                  <strong>Expired Items:</strong> <?= esc($wastageByReason['expired']['item_count'] ?? 0) ?><br>
+                  <strong>Damaged Items:</strong> <?= esc($wastageByReason['damaged']['item_count'] ?? 0) ?>
+                </small>
+              <?php endif; ?>
+            <?php else: ?>
+              <p class="text-muted mb-0">No wastage data available.</p>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
 
       <div class="col-lg-4">

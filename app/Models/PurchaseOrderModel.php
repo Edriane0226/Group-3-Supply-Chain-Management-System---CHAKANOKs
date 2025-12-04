@@ -225,4 +225,159 @@ class PurchaseOrderModel extends Model
 
         return $this->update($poId, ['total_amount' => $total]);
     }
+
+    /**
+     * Get cost breakdown by branch
+     */
+    public function getCostBreakdownByBranch(?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $query = "
+            SELECT
+                branches.id,
+                branches.branch_name,
+                COUNT(purchase_orders.id) as total_orders,
+                SUM(purchase_orders.total_amount) as total_cost,
+                AVG(purchase_orders.total_amount) as avg_order_value
+            FROM purchase_orders
+            JOIN branches ON branches.id = purchase_orders.branch_id
+            WHERE purchase_orders.status IN ('Approved', 'Delivered', 'In_Transit')
+        ";
+
+        $params = [];
+        if ($dateFrom) {
+            $query .= " AND purchase_orders.created_at >= ?";
+            $params[] = $dateFrom;
+        }
+        if ($dateTo) {
+            $query .= " AND purchase_orders.created_at <= ?";
+            $params[] = $dateTo . ' 23:59:59';
+        }
+
+        $query .= " GROUP BY branches.id, branches.branch_name ORDER BY total_cost DESC";
+
+        return $this->db->query($query, $params)->getResultArray();
+    }
+
+    /**
+     * Get cost breakdown by supplier
+     */
+    public function getCostBreakdownBySupplier(?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $query = "
+            SELECT
+                suppliers.id,
+                suppliers.supplier_name,
+                COUNT(purchase_orders.id) as total_orders,
+                SUM(purchase_orders.total_amount) as total_cost,
+                AVG(purchase_orders.total_amount) as avg_order_value
+            FROM purchase_orders
+            JOIN suppliers ON suppliers.id = purchase_orders.supplier_id
+            WHERE purchase_orders.status IN ('Approved', 'Delivered', 'In_Transit')
+        ";
+
+        $params = [];
+        if ($dateFrom) {
+            $query .= " AND purchase_orders.created_at >= ?";
+            $params[] = $dateFrom;
+        }
+        if ($dateTo) {
+            $query .= " AND purchase_orders.created_at <= ?";
+            $params[] = $dateTo . ' 23:59:59';
+        }
+
+        $query .= " GROUP BY suppliers.id, suppliers.supplier_name ORDER BY total_cost DESC";
+
+        return $this->db->query($query, $params)->getResultArray();
+    }
+
+    /**
+     * Get cost trends (daily cost for last N days)
+     */
+    public function getCostTrends(int $days = 30): array
+    {
+        $startDate = date('Y-m-d', strtotime("-{$days} days"));
+        
+        $query = "
+            SELECT
+                DATE(created_at) as date,
+                COUNT(*) as order_count,
+                SUM(total_amount) as daily_cost
+            FROM purchase_orders
+            WHERE created_at >= ?
+                AND status IN ('Approved', 'Delivered', 'In_Transit')
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ";
+
+        return $this->db->query($query, [$startDate])->getResultArray();
+    }
+
+    /**
+     * Get total cost summary
+     */
+    public function getCostSummary(?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $query = "
+            SELECT
+                COUNT(*) as total_orders,
+                SUM(total_amount) as total_cost,
+                AVG(total_amount) as avg_order_value,
+                MIN(total_amount) as min_order_value,
+                MAX(total_amount) as max_order_value
+            FROM purchase_orders
+            WHERE status IN ('Approved', 'Delivered', 'In_Transit')
+        ";
+
+        $params = [];
+        if ($dateFrom) {
+            $query .= " AND created_at >= ?";
+            $params[] = $dateFrom;
+        }
+        if ($dateTo) {
+            $query .= " AND created_at <= ?";
+            $params[] = $dateTo . ' 23:59:59';
+        }
+
+        $result = $this->db->query($query, $params)->getRowArray();
+
+        return [
+            'total_orders' => (int)($result['total_orders'] ?? 0),
+            'total_cost' => (float)($result['total_cost'] ?? 0),
+            'avg_order_value' => (float)($result['avg_order_value'] ?? 0),
+            'min_order_value' => (float)($result['min_order_value'] ?? 0),
+            'max_order_value' => (float)($result['max_order_value'] ?? 0),
+        ];
+    }
+
+    /**
+     * Get accounts payable summary (outstanding payments)
+     */
+    public function getAccountsPayableSummary(): array
+    {
+        $apModel = new \App\Models\AccountsPayableModel();
+        
+        $totalPending = $this->db->table('accounts_payable')
+            ->selectSum('balance_due', 'total')
+            ->where('payment_status', 'pending')
+            ->get()
+            ->getRowArray();
+
+        $totalOverdue = $this->db->table('accounts_payable')
+            ->selectSum('balance_due', 'total')
+            ->where('payment_status', 'overdue')
+            ->get()
+            ->getRowArray();
+
+        $totalPaid = $this->db->table('accounts_payable')
+            ->selectSum('amount_paid', 'total')
+            ->where('payment_status', 'paid')
+            ->get()
+            ->getRowArray();
+
+        return [
+            'total_pending' => (float)($totalPending['total'] ?? 0),
+            'total_overdue' => (float)($totalOverdue['total'] ?? 0),
+            'total_paid' => (float)($totalPaid['total'] ?? 0),
+        ];
+    }
 }

@@ -290,6 +290,180 @@ class InventoryModel extends Model
         return $result['expired_value'] ?? 0.0;
     }
 
+    /**
+     * Get wastage breakdown by branch
+     */
+    public function getWastageByBranch(): array
+    {
+        $query = "
+            SELECT
+                branches.id,
+                branches.branch_name,
+                COUNT(DISTINCT CASE WHEN si.expiry_date < CURDATE() THEN si.id END) as expired_items_count,
+                SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) * si.price ELSE 0 END) as expired_value,
+                COUNT(DISTINCT CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.id END) as damaged_items_count,
+                SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity * si.price ELSE 0 END) as damaged_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+            JOIN branches ON branches.id = si.branch_id
+            WHERE (si.expiry_date < CURDATE() OR so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%')
+            GROUP BY branches.id, branches.branch_name
+            ORDER BY (SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) * si.price ELSE 0 END) + SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity * si.price ELSE 0 END)) DESC
+        ";
+
+        return $this->db->query($query)->getResultArray();
+    }
+
+    /**
+     * Get wastage breakdown by item
+     */
+    public function getWastageByItem(?int $branchId = null, int $limit = 10): array
+    {
+        $whereClause = "WHERE (si.expiry_date < CURDATE() OR so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%')";
+        $params = [];
+
+        if ($branchId) {
+            $whereClause .= " AND si.branch_id = ?";
+            $params[] = $branchId;
+        }
+
+        $query = "
+            SELECT
+                si.item_name,
+                si.branch_id,
+                branches.branch_name,
+                SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) ELSE 0 END) as expired_quantity,
+                SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) * si.price ELSE 0 END) as expired_value,
+                SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity ELSE 0 END) as damaged_quantity,
+                SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity * si.price ELSE 0 END) as damaged_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+            LEFT JOIN branches ON branches.id = si.branch_id
+            {$whereClause}
+            GROUP BY si.item_name, si.branch_id, branches.branch_name
+            HAVING (SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) * si.price ELSE 0 END) + SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity * si.price ELSE 0 END)) > 0
+            ORDER BY (SUM(CASE WHEN si.expiry_date < CURDATE() THEN (si.quantity - IFNULL(so.quantity, 0)) * si.price ELSE 0 END) + SUM(CASE WHEN so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' THEN so.quantity * si.price ELSE 0 END)) DESC
+            LIMIT {$limit}
+        ";
+
+        return $this->db->query($query, $params)->getResultArray();
+    }
+
+    /**
+     * Get wastage by reason (expired, damaged, etc.)
+     */
+    public function getWastageByReason(): array
+    {
+        // Expired items
+        $expiredQuery = "
+            SELECT
+                'expired' as reason,
+                COUNT(DISTINCT si.id) as item_count,
+                SUM((si.quantity - IFNULL(so.quantity, 0)) * si.price) as total_value
+            FROM stock_in si
+            LEFT JOIN stock_out so
+                ON si.item_type_id = so.item_type_id
+                AND si.branch_id = so.branch_id
+                AND si.item_name = so.item_name
+            WHERE si.expiry_date < CURDATE()
+        ";
+
+        $expired = $this->db->query($expiredQuery)->getRowArray();
+
+        // Damaged items
+        $damagedQuery = "
+            SELECT
+                'damaged' as reason,
+                COUNT(DISTINCT so.id) as item_count,
+                SUM(so.quantity * si.price) as total_value
+            FROM stock_out so
+            JOIN stock_in si
+                ON so.item_type_id = si.item_type_id
+                AND so.branch_id = si.branch_id
+                AND so.item_name = si.item_name
+            WHERE so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%'
+        ";
+
+        $damaged = $this->db->query($damagedQuery)->getRowArray();
+
+        return [
+            'expired' => [
+                'reason' => 'expired',
+                'item_count' => (int)($expired['item_count'] ?? 0),
+                'total_value' => (float)($expired['total_value'] ?? 0),
+            ],
+            'damaged' => [
+                'reason' => 'damaged',
+                'item_count' => (int)($damaged['item_count'] ?? 0),
+                'total_value' => (float)($damaged['total_value'] ?? 0),
+            ],
+        ];
+    }
+
+    /**
+     * Get wastage trends (monthly wastage for last N months)
+     */
+    public function getWastageTrends(int $months = 6): array
+    {
+        $startDate = date('Y-m-01', strtotime("-{$months} months"));
+
+        $query = "
+            SELECT
+                DATE_FORMAT(so.created_at, '%Y-%m') as month,
+                COUNT(DISTINCT so.id) as wastage_count,
+                SUM(so.quantity * si.price) as wastage_value
+            FROM stock_out so
+            JOIN stock_in si
+                ON so.item_type_id = si.item_type_id
+                AND so.branch_id = si.branch_id
+                AND so.item_name = si.item_name
+            WHERE so.created_at >= ?
+                AND (so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%' OR so.reason LIKE '%expired%')
+            GROUP BY DATE_FORMAT(so.created_at, '%Y-%m')
+            ORDER BY month ASC
+        ";
+
+        return $this->db->query($query, [$startDate])->getResultArray();
+    }
+
+    /**
+     * Get total wastage summary
+     */
+    public function getWastageSummary(): array
+    {
+        $expiredValue = $this->getOverallExpiredValue();
+
+        $damagedQuery = "
+            SELECT
+                SUM(so.quantity * si.price) as total_value,
+                COUNT(DISTINCT so.id) as item_count
+            FROM stock_out so
+            JOIN stock_in si
+                ON so.item_type_id = si.item_type_id
+                AND so.branch_id = si.branch_id
+                AND so.item_name = si.item_name
+            WHERE so.reason LIKE '%damage%' OR so.reason LIKE '%damaged%'
+        ";
+
+        $damaged = $this->db->query($damagedQuery)->getRowArray();
+
+        $totalWastage = $expiredValue + (float)($damaged['total_value'] ?? 0);
+
+        return [
+            'total_wastage_value' => $totalWastage,
+            'expired_value' => $expiredValue,
+            'damaged_value' => (float)($damaged['total_value'] ?? 0),
+            'expired_items_count' => 0, // Can be calculated separately if needed
+            'damaged_items_count' => (int)($damaged['item_count'] ?? 0),
+        ];
+    }
+
     // Deliveries methods
 
     // Create a new delivery
