@@ -14,6 +14,11 @@ class AddCoordinatesToBranches extends Migration
     {
         $db = \Config\Database::connect();
         
+        // Check if table exists first
+        if (!$db->tableExists('branches')) {
+            return;
+        }
+        
         // Check if columns already exist
         if (!$db->fieldExists('latitude', 'branches')) {
             $this->forge->addColumn('branches', [

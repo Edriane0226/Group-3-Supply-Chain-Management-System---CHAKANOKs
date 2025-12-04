@@ -14,6 +14,11 @@ class AddInvoiceDocumentToPurchaseOrders extends Migration
     {
         $db = \Config\Database::connect();
         
+        // Check if table exists first
+        if (!$db->tableExists('purchase_orders')) {
+            return;
+        }
+        
         // Check if column already exists
         if (!$db->fieldExists('invoice_document_path', 'purchase_orders')) {
             $this->forge->addColumn('purchase_orders', [

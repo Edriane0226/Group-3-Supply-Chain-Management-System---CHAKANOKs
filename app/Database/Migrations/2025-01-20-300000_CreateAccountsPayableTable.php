@@ -100,8 +100,16 @@ class CreateAccountsPayableTable extends Migration
         ]);
 
         $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('purchase_order_id', 'purchase_orders', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('supplier_id', 'suppliers', 'id', 'CASCADE', 'CASCADE');
+        
+        // Only add foreign keys if the referenced tables exist
+        $db = \Config\Database::connect();
+        if ($db->tableExists('purchase_orders')) {
+            $this->forge->addForeignKey('purchase_order_id', 'purchase_orders', 'id', 'CASCADE', 'CASCADE');
+        }
+        if ($db->tableExists('suppliers')) {
+            $this->forge->addForeignKey('supplier_id', 'suppliers', 'id', 'CASCADE', 'CASCADE');
+        }
+        
         $this->forge->createTable('accounts_payable');
     }
 
