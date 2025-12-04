@@ -401,9 +401,84 @@
             <?php endif; ?>
           </div>
         </div>
+
+        <!-- NEW: Charts Section -->
+        <?php if ($role == 'Central Office Admin'): ?>
+          <!-- Cost Trends Line Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-graph-up me-2"></i>Cost Trends (Last 30 Days)</span>
+            </div>
+            <div class="card-body">
+              <canvas id="costTrendsChart" height="100"></canvas>
+            </div>
+          </div>
+
+          <!-- Wastage Trends Line Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-graph-down me-2"></i>Wastage Trends (Last 6 Months)</span>
+            </div>
+            <div class="card-body">
+              <canvas id="wastageTrendsChart" height="100"></canvas>
+            </div>
+          </div>
+
+          <!-- Purchase Request Trends Line Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-graph-up-arrow me-2"></i>Purchase Request Trends (Last 30 Days)</span>
+            </div>
+            <div class="card-body">
+              <canvas id="prTrendsChart" height="100"></canvas>
+            </div>
+          </div>
+
+          <!-- Cost by Branch Bar Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-bar-chart me-2"></i>Cost Breakdown by Branch</span>
+            </div>
+            <div class="card-body">
+              <canvas id="costByBranchChart" height="100"></canvas>
+            </div>
+          </div>
+
+          <!-- Wastage by Branch Bar Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-bar-chart-fill me-2"></i>Wastage Breakdown by Branch</span>
+            </div>
+            <div class="card-body">
+              <canvas id="wastageByBranchChart" height="100"></canvas>
+            </div>
+          </div>
+        <?php endif; ?>
       </div>
 
       <div class="col-lg-4">
+        <?php if ($role == 'Central Office Admin'): ?>
+          <!-- Purchase Request Status Pie Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-pie-chart me-2"></i>Purchase Request Status</span>
+            </div>
+            <div class="card-body">
+              <canvas id="prStatusChart" height="200"></canvas>
+            </div>
+          </div>
+
+          <!-- Wastage by Reason Pie Chart -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <span class="fw-semibold"><i class="bi bi-pie-chart-fill me-2"></i>Wastage by Reason</span>
+            </div>
+            <div class="card-body">
+              <canvas id="wastageByReasonChart" height="200"></canvas>
+            </div>
+          </div>
+        <?php endif; ?>
+
         <div class="dashboard-box mb-3">
           <i class="bi bi-pie-chart-fill"></i>
           <h6>Sales Breakdown</h6>
@@ -510,6 +585,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js for data visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <?php if (in_array(($role ?? ''), ['Branch Manager', 'Inventory Staff'])): ?>
 <script>
 async function markIncomingDelivery(deliveryId) {
@@ -559,5 +636,362 @@ async function confirmScheduledDelivery(scheduleId) {
     alert('An error occurred while confirming the delivery.');
   }
 }
+</script>
+<?php endif; ?>
+
+<?php if ($role == 'Central Office Admin'): ?>
+<script>
+// Chart.js configuration
+Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#666';
+
+// Cost Trends Line Chart
+<?php if (isset($costTrends) && !empty($costTrends)): ?>
+const costTrendsCtx = document.getElementById('costTrendsChart');
+if (costTrendsCtx) {
+  new Chart(costTrendsCtx, {
+    type: 'line',
+    data: {
+      labels: <?= json_encode(array_column($costTrends, 'date')) ?>,
+      datasets: [{
+        label: 'Daily Cost (₱)',
+        data: <?= json_encode(array_column($costTrends, 'daily_cost')) ?>,
+        borderColor: 'rgb(40, 167, 69)',
+        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'Cost: ₱' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₱' + value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Wastage Trends Line Chart
+<?php if (isset($wastageTrends) && !empty($wastageTrends)): ?>
+const wastageTrendsCtx = document.getElementById('wastageTrendsChart');
+if (wastageTrendsCtx) {
+  new Chart(wastageTrendsCtx, {
+    type: 'line',
+    data: {
+      labels: <?= json_encode(array_column($wastageTrends, 'month')) ?>,
+      datasets: [{
+        label: 'Wastage Value (₱)',
+        data: <?= json_encode(array_column($wastageTrends, 'wastage_value')) ?>,
+        borderColor: 'rgb(220, 53, 69)',
+        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'Wastage: ₱' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₱' + value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Purchase Request Trends Line Chart
+<?php if (isset($prTrends) && !empty($prTrends)): ?>
+const prTrendsCtx = document.getElementById('prTrendsChart');
+if (prTrendsCtx) {
+  new Chart(prTrendsCtx, {
+    type: 'line',
+    data: {
+      labels: <?= json_encode(array_column($prTrends, 'date')) ?>,
+      datasets: [{
+        label: 'Request Count',
+        data: <?= json_encode(array_column($prTrends, 'count')) ?>,
+        borderColor: 'rgb(13, 110, 253)',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Cost by Branch Bar Chart
+<?php if (isset($costByBranch) && !empty($costByBranch)): ?>
+const costByBranchCtx = document.getElementById('costByBranchChart');
+if (costByBranchCtx) {
+  new Chart(costByBranchCtx, {
+    type: 'bar',
+    data: {
+      labels: <?= json_encode(array_column($costByBranch, 'branch_name')) ?>,
+      datasets: [{
+        label: 'Total Cost (₱)',
+        data: <?= json_encode(array_column($costByBranch, 'total_cost')) ?>,
+        backgroundColor: 'rgba(40, 167, 69, 0.8)',
+        borderColor: 'rgb(40, 167, 69)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return 'Cost: ₱' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '₱' + value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Wastage by Branch Bar Chart
+<?php if (isset($wastageByBranch) && !empty($wastageByBranch)): ?>
+const wastageByBranchCtx = document.getElementById('wastageByBranchChart');
+if (wastageByBranchCtx) {
+  const wastageData = <?= json_encode($wastageByBranch) ?>;
+  const branchNames = wastageData.map(b => b.branch_name);
+  const expiredValues = wastageData.map(b => parseFloat(b.expired_value || 0));
+  const damagedValues = wastageData.map(b => parseFloat(b.damaged_value || 0));
+
+  new Chart(wastageByBranchCtx, {
+    type: 'bar',
+    data: {
+      labels: branchNames,
+      datasets: [
+        {
+          label: 'Expired (₱)',
+          data: expiredValues,
+          backgroundColor: 'rgba(255, 193, 7, 0.8)',
+          borderColor: 'rgb(255, 193, 7)',
+          borderWidth: 1
+        },
+        {
+          label: 'Damaged (₱)',
+          data: damagedValues,
+          backgroundColor: 'rgba(220, 53, 69, 0.8)',
+          borderColor: 'rgb(220, 53, 69)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.dataset.label + ': ₱' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          stacked: false,
+          ticks: {
+            callback: function(value) {
+              return '₱' + value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Purchase Request Status Pie Chart
+<?php if (isset($prStatistics)): ?>
+const prStatusCtx = document.getElementById('prStatusChart');
+if (prStatusCtx) {
+  new Chart(prStatusCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Pending', 'Approved', 'Rejected', 'Cancelled'],
+      datasets: [{
+        data: [
+          <?= esc($prStatistics['pending'] ?? 0) ?>,
+          <?= esc($prStatistics['approved'] ?? 0) ?>,
+          <?= esc($prStatistics['rejected'] ?? 0) ?>,
+          <?= esc($prStatistics['cancelled'] ?? 0) ?>
+        ],
+        backgroundColor: [
+          'rgba(255, 193, 7, 0.8)',
+          'rgba(40, 167, 69, 0.8)',
+          'rgba(220, 53, 69, 0.8)',
+          'rgba(108, 117, 125, 0.8)'
+        ],
+        borderColor: [
+          'rgb(255, 193, 7)',
+          'rgb(40, 167, 69)',
+          'rgb(220, 53, 69)',
+          'rgb(108, 117, 125)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+              return label + ': ' + value + ' (' + percentage + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Wastage by Reason Pie Chart
+<?php if (isset($wastageByReason)): ?>
+const wastageByReasonCtx = document.getElementById('wastageByReasonChart');
+if (wastageByReasonCtx) {
+  new Chart(wastageByReasonCtx, {
+    type: 'pie',
+    data: {
+      labels: ['Expired', 'Damaged'],
+      datasets: [{
+        data: [
+          <?= esc($wastageByReason['expired']['total_value'] ?? 0) ?>,
+          <?= esc($wastageByReason['damaged']['total_value'] ?? 0) ?>
+        ],
+        backgroundColor: [
+          'rgba(255, 193, 7, 0.8)',
+          'rgba(220, 53, 69, 0.8)'
+        ],
+        borderColor: [
+          'rgb(255, 193, 7)',
+          'rgb(220, 53, 69)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = parseFloat(context.parsed || 0);
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+              return label + ': ₱' + value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + percentage + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
 </script>
 <?php endif; ?>
