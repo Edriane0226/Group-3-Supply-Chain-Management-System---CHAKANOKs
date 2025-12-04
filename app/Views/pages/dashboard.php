@@ -402,6 +402,40 @@
           </div>
         </div>
 
+        <!-- NEW: Demand Analysis Card -->
+        <div class="card mb-3 border-info">
+          <div class="card-header bg-info text-white">
+            <span class="fw-semibold"><i class="bi bi-graph-up-arrow me-2"></i>Demand Analysis <small class="text-white-50">(Based on Purchase Patterns)</small></span>
+          </div>
+          <div class="card-body">
+            <?php if (isset($demandSummary)): ?>
+              <div class="mb-2">
+                <strong>Total Requests:</strong> 
+                <span class="text-info"><?= esc($demandSummary['total_requests'] ?? 0) ?></span>
+              </div>
+              <div class="mb-2">
+                <strong>Total Items Requested:</strong> 
+                <span><?= esc($demandSummary['total_items_requested'] ?? 0) ?></span>
+              </div>
+              <div class="mb-2">
+                <small class="text-muted">
+                  Unique Items: <?= esc($demandSummary['unique_items'] ?? 0) ?><br>
+                  Avg Frequency: <?= esc($demandSummary['avg_request_frequency'] ?? 0) ?> requests/day
+                </small>
+              </div>
+              <?php if (isset($fastSlowMoving) && !empty($fastSlowMoving)): ?>
+                <hr>
+                <small class="text-muted">
+                  <strong>Fast Moving Items:</strong> <?= esc(count(array_filter($fastSlowMoving, fn($item) => ($item['movement_category'] ?? '') === 'Fast Moving'))) ?><br>
+                  <strong>Slow Moving Items:</strong> <?= esc(count(array_filter($fastSlowMoving, fn($item) => ($item['movement_category'] ?? '') === 'Slow Moving'))) ?>
+                </small>
+              <?php endif; ?>
+            <?php else: ?>
+              <p class="text-muted mb-0">No demand data available.</p>
+            <?php endif; ?>
+          </div>
+        </div>
+
         <!-- NEW: Charts Section -->
         <?php if ($role == 'Central Office Admin'): ?>
           <!-- Cost Trends Line Chart -->
@@ -478,6 +512,190 @@
             </div>
           </div>
         <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Demand Analysis Charts Section -->
+    <?php if ($role == 'Central Office Admin'): ?>
+    <div class="row mt-4">
+      <div class="col-lg-8">
+        <!-- Demand Trends Line Chart -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <span class="fw-semibold"><i class="bi bi-graph-up me-2"></i>Demand Trends (Last 30 Days)</span>
+          </div>
+          <div class="card-body">
+            <canvas id="demandTrendsChart" height="100"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <!-- Fast/Slow Moving Items Bar Chart -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <span class="fw-semibold"><i class="bi bi-bar-chart me-2"></i>Fast/Slow Moving Items</span>
+          </div>
+          <div class="card-body">
+            <canvas id="fastSlowMovingChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demand Analysis Details Section -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card mb-3">
+          <div class="card-header bg-info text-white">
+            <span class="fw-semibold"><i class="bi bi-clipboard-data me-2"></i>Demand Analysis Details <small class="text-white-50">(Based on Purchase Patterns)</small></span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <!-- Demand by Branch -->
+              <div class="col-md-6 mb-3">
+                <h6 class="fw-semibold mb-3">Demand by Branch</h6>
+                <?php if (isset($demandByBranch) && !empty($demandByBranch)): ?>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                      <thead>
+                        <tr>
+                          <th>Branch</th>
+                          <th>Requests</th>
+                          <th>Items</th>
+                          <th>Unique Items</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach (array_slice($demandByBranch, 0, 5) as $branch): ?>
+                          <tr>
+                            <td><?= esc($branch['branch_name']) ?></td>
+                            <td><?= esc($branch['total_requests']) ?></td>
+                            <td><?= esc($branch['total_items_requested']) ?></td>
+                            <td><?= esc($branch['unique_items']) ?></td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                <?php else: ?>
+                  <p class="text-muted mb-0">No demand data by branch available.</p>
+                <?php endif; ?>
+              </div>
+
+              <!-- Top Items by Demand -->
+              <div class="col-md-6 mb-3">
+                <h6 class="fw-semibold mb-3">Top Items by Demand</h6>
+                <?php if (isset($demandByItem) && !empty($demandByItem)): ?>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th>Requests</th>
+                          <th>Total Qty</th>
+                          <th>Branches</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach ($demandByItem as $item): ?>
+                          <tr>
+                            <td><?= esc($item['item_name']) ?></td>
+                            <td><?= esc($item['request_count']) ?></td>
+                            <td><?= esc($item['total_quantity_requested']) ?></td>
+                            <td><?= esc($item['branches_requesting']) ?></td>
+                          </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
+                <?php else: ?>
+                  <p class="text-muted mb-0">No item demand data available.</p>
+                <?php endif; ?>
+              </div>
+            </div>
+
+            <!-- Reorder Point Analysis -->
+            <?php if (isset($reorderPointAnalysis) && !empty($reorderPointAnalysis)): ?>
+            <div class="row mt-3">
+              <div class="col-12">
+                <h6 class="fw-semibold mb-3">Reorder Point Analysis (Items Needing Attention)</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Branch</th>
+                        <th>Current Stock</th>
+                        <th>Suggested Reorder Point</th>
+                        <th>Days of Stock</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($reorderPointAnalysis as $item): ?>
+                        <tr>
+                          <td><?= esc($item['item_name']) ?></td>
+                          <td><?= esc($item['branch_name']) ?></td>
+                          <td><?= esc($item['current_stock']) ?> <?= esc($item['unit']) ?></td>
+                          <td><?= esc($item['suggested_reorder_point']) ?> <?= esc($item['unit']) ?></td>
+                          <td><?= $item['days_of_stock'] !== null ? esc($item['days_of_stock']) . ' days' : 'N/A' ?></td>
+                          <td>
+                            <span class="badge bg-<?= $item['status'] === 'Low Stock' ? 'warning' : 'success' ?>">
+                              <?= esc($item['status']) ?>
+                            </span>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Demand vs Supply -->
+            <?php if (isset($demandVsSupply) && !empty($demandVsSupply)): ?>
+            <div class="row mt-3">
+              <div class="col-12">
+                <h6 class="fw-semibold mb-3">Demand vs Supply Analysis</h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th>Branch</th>
+                        <th>Current Stock</th>
+                        <th>Avg Monthly Demand</th>
+                        <th>Months of Supply</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($demandVsSupply as $item): ?>
+                        <tr>
+                          <td><?= esc($item['item_name']) ?></td>
+                          <td><?= esc($item['branch_name']) ?></td>
+                          <td><?= esc($item['current_stock']) ?> <?= esc($item['unit']) ?></td>
+                          <td><?= esc($item['avg_monthly_demand']) ?> <?= esc($item['unit']) ?></td>
+                          <td><?= $item['months_of_supply'] !== null ? esc($item['months_of_supply']) . ' months' : 'N/A' ?></td>
+                          <td>
+                            <span class="badge bg-<?= $item['status'] === 'Critical' ? 'danger' : ($item['status'] === 'Low' ? 'warning' : 'success') ?>">
+                              <?= esc($item['status']) ?>
+                            </span>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
 
         <div class="dashboard-box mb-3">
           <i class="bi bi-pie-chart-fill"></i>
@@ -987,6 +1205,116 @@ if (wastageByReasonCtx) {
               return label + ': ₱' + value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + percentage + '%)';
             }
           }
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Demand Trends Line Chart
+<?php if (isset($demandTrends) && !empty($demandTrends)): ?>
+const demandTrendsCtx = document.getElementById('demandTrendsChart');
+if (demandTrendsCtx) {
+  new Chart(demandTrendsCtx, {
+    type: 'line',
+    data: {
+      labels: <?= json_encode(array_column($demandTrends, 'date')) ?>,
+      datasets: [{
+        label: 'Daily Requests',
+        data: <?= json_encode(array_column($demandTrends, 'request_count')) ?>,
+        borderColor: 'rgb(13, 110, 253)',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        tension: 0.4,
+        fill: true
+      }, {
+        label: 'Total Quantity',
+        data: <?= json_encode(array_column($demandTrends, 'total_quantity')) ?>,
+        borderColor: 'rgb(25, 135, 84)',
+        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+        tension: 0.4,
+        fill: true,
+        yAxisID: 'y1'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Request Count'
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Quantity'
+          },
+          grid: {
+            drawOnChartArea: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      }
+    }
+  });
+}
+<?php endif; ?>
+
+// Fast/Slow Moving Items Bar Chart
+<?php if (isset($fastSlowMoving) && !empty($fastSlowMoving)): ?>
+const fastSlowMovingCtx = document.getElementById('fastSlowMovingChart');
+if (fastSlowMovingCtx) {
+  const topItems = <?= json_encode(array_slice($fastSlowMoving, 0, 10)) ?>;
+  const fastMoving = topItems.filter(item => item.movement_category === 'Fast Moving').length;
+  const mediumMoving = topItems.filter(item => item.movement_category === 'Medium Moving').length;
+  const slowMoving = topItems.filter(item => item.movement_category === 'Slow Moving').length;
+
+  new Chart(fastSlowMovingCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Fast Moving', 'Medium Moving', 'Slow Moving'],
+      datasets: [{
+        label: 'Number of Items',
+        data: [fastMoving, mediumMoving, slowMoving],
+        backgroundColor: [
+          'rgba(40, 167, 69, 0.8)',
+          'rgba(255, 193, 7, 0.8)',
+          'rgba(220, 53, 69, 0.8)'
+        ],
+        borderColor: [
+          'rgb(40, 167, 69)',
+          'rgb(255, 193, 7)',
+          'rgb(220, 53, 69)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
         }
       }
     }

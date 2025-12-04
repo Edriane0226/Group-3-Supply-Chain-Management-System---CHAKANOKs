@@ -9,6 +9,7 @@ use App\Models\PurchaseRequestModel;
 use App\Models\InventoryModel;
 use App\Models\BranchModel;
 use App\Models\DeliveryScheduleModel;
+use App\Models\DemandAnalysisModel;
 
 
 class Dashboard extends Controller
@@ -114,6 +115,17 @@ class Dashboard extends Controller
             $wastageByReason = $Inv->getWastageByReason(); // Wastage by reason (expired, damaged)
             $wastageTrends = $Inv->getWastageTrends(6); // Last 6 months wastage trends
 
+            // Get Demand Analysis Data (Based on Purchase Patterns)
+            $demandAnalysisModel = new DemandAnalysisModel();
+            $demandSummary = $demandAnalysisModel->getDemandSummary(); // Overall demand summary
+            $demandByBranch = $demandAnalysisModel->getDemandByBranch(); // Demand by branch
+            $fastSlowMoving = array_slice($demandAnalysisModel->getFastSlowMovingItems(15), 0, 15); // Top 15 fast/slow moving items
+            $demandTrends = $demandAnalysisModel->getDemandTrends(30); // Last 30 days demand trends
+            $demandByItem = array_slice($demandAnalysisModel->getDemandByItem(10), 0, 10); // Top 10 items by demand
+            $reorderPointAnalysis = array_slice($demandAnalysisModel->getReorderPointAnalysis(), 0, 10); // Top 10 items needing reorder
+            $demandVsSupply = array_slice($demandAnalysisModel->getDemandVsSupply(), 0, 10); // Top 10 items with demand vs supply gaps
+            $seasonalPatterns = $demandAnalysisModel->getSeasonalPatterns(12); // Last 12 months seasonal patterns
+
             $windowStart = date('Y-m-d');
             $windowEnd = date('Y-m-d', strtotime('+14 days'));
             $centralDeliveryOverview = $deliveryScheduleModel->getCentralDeliveryOverview($windowStart, $windowEnd);
@@ -206,6 +218,15 @@ class Dashboard extends Controller
                 'wastageByItem' => $wastageByItem,
                 'wastageByReason' => $wastageByReason,
                 'wastageTrends' => $wastageTrends,
+                // Demand Analysis Data
+                'demandSummary' => $demandSummary,
+                'demandByBranch' => $demandByBranch,
+                'fastSlowMoving' => $fastSlowMoving,
+                'demandTrends' => $demandTrends,
+                'demandByItem' => $demandByItem,
+                'reorderPointAnalysis' => $reorderPointAnalysis,
+                'demandVsSupply' => $demandVsSupply,
+                'seasonalPatterns' => $seasonalPatterns,
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
