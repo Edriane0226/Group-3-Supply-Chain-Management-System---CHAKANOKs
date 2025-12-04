@@ -488,6 +488,51 @@
             </div>
           </div>
         <?php endif; ?>
+
+        <!-- Delivery Pipeline Section -->
+        <div class="card mb-3 border-info">
+          <div class="card-header bg-info text-white">
+            <span class="fw-semibold"><i class="bi bi-truck me-2"></i>Delivery Pipeline (Next 14 Days)</span>
+          </div>
+          <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              <?php $statusColors = ['Scheduled' => 'secondary', 'In Progress' => 'warning', 'Completed' => 'success', 'Cancelled' => 'danger']; ?>
+              <?php foreach (($centralDeliveryStatusSummary ?? []) as $label => $count): ?>
+                <span class="badge bg-<?= esc($statusColors[$label] ?? 'secondary') ?>"><?= esc($label) ?>: <?= esc($count) ?></span>
+              <?php endforeach; ?>
+            </div>
+            <?php if (!empty($centralDeliveryOverview)): ?>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Branch</th>
+                      <th>Supplier</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach (array_slice($centralDeliveryOverview, 0, 5) as $delivery): ?>
+                      <?php $status = $delivery['status'] ?? 'Scheduled'; ?>
+                      <tr>
+                        <td><?= esc($delivery['branch_name'] ?? 'N/A') ?></td>
+                        <td><?= esc($delivery['supplier_name'] ?? 'N/A') ?></td>
+                        <td>
+                          <strong><?= esc(date('M d', strtotime($delivery['scheduled_date']))) ?></strong><br>
+                          <small class="text-muted"><?= esc(date('h:i A', strtotime($delivery['scheduled_time']))) ?></small>
+                        </td>
+                        <td><span class="badge bg-<?= esc($statusColors[$status] ?? 'secondary') ?>"><?= esc($status) ?></span></td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            <?php else: ?>
+              <p class="text-muted mb-0">No scheduled deliveries within the selected window.</p>
+            <?php endif; ?>
+          </div>
+        </div>
       </div>
 
       <div class="col-lg-4">
@@ -509,6 +554,73 @@
             </div>
             <div class="card-body">
               <canvas id="wastageByReasonChart" height="200"></canvas>
+            </div>
+          </div>
+
+          <!-- Supplier Performance Card -->
+          <div class="card mb-3 border-primary">
+            <div class="card-header bg-primary text-white">
+              <span class="fw-semibold"><i class="bi bi-people me-2"></i>Supplier Performance</span>
+            </div>
+            <div class="card-body">
+              <?php if (!empty($supplierPerformance)): ?>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover mb-0">
+                    <thead>
+                      <tr>
+                        <th>Supplier</th>
+                        <th>Orders</th>
+                        <th>Completion</th>
+                        <th>On-Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($supplierPerformance as $supplier): ?>
+                        <tr>
+                          <td><small><?= esc($supplier['supplier']) ?></small></td>
+                          <td><?= esc($supplier['total']) ?></td>
+                          <td>
+                            <span class="badge bg-<?= $supplier['completion_rate'] >= 80 ? 'success' : ($supplier['completion_rate'] >= 50 ? 'warning' : 'danger') ?>">
+                              <?= esc($supplier['completion_rate']) ?>%
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge bg-<?= $supplier['on_time_rate'] >= 80 ? 'success' : ($supplier['on_time_rate'] >= 50 ? 'warning' : 'danger') ?>">
+                              <?= esc($supplier['on_time_rate']) ?>%
+                            </span>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+              <?php else: ?>
+                <p class="text-muted mb-0 small">No supplier performance data available for this period.</p>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <!-- Delayed Deliveries Alert Card -->
+          <div class="card mb-3 border-danger">
+            <div class="card-header bg-danger text-white">
+              <span class="fw-semibold"><i class="bi bi-exclamation-triangle me-2"></i>Delayed / At-Risk Deliveries</span>
+            </div>
+            <div class="card-body">
+              <?php if (!empty($centralDelayedDeliveries)): ?>
+                <div class="list-group list-group-flush">
+                  <?php foreach ($centralDelayedDeliveries as $delayed): ?>
+                    <div class="list-group-item px-0 py-2 border-0">
+                      <strong class="d-block"><?= esc($delayed['branch_name'] ?? 'Branch') ?></strong>
+                      <small class="text-muted d-block"><?= esc($delayed['supplier_name'] ?? 'Supplier') ?></small>
+                      <small class="text-muted">
+                        Scheduled <?= esc(date('M d, h:i A', strtotime($delayed['scheduled_date'] . ' ' . $delayed['scheduled_time']))) ?>
+                      </small>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php else: ?>
+                <p class="text-muted mb-0 small">No delayed deliveries detected.</p>
+              <?php endif; ?>
             </div>
           </div>
         <?php endif; ?>
@@ -696,109 +808,6 @@
       </div>
     </div>
     <?php endif; ?>
-
-        <div class="dashboard-box mb-3">
-          <i class="bi bi-pie-chart-fill"></i>
-          <h6>Sales Breakdown</h6>
-          <p><?= esc($salesBreakdown ?? 'N/A') ?></p>
-        </div>
-
-        <div class="dashboard-box mb-3">
-          <i class="bi bi-file-earmark-bar-graph"></i>
-          <h6>Reports</h6>
-          <?= $reports_section ?? '<p>No reports available.</p>' ?>
-        </div>
-
-        <div class="dashboard-box mb-3">
-          <i class="bi bi-truck"></i>
-          <h6>Delivery Pipeline (Next 14 Days)</h6>
-          <div class="d-flex flex-wrap gap-2 mb-3">
-            <?php $statusColors = ['Scheduled' => 'secondary', 'In Progress' => 'warning', 'Completed' => 'success', 'Cancelled' => 'danger']; ?>
-            <?php foreach (($centralDeliveryStatusSummary ?? []) as $label => $count): ?>
-              <span class="badge bg-<?= esc($statusColors[$label] ?? 'secondary') ?>"><?= esc($label) ?>: <?= esc($count) ?></span>
-            <?php endforeach; ?>
-          </div>
-          <?php if (!empty($centralDeliveryOverview)): ?>
-            <div class="table-responsive">
-              <table class="table table-sm mb-0">
-                <thead>
-                  <tr>
-                    <th>Branch</th>
-                    <th>Supplier</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach (array_slice($centralDeliveryOverview, 0, 5) as $delivery): ?>
-                    <?php $status = $delivery['status'] ?? 'Scheduled'; ?>
-                    <tr>
-                      <td><?= esc($delivery['branch_name'] ?? 'N/A') ?></td>
-                      <td><?= esc($delivery['supplier_name'] ?? 'N/A') ?></td>
-                      <td>
-                        <strong><?= esc(date('M d', strtotime($delivery['scheduled_date']))) ?></strong><br>
-                        <small class="text-muted"><?= esc(date('h:i A', strtotime($delivery['scheduled_time']))) ?></small>
-                      </td>
-                      <td><span class="badge bg-<?= esc($statusColors[$status] ?? 'secondary') ?>"><?= esc($status) ?></span></td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          <?php else: ?>
-            <p class="text-muted mb-0">No scheduled deliveries within the selected window.</p>
-          <?php endif; ?>
-        </div>
-
-        <div class="dashboard-box mb-3">
-          <i class="bi bi-exclamation-triangle"></i>
-          <h6>Delayed / At-Risk Deliveries</h6>
-          <?php if (!empty($centralDelayedDeliveries)): ?>
-            <ul class="list-group list-group-flush">
-              <?php foreach ($centralDelayedDeliveries as $delayed): ?>
-                <li class="list-group-item px-0">
-                  <strong><?= esc($delayed['branch_name'] ?? 'Branch') ?></strong> · <?= esc($delayed['supplier_name'] ?? 'Supplier') ?><br>
-                  <small class="text-muted">Scheduled <?= esc(date('M d, h:i A', strtotime($delayed['scheduled_date'] . ' ' . $delayed['scheduled_time']))) ?></small>
-                </li>
-              <?php endforeach; ?>
-            </ul>
-          <?php else: ?>
-            <p class="text-muted mb-0">No delayed deliveries detected.</p>
-          <?php endif; ?>
-        </div>
-
-        <div class="dashboard-box">
-          <i class="bi bi-people"></i>
-          <h6>Supplier Delivery Performance</h6>
-          <?php if (!empty($supplierPerformance)): ?>
-            <div class="table-responsive">
-              <table class="table table-sm mb-0">
-                <thead>
-                  <tr>
-                    <th>Supplier</th>
-                    <th>Orders</th>
-                    <th>Completion</th>
-                    <th>On-Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($supplierPerformance as $supplier): ?>
-                    <tr>
-                      <td><?= esc($supplier['supplier']) ?></td>
-                      <td><?= esc($supplier['total']) ?></td>
-                      <td><?= esc($supplier['completion_rate']) ?>%</td>
-                      <td><?= esc($supplier['on_time_rate']) ?>%</td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          <?php else: ?>
-            <p class="text-muted mb-0">No supplier metrics available for this period.</p>
-          <?php endif; ?>
-        </div>
-      </div>
-    </div>
   <?php endif; ?>
 </div>
 
