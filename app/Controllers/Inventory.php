@@ -168,43 +168,46 @@ class Inventory extends BaseController
         $dateTo = $this->request->getGet('date_to');
 
         $data = $this->inventoryModel->getExportData($branchId, $itemTypeId, $dateFrom, $dateTo);
+        
+        // Prepare data for export
+        $exportData = [];
+        foreach ($data as $item) {
+            $exportData[] = [
+                $item['item_name'] ?? '',
+                $item['current_stock'] ?? 0,
+                $item['unit'] ?? '',
+                $item['expiry_date'] ?? 'N/A',
+                $item['barcode'] ?? '',
+                $item['updated_at'] ?? ''
+            ];
+        }
+        
+        $headers = ['Item Name', 'Current Stock', 'Unit', 'Expiry Date', 'Barcode', 'Last Updated'];
+        $title = 'Inventory Report - ' . date('F d, Y');
+        $reportExport = new \App\Libraries\ReportExport();
 
         if ($format === 'csv') {
             $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
-            $csv = $this->generateCSV($data);
+            $csv = $reportExport->generateCSV($exportData, $headers);
             return $this->response
                 ->setHeader('Content-Type', 'text/csv')
                 ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
                 ->setBody($csv);
         } elseif ($format === 'pdf') {
-            // For PDF, we'd need a library like TCPDF or similar
-            // For now, return CSV as fallback
-            $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
-            $csv = $this->generateCSV($data);
+            $filename = 'inventory_report_' . date('Y-m-d') . '.pdf';
+            $pdfContent = $reportExport->generatePDF($exportData, $title, $headers);
             return $this->response
-                ->setHeader('Content-Type', 'text/csv')
+                ->setHeader('Content-Type', 'application/pdf')
                 ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setBody($csv);
+                ->setBody($pdfContent);
+        } elseif ($format === 'excel' || $format === 'xlsx') {
+            $filename = 'inventory_report_' . date('Y-m-d') . '.xlsx';
+            $excelFile = $reportExport->generateExcel($exportData, $title, $headers);
+            
+            return $this->response->download($excelFile, null)->setFileName($filename);
         }
 
         return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
-    }
-
-    private function generateCSV($data): string
-    {
-        $csv = "Item Name,Current Stock,Unit,Expiry Date,Barcode,Last Updated\n";
-
-        foreach ($data as $item) {
-            $csv .= '"' . str_replace('"', '""', $item['item_name']) . '",';
-            $csv .= '"' . $item['current_stock'] . '",';
-            $csv .= '"' . $item['unit'] . '",';
-            $csv .= '"' . ($item['expiry_date'] ?? '') . '",';
-            $csv .= '"' . ($item['barcode'] ?? '') . '",';
-            $csv .= '"' . ($item['updated_at'] ?? '') . '"';
-            $csv .= "\n";
-        }
-
-        return $csv;
     }
 
     // ✅ Receive stock (increase)

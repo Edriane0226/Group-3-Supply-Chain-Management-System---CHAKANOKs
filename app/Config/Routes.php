@@ -12,6 +12,7 @@ $routes->get('/logout', 'Auth::logout');
 
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('dashboard/test-data', 'Dashboard::testData');
+$routes->get('dashboard/export', 'Dashboard::exportReport');
 
 //Central
 $routes->get('/central', 'Auth::centralDashboard');
@@ -160,11 +161,16 @@ $routes->group('franchise', function($routes) {
     $routes->post('allocate/(:num)', 'FranchiseManagement::processAllocation/$1');
     $routes->post('allocation-status/(:num)', 'FranchiseManagement::updateAllocationStatus/$1');
     $routes->get('reports', 'FranchiseManagement::reports');
+    $routes->get('reports/export', 'FranchiseManagement::exportReport');
     $routes->get('performance/(:num)', 'FranchiseManagement::performanceReport/$1');
     $routes->post('send-reminders', 'FranchiseManagement::sendPaymentReminders');
     $routes->get('check-reminders', 'FranchiseManagement::checkPaymentReminders');
     $routes->get('search', 'FranchiseManagement::search');
 });
+
+// Scheduled Reports Routes (for cron jobs)
+$routes->get('reports/daily', 'ScheduledReports::generateDailyReports');
+$routes->get('reports/weekly-franchise', 'ScheduledReports::generateWeeklyFranchiseReport');
 
 // System Administration Routes
 $routes->group('admin', function($routes) {

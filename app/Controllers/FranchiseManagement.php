@@ -781,5 +781,104 @@ class FranchiseManagement extends Controller
 
         return view('reusables/sidenav', $data) . view('franchise/search_results', $data);
     }
+
+    /**
+     * Export franchise reports
+     */
+    public function exportReport()
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $reportType = $this->request->getGet('type') ?? 'performance';
+        $format = $this->request->getGet('format') ?? 'pdf';
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-d', strtotime('-12 months'));
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-d');
+
+        $reportExport = new \App\Libraries\ReportExport();
+        $data = [];
+        $headers = [];
+        $title = '';
+
+        switch ($reportType) {
+            case 'performance':
+                $title = 'Franchise Performance Report - ' . date('F d, Y');
+                $performanceData = $this->franchiseModel->getAllFranchisesPerformance($startDate, $endDate);
+                $headers = ['Franchise', 'Status', 'Total Payments', 'Avg Monthly Revenue', 'Supply Utilization', 'Overall Score'];
+                foreach ($performanceData as $perf) {
+                    $data[] = [
+                        $perf['franchise_name'] ?? 'N/A',
+                        ucfirst($perf['status'] ?? 'N/A'),
+                        '₱' . number_format($perf['total_payments'] ?? 0, 2),
+                        '₱' . number_format($perf['avg_monthly_revenue'] ?? 0, 2),
+                        number_format($perf['supply_utilization'] ?? 0, 1) . '%',
+                        number_format($perf['overall_score'] ?? 0, 1)
+                    ];
+                }
+                break;
+
+            case 'payments':
+                $title = 'Franchise Payments Report - ' . date('F d, Y');
+                $payments = $this->paymentModel->getByDateRange($startDate, $endDate);
+                $headers = ['Franchise', 'Payment Type', 'Amount', 'Payment Date', 'Method', 'Status'];
+                foreach ($payments as $payment) {
+                    $data[] = [
+                        $payment['applicant_name'] ?? 'N/A',
+                        ucfirst(str_replace('_', ' ', $payment['payment_type'] ?? 'N/A')),
+                        '₱' . number_format($payment['amount'] ?? 0, 2),
+                        date('M d, Y', strtotime($payment['payment_date'] ?? '')),
+                        ucfirst($payment['payment_method'] ?? 'N/A'),
+                        ucfirst($payment['payment_status'] ?? 'N/A')
+                    ];
+                }
+                break;
+
+            case 'overdue':
+                $title = 'Overdue Payments Report - ' . date('F d, Y');
+                $overdueFranchises = $this->franchiseModel->getFranchisesWithOverduePayments(30);
+                $headers = ['Franchise', 'Contact', 'Days Overdue', 'Last Payment', 'Status'];
+                foreach ($overdueFranchises as $franchise) {
+                    $data[] = [
+                        $franchise['applicant_name'] ?? 'N/A',
+                        $franchise['contact_info'] ?? 'N/A',
+                        ($franchise['days_overdue'] ?? 0) . ' days',
+                        $franchise['last_payment_date'] ? date('M d, Y', strtotime($franchise['last_payment_date'])) : 'No payments',
+                        ucfirst($franchise['status'] ?? 'N/A')
+                    ];
+                }
+                break;
+
+            default:
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid report type']);
+        }
+
+        if (empty($data)) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'No data available for export']);
+        }
+
+        // Generate export based on format
+        if ($format === 'pdf') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.pdf';
+            $pdfContent = $reportExport->generatePDF($data, $title, $headers);
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->setBody($pdfContent);
+        } elseif ($format === 'excel' || $format === 'xlsx') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.xlsx';
+            $excelFile = $reportExport->generateExcel($data, $title, $headers);
+            return $this->response->download($excelFile, null)->setFileName($filename);
+        } elseif ($format === 'csv') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
+            $csv = $reportExport->generateCSV($data, $headers);
+            return $this->response
+                ->setHeader('Content-Type', 'text/csv')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->setBody($csv);
+        }
+
+        return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+    }
 }
 

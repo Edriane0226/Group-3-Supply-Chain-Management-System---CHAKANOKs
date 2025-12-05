@@ -288,4 +288,123 @@ class Dashboard extends Controller
 
         return $this->response->setJSON($data);
     }
+
+    /**
+     * Export Central Office Dashboard Reports
+     */
+    public function exportReport()
+    {
+        $session = session();
+        
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Central Office Admin') {
+            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access.');
+        }
+
+        $reportType = $this->request->getGet('type') ?? 'cost';
+        $format = $this->request->getGet('format') ?? 'pdf';
+        $dateFrom = $this->request->getGet('date_from');
+        $dateTo = $this->request->getGet('date_to');
+
+        $reportExport = new \App\Libraries\ReportExport();
+        $data = [];
+        $headers = [];
+        $title = '';
+
+        $purchaseOrderModel = new PurchaseOrderModel();
+        $inventoryModel = new InventoryModel();
+        $purchaseRequestModel = new PurchaseRequestModel();
+        $demandAnalysisModel = new DemandAnalysisModel();
+
+        switch ($reportType) {
+            case 'cost':
+                $title = 'Cost Analysis Report - ' . date('F d, Y');
+                $costByBranch = $purchaseOrderModel->getCostBreakdownByBranch($dateFrom, $dateTo);
+                $headers = ['Branch', 'Total Cost', 'Order Count', 'Average Order Value'];
+                foreach ($costByBranch as $branch) {
+                    $data[] = [
+                        $branch['branch_name'] ?? 'N/A',
+                        '₱' . number_format($branch['total_cost'] ?? 0, 2),
+                        $branch['order_count'] ?? 0,
+                        '₱' . number_format($branch['avg_order_value'] ?? 0, 2)
+                    ];
+                }
+                break;
+
+            case 'wastage':
+                $title = 'Wastage Analysis Report - ' . date('F d, Y');
+                $wastageByBranch = $inventoryModel->getWastageByBranch();
+                $headers = ['Branch', 'Total Wastage Value', 'Expired Value', 'Damaged Value', 'Item Count'];
+                foreach ($wastageByBranch as $branch) {
+                    $data[] = [
+                        $branch['branch_name'] ?? 'N/A',
+                        '₱' . number_format($branch['total_wastage_value'] ?? 0, 2),
+                        '₱' . number_format($branch['expired_value'] ?? 0, 2),
+                        '₱' . number_format($branch['damaged_value'] ?? 0, 2),
+                        $branch['item_count'] ?? 0
+                    ];
+                }
+                break;
+
+            case 'demand':
+                $title = 'Demand Analysis Report - ' . date('F d, Y');
+                $demandByBranch = $demandAnalysisModel->getDemandByBranch();
+                $headers = ['Branch', 'Total Requests', 'Total Items', 'Unique Items', 'Avg Frequency'];
+                foreach ($demandByBranch as $branch) {
+                    $data[] = [
+                        $branch['branch_name'] ?? 'N/A',
+                        $branch['total_requests'] ?? 0,
+                        $branch['total_items_requested'] ?? 0,
+                        $branch['unique_items'] ?? 0,
+                        number_format($branch['avg_request_frequency'] ?? 0, 2) . ' requests/day'
+                    ];
+                }
+                break;
+
+            case 'purchase_requests':
+                $title = 'Purchase Request Report - ' . date('F d, Y');
+                $prByBranch = $purchaseRequestModel->getStatisticsByBranch();
+                $headers = ['Branch', 'Total', 'Pending', 'Approved', 'Rejected', 'Approval Rate'];
+                foreach ($prByBranch as $branch) {
+                    $data[] = [
+                        $branch['branch_name'] ?? 'N/A',
+                        $branch['total'] ?? 0,
+                        $branch['pending'] ?? 0,
+                        $branch['approved'] ?? 0,
+                        $branch['rejected'] ?? 0,
+                        number_format($branch['approval_rate'] ?? 0, 1) . '%'
+                    ];
+                }
+                break;
+
+            default:
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid report type']);
+        }
+
+        if (empty($data)) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'No data available for export']);
+        }
+
+        // Generate export based on format
+        if ($format === 'pdf') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.pdf';
+            $pdfContent = $reportExport->generatePDF($data, $title, $headers);
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->setBody($pdfContent);
+        } elseif ($format === 'excel' || $format === 'xlsx') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.xlsx';
+            $excelFile = $reportExport->generateExcel($data, $title, $headers);
+            return $this->response->download($excelFile, null)->setFileName($filename);
+        } elseif ($format === 'csv') {
+            $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
+            $csv = $reportExport->generateCSV($data, $headers);
+            return $this->response
+                ->setHeader('Content-Type', 'text/csv')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->setBody($csv);
+        }
+
+        return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+    }
 }

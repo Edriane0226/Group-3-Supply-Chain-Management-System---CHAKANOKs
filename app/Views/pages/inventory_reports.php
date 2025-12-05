@@ -68,8 +68,11 @@
                 <button id="exportCSV" class="btn btn-success me-2">
                     <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export CSV
                 </button>
-                <button id="exportPDF" class="btn btn-danger">
+                <button id="exportPDF" class="btn btn-danger me-2">
                     <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+                </button>
+                <button id="exportExcel" class="btn btn-primary">
+                    <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
                 </button>
             </div>
         </div>
@@ -179,6 +182,24 @@
             date_from: document.getElementById('dateFrom').value,
             date_to: document.getElementById('dateTo').value,
             export: 'pdf'
+        };
+
+        const url = new URL('<?php echo base_url('inventory/export'); ?>', window.location.origin);
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) url.searchParams.set(key, filters[key]);
+        });
+
+        window.open(url, '_blank');
+    });
+
+    // Export Excel
+    document.getElementById('exportExcel').addEventListener('click', async () => {
+        const filters = {
+            branch_id: document.getElementById('branchFilter').value,
+            item_type_id: document.getElementById('typeFilter').value,
+            date_from: document.getElementById('dateFrom').value,
+            date_to: document.getElementById('dateTo').value,
+            export: 'excel'
         };
 
         const url = new URL('<?php echo base_url('inventory/export'); ?>', window.location.origin);
