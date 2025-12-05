@@ -124,3 +124,12 @@ _modules/*
 
 /results/
 /phpunit*.xml
+
+#-------------------------
+# Documentation Files (Analysis/Reports)
+#-------------------------
+SYSTEM_COMPLETE_ANALYSIS.md
+SYSTEM_STATUS_SUMMARY.md
+CENTRAL_OFFICE_ADMIN_ANALYSIS.md
+*.md
+!README.md

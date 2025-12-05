@@ -160,6 +160,9 @@ $routes->group('franchise', function($routes) {
     $routes->post('allocate/(:num)', 'FranchiseManagement::processAllocation/$1');
     $routes->post('allocation-status/(:num)', 'FranchiseManagement::updateAllocationStatus/$1');
     $routes->get('reports', 'FranchiseManagement::reports');
+    $routes->get('performance/(:num)', 'FranchiseManagement::performanceReport/$1');
+    $routes->post('send-reminders', 'FranchiseManagement::sendPaymentReminders');
+    $routes->get('check-reminders', 'FranchiseManagement::checkPaymentReminders');
     $routes->get('search', 'FranchiseManagement::search');
 });
 

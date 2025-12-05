@@ -628,17 +628,132 @@ class FranchiseManagement extends Controller
         }
 
         $year = $this->request->getGet('year') ?: date('Y');
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-d', strtotime('-12 months'));
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-d');
+
+        // Get franchise performance data
+        $performanceData = $this->franchiseModel->getAllFranchisesPerformance($startDate, $endDate);
+        $overdueFranchises = $this->franchiseModel->getFranchisesWithOverduePayments(30);
 
         $data = [
-            'role'          => $this->session->get('role'),
-            'title'         => 'Franchise Reports',
-            'stats'         => $this->franchiseModel->getStatistics(),
-            'paymentStats'  => $this->paymentModel->getStatistics(),
-            'monthlyReport' => $this->paymentModel->getMonthlyReport($year),
-            'year'          => $year,
+            'role'              => $this->session->get('role'),
+            'title'             => 'Franchise Reports',
+            'stats'             => $this->franchiseModel->getStatistics(),
+            'paymentStats'      => $this->paymentModel->getStatistics(),
+            'monthlyReport'     => $this->paymentModel->getMonthlyReport($year),
+            'performanceData'   => $performanceData,
+            'overdueFranchises' => $overdueFranchises,
+            'year'              => $year,
+            'startDate'         => $startDate,
+            'endDate'           => $endDate,
         ];
 
         return view('reusables/sidenav', $data) . view('franchise/reports', $data);
+    }
+
+    /**
+     * View individual franchise performance report
+     */
+    public function performanceReport(int $franchiseId)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $startDate = $this->request->getGet('start_date') ?: date('Y-m-d', strtotime('-12 months'));
+        $endDate = $this->request->getGet('end_date') ?: date('Y-m-d');
+
+        $franchise = $this->franchiseModel->find($franchiseId);
+        if (!$franchise) {
+            return redirect()->to(site_url('franchise/list'))->with('error', 'Franchise not found.');
+        }
+
+        $performance = $this->franchiseModel->getPerformanceMetrics($franchiseId, $startDate, $endDate);
+        $payments = $this->paymentModel->getByFranchise($franchiseId);
+        $allocations = $this->allocationModel->getByFranchise($franchiseId);
+
+        $data = [
+            'role'        => $this->session->get('role'),
+            'title'       => 'Performance Report - ' . $franchise['applicant_name'],
+            'franchise'   => $franchise,
+            'performance' => $performance,
+            'payments'    => $payments,
+            'allocations' => $allocations,
+            'startDate'   => $startDate,
+            'endDate'     => $endDate,
+        ];
+
+        return view('reusables/sidenav', $data) . view('franchise/performance_report', $data);
+    }
+
+    /**
+     * Send payment reminders to franchises with overdue payments
+     */
+    public function sendPaymentReminders()
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $daysOverdue = (int) ($this->request->getPost('days_overdue') ?? 30);
+        $overdueFranchises = $this->franchiseModel->getFranchisesWithOverduePayments($daysOverdue);
+
+        $reminderCount = 0;
+        $notificationModel = new \App\Models\NotificationModel();
+
+        foreach ($overdueFranchises as $franchise) {
+            // Create notification for franchise manager
+            // Note: In a real system, you would also send email/SMS here
+            $notificationModel->createNotification([
+                'user_id' => $franchise['approved_by'] ?? null, // Notify the approver/franchise manager
+                'type' => 'in_app',
+                'title' => 'Payment Reminder - ' . $franchise['applicant_name'],
+                'message' => "Franchise '{$franchise['applicant_name']}' has overdue payments. Days overdue: {$franchise['days_overdue']}",
+                'reference_type' => 'franchise',
+                'reference_id' => $franchise['id'],
+            ]);
+
+            $reminderCount++;
+        }
+
+        return redirect()->back()->with('success', "Payment reminders sent to {$reminderCount} franchise(s).");
+    }
+
+    /**
+     * Automated payment reminder check (can be called via cron job)
+     */
+    public function checkPaymentReminders()
+    {
+        // This can be called via cron job for automated reminders
+        $overdueFranchises = $this->franchiseModel->getFranchisesWithOverduePayments(30);
+        
+        $notificationModel = new \App\Models\NotificationModel();
+        $reminderCount = 0;
+
+        foreach ($overdueFranchises as $franchise) {
+            // Check if reminder was already sent today
+            $today = date('Y-m-d');
+            $existingReminder = $notificationModel->where('reference_type', 'franchise')
+                ->where('reference_id', $franchise['id'])
+                ->where('title LIKE', '%Payment Reminder%')
+                ->where('DATE(created_at)', $today)
+                ->first();
+
+            if (!$existingReminder) {
+                $notificationModel->createNotification([
+                    'user_id' => $franchise['approved_by'] ?? null,
+                    'type' => 'in_app',
+                    'title' => 'Payment Reminder - ' . $franchise['applicant_name'],
+                    'message' => "Franchise '{$franchise['applicant_name']}' has overdue payments. Days overdue: {$franchise['days_overdue']}",
+                    'reference_type' => 'franchise',
+                    'reference_id' => $franchise['id'],
+                ]);
+
+                $reminderCount++;
+            }
+        }
+
+        return $reminderCount;
     }
 
     /**

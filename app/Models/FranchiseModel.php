@@ -291,5 +291,150 @@ class FranchiseModel extends Model
         $this->insert($insertData);
         return $this->insertID();
     }
+
+    /**
+     * Get franchise performance metrics
+     */
+    public function getPerformanceMetrics(int $franchiseId, ?string $startDate = null, ?string $endDate = null): array
+    {
+        $franchise = $this->find($franchiseId);
+        if (!$franchise) {
+            return [];
+        }
+
+        // Set default date range (last 12 months)
+        if (!$startDate) {
+            $startDate = date('Y-m-d', strtotime('-12 months'));
+        }
+        if (!$endDate) {
+            $endDate = date('Y-m-d');
+        }
+
+        // Get payment statistics
+        $paymentModel = new \App\Models\FranchisePaymentModel();
+        $payments = $paymentModel->getByDateRange($startDate, $endDate, $franchiseId);
+        
+        $totalPayments = array_sum(array_column($payments, 'amount'));
+        $royaltyPayments = array_sum(array_column(
+            array_filter($payments, fn($p) => $p['payment_type'] === 'royalty'),
+            'amount'
+        ));
+        $franchiseFeePayments = array_sum(array_column(
+            array_filter($payments, fn($p) => $p['payment_type'] === 'franchise_fee'),
+            'amount'
+        ));
+        $supplyPayments = array_sum(array_column(
+            array_filter($payments, fn($p) => $p['payment_type'] === 'supply_payment'),
+            'amount'
+        ));
+
+        // Get supply allocation statistics
+        $allocationModel = new \App\Models\FranchiseSupplyAllocationModel();
+        $allocations = $allocationModel->getByFranchise($franchiseId);
+        
+        $totalAllocations = count($allocations);
+        $deliveredAllocations = count(array_filter($allocations, fn($a) => $a['status'] === 'delivered'));
+        $totalSupplyValue = array_sum(array_column($allocations, 'total_amount'));
+
+        // Calculate performance scores
+        $paymentCompliance = $totalPayments > 0 ? 100 : 0; // Simplified - can be enhanced
+        $supplyUtilization = $totalAllocations > 0 ? ($deliveredAllocations / $totalAllocations) * 100 : 0;
+
+        // Calculate days since activation
+        $daysActive = 0;
+        if ($franchise['contract_start']) {
+            $daysActive = (strtotime($endDate) - strtotime($franchise['contract_start'])) / 86400;
+        }
+
+        // Calculate average monthly revenue
+        $monthsActive = max(1, ceil($daysActive / 30));
+        $avgMonthlyRevenue = $monthsActive > 0 ? $totalPayments / $monthsActive : 0;
+
+        return [
+            'franchise_id' => $franchiseId,
+            'franchise_name' => $franchise['applicant_name'],
+            'status' => $franchise['status'],
+            'contract_start' => $franchise['contract_start'],
+            'contract_end' => $franchise['contract_end'],
+            'days_active' => max(0, floor($daysActive)),
+            'months_active' => $monthsActive,
+            // Payment metrics
+            'total_payments' => $totalPayments,
+            'royalty_payments' => $royaltyPayments,
+            'franchise_fee_payments' => $franchiseFeePayments,
+            'supply_payments' => $supplyPayments,
+            'payment_count' => count($payments),
+            'avg_monthly_revenue' => $avgMonthlyRevenue,
+            // Supply metrics
+            'total_allocations' => $totalAllocations,
+            'delivered_allocations' => $deliveredAllocations,
+            'total_supply_value' => $totalSupplyValue,
+            'avg_allocation_value' => $totalAllocations > 0 ? $totalSupplyValue / $totalAllocations : 0,
+            // Performance scores
+            'payment_compliance' => round($paymentCompliance, 2),
+            'supply_utilization' => round($supplyUtilization, 2),
+            'overall_score' => round(($paymentCompliance + $supplyUtilization) / 2, 2),
+            // Period
+            'period_start' => $startDate,
+            'period_end' => $endDate,
+        ];
+    }
+
+    /**
+     * Get all franchises with performance metrics
+     */
+    public function getAllFranchisesPerformance(?string $startDate = null, ?string $endDate = null): array
+    {
+        $activeFranchises = $this->getActiveFranchises();
+        $performanceData = [];
+
+        foreach ($activeFranchises as $franchise) {
+            $performanceData[] = $this->getPerformanceMetrics($franchise['id'], $startDate, $endDate);
+        }
+
+        // Sort by overall score (descending)
+        usort($performanceData, fn($a, $b) => $b['overall_score'] <=> $a['overall_score']);
+
+        return $performanceData;
+    }
+
+    /**
+     * Get franchises with overdue payments
+     */
+    public function getFranchisesWithOverduePayments(int $daysOverdue = 30): array
+    {
+        $activeFranchises = $this->getActiveFranchises();
+        $overdueFranchises = [];
+
+        foreach ($activeFranchises as $franchise) {
+            // Calculate expected payments based on contract
+            $lastPaymentDate = $this->db->table('franchise_payments')
+                ->selectMax('payment_date')
+                ->where('franchise_id', $franchise['id'])
+                ->where('payment_type', 'royalty')
+                ->get()
+                ->getRow();
+
+            if ($lastPaymentDate && $lastPaymentDate->payment_date) {
+                $daysSinceLastPayment = (time() - strtotime($lastPaymentDate->payment_date)) / 86400;
+                
+                if ($daysSinceLastPayment > $daysOverdue) {
+                    $franchise['days_overdue'] = floor($daysSinceLastPayment);
+                    $franchise['last_payment_date'] = $lastPaymentDate->payment_date;
+                    $overdueFranchises[] = $franchise;
+                }
+            } elseif ($franchise['contract_start']) {
+                // No payments yet, check if contract started more than X days ago
+                $daysSinceContractStart = (time() - strtotime($franchise['contract_start'])) / 86400;
+                if ($daysSinceContractStart > $daysOverdue) {
+                    $franchise['days_overdue'] = floor($daysSinceContractStart);
+                    $franchise['last_payment_date'] = null;
+                    $overdueFranchises[] = $franchise;
+                }
+            }
+        }
+
+        return $overdueFranchises;
+    }
 }
 

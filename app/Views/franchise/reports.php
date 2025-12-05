@@ -216,6 +216,142 @@
                 </div>
             </div>
         </div>
+
+        <!-- Franchise Performance Reports -->
+        <?php if (!empty($performanceData)): ?>
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-semibold mb-0"><i class="bi bi-trophy me-2"></i>Franchise Performance Rankings</h6>
+                    <small class="text-muted">Period: <?= date('M d, Y', strtotime($startDate)) ?> - <?= date('M d, Y', strtotime($endDate)) ?></small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Franchise</th>
+                                    <th>Status</th>
+                                    <th>Total Payments</th>
+                                    <th>Avg Monthly Revenue</th>
+                                    <th>Supply Utilization</th>
+                                    <th>Overall Score</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($performanceData as $index => $perf): ?>
+                                    <?php
+                                    $scoreColor = 'success';
+                                    if ($perf['overall_score'] < 50) $scoreColor = 'danger';
+                                    elseif ($perf['overall_score'] < 70) $scoreColor = 'warning';
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-<?= $index < 3 ? 'warning text-dark' : 'secondary' ?>">
+                                                #<?= $index + 1 ?>
+                                            </span>
+                                        </td>
+                                        <td><?= esc($perf['franchise_name']) ?></td>
+                                        <td>
+                                            <span class="badge bg-<?= $perf['status'] === 'active' ? 'success' : 'secondary' ?>">
+                                                <?= esc(ucfirst($perf['status'])) ?>
+                                            </span>
+                                        </td>
+                                        <td>₱<?= number_format($perf['total_payments'], 2) ?></td>
+                                        <td>₱<?= number_format($perf['avg_monthly_revenue'], 2) ?></td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 20px; width: 100px;">
+                                                    <div class="progress-bar bg-info" style="width: <?= $perf['supply_utilization'] ?>%">
+                                                        <?= number_format($perf['supply_utilization'], 1) ?>%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-<?= $scoreColor ?> fs-6">
+                                                <?= number_format($perf['overall_score'], 1) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="<?= site_url('franchise/performance/' . $perf['franchise_id']) ?>" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>View Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Overdue Payments -->
+        <?php if (!empty($overdueFranchises)): ?>
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-semibold mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Franchises with Overdue Payments</h6>
+                    <form method="post" action="<?= site_url('franchise/send-reminders') ?>" class="d-inline">
+                        <input type="hidden" name="days_overdue" value="30">
+                        <button type="submit" class="btn btn-sm btn-dark">
+                            <i class="bi bi-send me-1"></i>Send Reminders
+                        </button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Franchise</th>
+                                    <th>Contact</th>
+                                    <th>Days Overdue</th>
+                                    <th>Last Payment</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($overdueFranchises as $franchise): ?>
+                                    <tr>
+                                        <td><?= esc($franchise['applicant_name']) ?></td>
+                                        <td><?= esc($franchise['contact_info']) ?></td>
+                                        <td>
+                                            <span class="badge bg-danger">
+                                                <?= esc($franchise['days_overdue']) ?> days
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?= $franchise['last_payment_date'] 
+                                                ? date('M d, Y', strtotime($franchise['last_payment_date'])) 
+                                                : '<span class="text-muted">No payments yet</span>' ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-<?= $franchise['status'] === 'active' ? 'success' : 'secondary' ?>">
+                                                <?= esc(ucfirst($franchise['status'])) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="<?= site_url('franchise/view/' . $franchise['id']) ?>" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
