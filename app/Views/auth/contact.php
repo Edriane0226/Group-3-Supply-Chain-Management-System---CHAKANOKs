@@ -58,34 +58,47 @@
     <p class="text-muted">Have questions or feedback? We'd love to hear from you. Fill out the form below and we'll get back to you as soon as possible.</p>
   </div>
   
-  <?php if (session()->getFlashdata('success')): ?>
+  <?php 
+  // Get flashdata and passed data
+  $successMsg = session()->getFlashdata('success') ?? (isset($success) ? $success : null);
+  $errorMsg = session()->getFlashdata('error') ?? (isset($error) ? $error : null);
+  $validationErrors = session()->getFlashdata('errors') ?? (isset($errors) ? $errors : []);
+  ?>
+  
+  <?php if ($successMsg): ?>
     <div class="alert alert-success alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
       <i class="bi bi-check-circle-fill me-3 fs-3 text-success"></i>
       <div class="flex-grow-1">
         <h5 class="mb-1 text-success"><i class="bi bi-check-circle me-2"></i>Message Sent Successfully!</h5>
-        <p class="mb-0"><?= session()->getFlashdata('success') ?></p>
+        <p class="mb-0"><?= esc($successMsg) ?></p>
       </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>
   
-  <?php if (session()->getFlashdata('error')): ?>
+  <?php if ($errorMsg): ?>
     <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
       <i class="bi bi-exclamation-circle-fill me-3 fs-3 text-danger"></i>
       <div class="flex-grow-1">
         <h5 class="mb-1 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error!</h5>
-        <p class="mb-0"><?= session()->getFlashdata('error') ?></p>
+        <p class="mb-0"><?= esc($errorMsg) ?></p>
       </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <?php endif; ?>
   
-  <?php if (isset($errors) && !empty($errors)): ?>
+  <?php if (!empty($validationErrors)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
       <h5>Please fix the following errors:</h5>
       <ul class="mb-0">
-        <?php foreach ($errors as $error): ?>
-          <li><?= $error ?></li>
+        <?php foreach ($validationErrors as $field => $error): ?>
+          <li>
+            <?php if (is_array($error)): ?>
+              <?= esc($field) ?>: <?= esc(implode(', ', $error)) ?>
+            <?php else: ?>
+              <?= esc($error) ?>
+            <?php endif; ?>
+          </li>
         <?php endforeach; ?>
       </ul>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -128,5 +141,32 @@
       </div>
     </form>
   </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Ensure alerts are visible
+    document.addEventListener('DOMContentLoaded', function() {
+      const alerts = document.querySelectorAll('.alert');
+      alerts.forEach(function(alert) {
+        alert.style.display = 'block';
+        alert.classList.add('show');
+      });
+      
+      // Auto-hide alerts after 5 seconds
+      setTimeout(function() {
+        alerts.forEach(function(alert) {
+          const bsAlert = new bootstrap.Alert(alert);
+          // Don't auto-hide, let user close manually
+        });
+      }, 100);
+    });
+    
+    // Debug: Log form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+      console.log('Form submitting...');
+      const formData = new FormData(this);
+      console.log('Form data:', Object.fromEntries(formData));
+    });
+  </script>
 </body>
 </html>

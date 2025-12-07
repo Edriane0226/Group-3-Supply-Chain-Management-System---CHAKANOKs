@@ -232,18 +232,9 @@ class ReportExport
      */
     public function sendReportEmail(string $to, string $subject, string $body, string $attachmentPath = null, string $attachmentName = null): bool
     {
-        $email = \Config\Services::email();
-        
-        $email->setFrom('noreply@chakanoks.com', 'ChakaNoks SCMS');
-        $email->setTo($to);
-        $email->setSubject($subject);
-        $email->setMessage($body);
-        
-        if ($attachmentPath && file_exists($attachmentPath)) {
-            $email->attach($attachmentPath, 'attachment', $attachmentName ?? basename($attachmentPath));
-        }
-        
-        return $email->send();
+        // Use EmailService for consistent email handling
+        $emailService = new \App\Libraries\EmailService();
+        return $emailService->send($to, $subject, $body, $attachmentPath, $attachmentName);
     }
 }
 

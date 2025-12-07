@@ -103,7 +103,7 @@ class NotificationModel extends Model
         ]);
     }
 
-    // Send notification (placeholder for actual implementation)
+    // Send notification (with actual email implementation)
     public function sendNotification(int $notificationId): bool
     {
         $notification = $this->find($notificationId);
@@ -111,14 +111,35 @@ class NotificationModel extends Model
             return false;
         }
 
-        // Placeholder for actual sending logic
-        // In real implementation, would integrate with email/SMS APIs
-
         if ($notification['type'] === 'email') {
-            // Send email logic here
-            return $this->markAsSent($notificationId);
+            // Get user email
+            $userModel = new \App\Models\UserModel();
+            $user = $userModel->find($notification['user_id']);
+            
+            if (!$user || empty($user['email'])) {
+                $this->markAsFailed($notificationId);
+                return false;
+            }
+
+            // Send email using EmailService
+            $emailService = new \App\Libraries\EmailService();
+            $success = $emailService->sendNotification(
+                $user['email'],
+                $notification['title'],
+                $notification['message'],
+                $notification['reference_type'] ?? 'general',
+                $notification['reference_id'] ?? null
+            );
+
+            if ($success) {
+                return $this->markAsSent($notificationId);
+            } else {
+                $this->markAsFailed($notificationId);
+                return false;
+            }
         } elseif ($notification['type'] === 'sms') {
-            // Send SMS logic here
+            // TODO: Implement SMS sending logic when SMS service is integrated
+            // For now, just mark as sent
             return $this->markAsSent($notificationId);
         } elseif ($notification['type'] === 'in_app') {
             // In-app notification - just mark as sent
@@ -128,13 +149,14 @@ class NotificationModel extends Model
         return false;
     }
 
-    // Create notification for status change
-    public function notifyStatusChange(string $referenceType, int $referenceId, string $oldStatus, string $newStatus, array $userIds): void
+    // Create notification for status change (both in-app and email)
+    public function notifyStatusChange(string $referenceType, int $referenceId, string $oldStatus, string $newStatus, array $userIds, bool $sendEmail = true): void
     {
         $messages = [
             'purchase_request' => [
                 'approved' => 'Your purchase request has been approved.',
                 'cancelled' => 'Your purchase request has been cancelled.',
+                'rejected' => 'Your purchase request has been rejected.',
             ],
             'purchase_order' => [
                 'approved' => 'Purchase order has been approved and is ready for delivery.',
@@ -149,11 +171,15 @@ class NotificationModel extends Model
             ],
         ];
 
-        $title = ucfirst($referenceType) . ' Status Update';
+        $title = ucfirst(str_replace('_', ' ', $referenceType)) . ' Status Update';
         $message = $messages[$referenceType][$newStatus] ?? "Status changed from {$oldStatus} to {$newStatus}";
 
+        $userModel = new \App\Models\UserModel();
+        $emailService = new \App\Libraries\EmailService();
+
         foreach ($userIds as $userId) {
-            $this->createNotification([
+            // Create in-app notification
+            $notificationId = $this->createNotification([
                 'user_id' => $userId,
                 'type' => 'in_app',
                 'title' => $title,
@@ -161,6 +187,37 @@ class NotificationModel extends Model
                 'reference_type' => $referenceType,
                 'reference_id' => $referenceId,
             ]);
+
+            // Also send email notification if enabled
+            if ($sendEmail) {
+                $user = $userModel->find($userId);
+                if ($user && !empty($user['email'])) {
+                    // Create email notification record
+                    $emailNotificationId = $this->createNotification([
+                        'user_id' => $userId,
+                        'type' => 'email',
+                        'title' => $title,
+                        'message' => $message,
+                        'reference_type' => $referenceType,
+                        'reference_id' => $referenceId,
+                    ]);
+
+                    // Send email immediately
+                    $emailSent = $emailService->sendNotification(
+                        $user['email'],
+                        $title,
+                        $message,
+                        $referenceType,
+                        $referenceId
+                    );
+
+                    if ($emailSent) {
+                        $this->markAsSent($emailNotificationId);
+                    } else {
+                        $this->markAsFailed($emailNotificationId);
+                    }
+                }
+            }
         }
     }
 

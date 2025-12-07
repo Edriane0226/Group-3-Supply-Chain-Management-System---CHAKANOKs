@@ -699,19 +699,67 @@ class FranchiseManagement extends Controller
         $overdueFranchises = $this->franchiseModel->getFranchisesWithOverduePayments($daysOverdue);
 
         $reminderCount = 0;
+        $emailSentCount = 0;
         $notificationModel = new \App\Models\NotificationModel();
+        $emailService = new \App\Libraries\EmailService();
+        $userModel = new \App\Models\UserModel();
 
         foreach ($overdueFranchises as $franchise) {
-            // Create notification for franchise manager
-            // Note: In a real system, you would also send email/SMS here
+            // Get franchise owner email (if available)
+            $franchiseEmail = $franchise['email'] ?? null;
+            $franchiseUserId = $franchise['approved_by'] ?? null;
+            
+            // Create in-app notification
             $notificationModel->createNotification([
-                'user_id' => $franchise['approved_by'] ?? null, // Notify the approver/franchise manager
+                'user_id' => $franchiseUserId,
                 'type' => 'in_app',
                 'title' => 'Payment Reminder - ' . $franchise['applicant_name'],
                 'message' => "Franchise '{$franchise['applicant_name']}' has overdue payments. Days overdue: {$franchise['days_overdue']}",
                 'reference_type' => 'franchise',
                 'reference_id' => $franchise['id'],
             ]);
+
+            // Send email notification if email is available
+            if ($franchiseEmail) {
+                $title = 'Payment Reminder - ' . $franchise['applicant_name'];
+                $message = "Dear {$franchise['applicant_name']},\n\n";
+                $message .= "This is a reminder that your franchise has overdue payments.\n\n";
+                $message .= "Days Overdue: {$franchise['days_overdue']}\n";
+                $message .= "Franchise: {$franchise['applicant_name']}\n\n";
+                $message .= "Please settle your outstanding payments as soon as possible.\n\n";
+                $message .= "Thank you for your attention to this matter.";
+
+                $emailSent = $emailService->sendNotification(
+                    $franchiseEmail,
+                    $title,
+                    $message,
+                    'franchise',
+                    $franchise['id']
+                );
+
+                if ($emailSent) {
+                    $emailSentCount++;
+                }
+            } elseif ($franchiseUserId) {
+                // Try to get email from user record
+                $user = $userModel->find($franchiseUserId);
+                if ($user && !empty($user['email'])) {
+                    $title = 'Payment Reminder - ' . $franchise['applicant_name'];
+                    $message = "Franchise '{$franchise['applicant_name']}' has overdue payments. Days overdue: {$franchise['days_overdue']}";
+                    
+                    $emailSent = $emailService->sendNotification(
+                        $user['email'],
+                        $title,
+                        $message,
+                        'franchise',
+                        $franchise['id']
+                    );
+
+                    if ($emailSent) {
+                        $emailSentCount++;
+                    }
+                }
+            }
 
             $reminderCount++;
         }

@@ -16,9 +16,17 @@ class Contact extends BaseController
     }
     public function index()
     {
+        // Get flashdata for debugging
+        $success = session()->getFlashdata('success');
+        $error = session()->getFlashdata('error');
+        $errors = session()->getFlashdata('errors');
+        
         $data = [
             'title' => 'Contact Us - Chakanoks',
-            'validation' => \Config\Services::validation()
+            'validation' => \Config\Services::validation(),
+            'success' => $success,
+            'error' => $error,
+            'errors' => $errors
         ];
         return view('auth/contact', $data);
     }
@@ -67,7 +75,12 @@ class Contact extends BaseController
 
         // Run validation
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $validation->getErrors());
+            $validationErrors = $validation->getErrors();
+            log_message('debug', 'Contact form validation failed: ' . json_encode($validationErrors));
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $validationErrors)
+                ->with('error', 'Please fix the validation errors below.');
         }
 
         // Get form data
@@ -88,13 +101,41 @@ class Contact extends BaseController
                 'user_agent' => $this->request->getUserAgent()->getAgentString(),
             ];
 
-            if (!$this->contactModel->insert($messageData)) {
-                log_message('error', 'Failed to save contact message: ' . implode(', ', $this->contactModel->errors()));
+            // Try to insert into database
+            $insertResult = $this->contactModel->insert($messageData);
+            
+            if (!$insertResult) {
+                $errors = $this->contactModel->errors();
+                $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Unknown database error';
+                
+                log_message('error', 'Failed to save contact message: ' . $errorMessage);
+                log_message('error', 'Contact message data: ' . json_encode($messageData));
+                
+                // Check if it's a database connection issue
+                $db = \Config\Database::connect();
+                if (!$db->connID) {
+                    return redirect()->back()
+                        ->with('error', 'Database connection error. Please try again later.')
+                        ->withInput();
+                }
+                
+                // Return error to user
+                return redirect()->back()
+                    ->with('error', 'Failed to save your message. Please try again. Error: ' . $errorMessage)
+                    ->withInput();
             }
+            
+            // Log successful database save
+            log_message('info', 'Contact message saved successfully. ID: ' . $this->contactModel->getInsertID());
 
-            // Try to send email (optional, don't fail if email fails)
+            // Try to send email using EmailService (with SMTP configuration)
+            // Note: Email sending failure won't prevent success message since message is already saved
+            $emailSent = false;
             try {
-                $emailService = \Config\Services::email();
+                $emailService = new \App\Libraries\EmailService();
+                
+                // Get recipient email from config
+                $recipientEmail = config('Email')->recipients ?? config('Email')->fromEmail ?? 'marcobatiller07@gmail.com';
                 
                 // Build the email content
                 $emailContent = view('emails/contact_form', [
@@ -104,20 +145,39 @@ class Contact extends BaseController
                     'message' => nl2br(htmlspecialchars($message))
                 ]);
                 
-                // Set email parameters
-                $emailService->setTo(config('Email')->recipients ?? 'admin@chakanoks.com');
-                $emailService->setFrom($email, $name);
-                $emailService->setReplyTo($email, $name);
-                $emailService->setSubject("Contact Form: $subject");
-                $emailService->setMessage($emailContent);
-                $emailService->send();
+                // Send email using EmailService (which handles SMTP configuration)
+                // Set Reply-To to user's email so admin can reply directly
+                $emailSent = $emailService->send(
+                    $recipientEmail,
+                    "Contact Form: $subject",
+                    $emailContent,
+                    null, // no attachment
+                    null, // no attachment name
+                    $email, // reply-to: user's email
+                    $name  // reply-to name: user's name
+                );
+                
+                if ($emailSent) {
+                    log_message('info', 'Contact form email sent successfully to: ' . $recipientEmail);
+                } else {
+                    log_message('warning', 'Contact form email sending failed. Check SMTP configuration.');
+                }
             } catch (\Exception $emailError) {
-                // Log but don't fail the request
-                log_message('warning', 'Email sending failed: ' . $emailError->getMessage());
+                // Log but don't fail the request since message is already saved
+                log_message('error', 'Contact form email error: ' . $emailError->getMessage());
+                log_message('error', 'Stack trace: ' . $emailError->getTraceAsString());
             }
 
+            // Show success message (message is saved even if email failed)
+            $successMessage = 'Your message has been sent successfully! We will get back to you soon.';
+            if (!$emailSent) {
+                $successMessage .= ' (Note: Email notification may not have been sent, but your message was saved.)';
+            }
+            
+            log_message('info', 'Contact form success - redirecting with message: ' . $successMessage);
+            
             return redirect()->to('/contact')
-                ->with('success', 'Your message has been sent successfully! We will get back to you soon.');
+                ->with('success', $successMessage);
                 
         } catch (\Exception $e) {
             log_message('error', 'Contact form error: ' . $e->getMessage());

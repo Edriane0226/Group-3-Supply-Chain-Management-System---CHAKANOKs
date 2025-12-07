@@ -139,5 +139,25 @@ TEST_NOW.md
 PAANO_I_TEST.md
 PAANO_AYUSIN_ANG_ERROR.md
 FIX_EXPORT_ERRORS.md
+SMTP_SETUP_GUIDE.md
+EMAIL_INTEGRATION_SUMMARY.md
+CREATE_ENV_FILE.md
+NOTIFICATION_SYSTEM_CHECK.md
+GMAIL_APP_PASSWORD_TROUBLESHOOTING.md
+UPDATE_APP_PASSWORD.md
+APP_PASSWORD_ALTERNATIVE_SOLUTIONS.md
+NEW_GMAIL_ACCOUNT_ISSUES.md
 *.md
 !README.md
+
+#-------------------------
+# Test Files (Development Only)
+#-------------------------
+test_*.php
+*_test.php
+
+#-------------------------
+# Temporary Files
+#-------------------------
+writable/temp/*
+!writable/temp/.gitkeep

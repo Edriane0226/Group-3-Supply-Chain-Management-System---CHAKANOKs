@@ -6,9 +6,9 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    public string $fromEmail  = 'your-email@gmail.com';  // Your Gmail address
-    public string $fromName   = 'Chakanoks Support';     // Your name or company name
-    public string $recipients = 'your-email@gmail.com';  // Where contact form emails will be sent
+    public string $fromEmail  = '';  // Will use environment variable or default
+    public string $fromName   = 'ChakaNoks SCMS';     // Your name or company name
+    public string $recipients = '';  // Will use environment variable or default
 
     /**
      * The "user agent"
@@ -28,22 +28,38 @@ class Email extends BaseConfig
     /**
      * SMTP Server Hostname
      */
-    public string $SMTPHost = 'smtp.gmail.com';
+    public string $SMTPHost = '';
 
     /**
      * SMTP Username
      */
-    public string $SMTPUser = 'your-email@gmail.com';  // Your Gmail address
+    public string $SMTPUser = '';
 
     /**
      * SMTP Password
      */
-    public string $SMTPPass = 'your-app-specific-password';  // App password from your Google Account
+    public string $SMTPPass = '';
 
     /**
      * SMTP Port
      */
     public int $SMTPPort = 587;  // For TLS
+    
+    public function __construct()
+    {
+        parent::__construct();
+        
+        // Load from environment variables if available, otherwise use defaults
+        // CodeIgniter 4 automatically loads .env file
+        // IMPORTANT: For production, use .env file for credentials
+        $this->SMTPHost = $_ENV['SMTP_HOST'] ?? getenv('SMTP_HOST') ?: 'smtp.gmail.com';
+        $this->SMTPUser = $_ENV['SMTP_USER'] ?? getenv('SMTP_USER') ?: 'marcobatiller07@gmail.com';
+        $this->SMTPPass = $_ENV['SMTP_PASS'] ?? getenv('SMTP_PASS') ?: 'npweofzfpueykpuk';
+        $this->SMTPPort = isset($_ENV['SMTP_PORT']) ? (int)$_ENV['SMTP_PORT'] : (getenv('SMTP_PORT') ? (int)getenv('SMTP_PORT') : 587);
+        $this->SMTPCrypto = $_ENV['SMTP_CRYPTO'] ?? getenv('SMTP_CRYPTO') ?: 'tls';
+        $this->fromEmail = $_ENV['SMTP_FROM_EMAIL'] ?? getenv('SMTP_FROM_EMAIL') ?: 'marcobatiller07@gmail.com';
+        $this->recipients = $_ENV['SMTP_RECIPIENTS'] ?? getenv('SMTP_RECIPIENTS') ?: $this->fromEmail;
+    }
 
     /**
      * SMTP Timeout (in seconds)
