@@ -13,6 +13,7 @@ class BranchManagement extends Controller
     public function __construct()
     {
         $this->session = session();
+        helper(['form', 'url']);
     }
 
     private function authorize()
@@ -63,9 +64,9 @@ class BranchManagement extends Controller
         }
 
         $rules = [
-            'branch_name'  => 'required|min_length[3]|max_length[100] | regex_match[/^[a-zA-Z0-9\s]+$/]',
-            'location'     => 'required|min_length[3]|max_length[255] | regex_match[/^[a-zA-Z0-9\s]+$/]',
-            'contact_info' => 'permit_empty|max_length[12]',
+            'branch_name'  => 'required|min_length[3]|max_length[150]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'location'     => 'required|min_length[3]|max_length[255]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'contact_info' => 'permit_empty|regex_match[/^[0-9]{7,15}$/]',
             'status'       => 'required|in_list[existing,upcoming,franchise]',
         ];
 
@@ -73,10 +74,17 @@ class BranchManagement extends Controller
             'branch_name' => [
                 'required'   => 'Branch name is required.',
                 'min_length' => 'Branch name must be at least 3 characters.',
+                'max_length' => 'Branch name may not exceed 150 characters.',
+                'regex_match' => 'Branch name may only contain letters, numbers, and spaces.',
             ],
             'location' => [
                 'required'   => 'Location is required.',
                 'min_length' => 'Location must be at least 3 characters.',
+                'max_length' => 'Location may not exceed 255 characters.',
+                'regex_match' => 'Location may only contain letters, numbers, and spaces.',
+            ],
+            'contact_info' => [
+                'regex_match' => 'Contact number must be 7 to 15 digits.',
             ],
             'status' => [
                 'required' => 'Please select a status for the branch.',
@@ -114,8 +122,25 @@ class BranchManagement extends Controller
             'status'       => $this->request->getPost('status'),
         ];
 
-        //Save dayun
-        $branchModel->save($data);
+        if (!$branchModel->save($data)) {
+            $modelErrors = $branchModel->errors();
+            $message = 'Unable to create branch right now. Please try again.';
+
+            if ($this->request->isAJAX()) {
+                return $this->response
+                    ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                    ->setJSON([
+                        'status'  => 'error',
+                        'message' => $message,
+                        'errors'  => $modelErrors,
+                    ]);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $modelErrors)
+                ->with('error', $message);
+        }
 
         return redirect()->to(site_url('branches'))
             ->with('success', 'Branch added successfully.');
@@ -147,9 +172,9 @@ class BranchManagement extends Controller
         }
 
         $rules = [
-            'branch_name'  => 'required|min_length[3]|max_length[100] | regex_match[/^[a-zA-Z0-9\s]+$/]',
-            'location'     => 'required|min_length[3]|max_length[255] | regex_match[/^[a-zA-Z0-9\s]+$/]',
-            'contact_info' => 'permit_empty|max_length[12]',
+            'branch_name'  => 'required|min_length[3]|max_length[150]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'location'     => 'required|min_length[3]|max_length[255]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'contact_info' => 'permit_empty|regex_match[/^[0-9]{7,15}$/]',
             'status'       => 'required|in_list[existing,upcoming,franchise]',
         ];
 
@@ -157,10 +182,17 @@ class BranchManagement extends Controller
             'branch_name' => [
                 'required'   => 'Branch name is required.',
                 'min_length' => 'Branch name must be at least 3 characters.',
+                'max_length' => 'Branch name may not exceed 150 characters.',
+                'regex_match' => 'Branch name may only contain letters, numbers, and spaces.',
             ],
             'location' => [
                 'required'   => 'Location is required.',
                 'min_length' => 'Location must be at least 3 characters.',
+                'max_length' => 'Location may not exceed 255 characters.',
+                'regex_match' => 'Location may only contain letters, numbers, and spaces.',
+            ],
+            'contact_info' => [
+                'regex_match' => 'Contact number must be 7 to 15 digits.',
             ],
             'status' => [
                 'required' => 'Please select a status for the branch.',
@@ -197,7 +229,25 @@ class BranchManagement extends Controller
             'status'       => $this->request->getPost('status'),
         ];
 
-        $branchModel->update($id, $data);
+        if (!$branchModel->update($id, $data)) {
+            $modelErrors = $branchModel->errors();
+            $message = 'Unable to update branch right now. Please try again.';
+
+            if ($this->request->isAJAX()) {
+                return $this->response
+                    ->setStatusCode(ResponseInterface::HTTP_BAD_REQUEST)
+                    ->setJSON([
+                        'status'  => 'error',
+                        'message' => $message,
+                        'errors'  => $modelErrors,
+                    ]);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $modelErrors)
+                ->with('error', $message);
+        }
 
         return redirect()->to(site_url('branches'))
             ->with('success', 'Branch updated successfully.');

@@ -15,29 +15,40 @@
       <div class="card-body p-4">
         <!-- ✅ updated form action -->
         <form action="<?= site_url('branches/store') ?>" method="post">
+          <?= csrf_field() ?>
+
+          <?php if (session()->getFlashdata('errors')): ?>
+            <div class="alert alert-warning" role="alert">
+              <ul class="mb-0">
+                <?php foreach ((array) session()->getFlashdata('errors') as $error): ?>
+                  <li><?= esc($error) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            </div>
+          <?php endif; ?>
           <div class="row g-3">
 
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="bi bi-building"></i> Branch Name</label>
-              <input type="text" name="branch_name" class="form-control" placeholder="Enter branch name" required>
+              <input type="text" name="branch_name" class="form-control" placeholder="Enter branch name" value="<?= esc(old('branch_name')) ?>" required>
             </div>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="bi bi-geo-alt"></i> Location</label>
-              <input type="text" name="location" class="form-control" placeholder="Enter location" required>
+              <input type="text" name="location" class="form-control" placeholder="Enter location" value="<?= esc(old('location')) ?>" required>
             </div>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="bi bi-telephone"></i> Contact Info</label>
-              <input type="text" name="contact_info" class="form-control" placeholder="Enter phone or email">
+              <input type="text" name="contact_info" class="form-control" placeholder="Enter contact number" value="<?= esc(old('contact_info')) ?>" pattern="[0-9]{7,15}" title="Enter digits only (7-15 characters)" maxlength="15">
             </div>
 
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="bi bi-flag"></i> Status</label>
               <select name="status" class="form-select" required>
-                <option value="existing">Existing</option>
-                <option value="upcoming">Upcoming</option>
-                <option value="franchise">Franchise</option>
+                <option value="existing" <?= old('status') === 'existing' ? 'selected' : '' ?>>Existing</option>
+                <option value="upcoming" <?= old('status') === 'upcoming' ? 'selected' : '' ?>>Upcoming</option>
+                <option value="franchise" <?= old('status') === 'franchise' ? 'selected' : '' ?>>Franchise</option>
               </select>
             </div>
           </div>
