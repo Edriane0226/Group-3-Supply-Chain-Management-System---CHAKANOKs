@@ -13,52 +13,64 @@
 
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
+
+        <?php if ($errors = session()->getFlashdata('errors')): ?>
+          <div class="alert alert-danger" role="alert">
+            <ul class="mb-0">
+              <?php foreach ($errors as $error): ?>
+                <li><?= esc($error) ?></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endif; ?>
+
         <form action="<?= base_url('store') ?>" method="post">
+          <?= csrf_field() ?>
           <div class="row g-3">
 
             <div class="col-md-4">
-              <label class="form-label fw-semibold"><i class="bi bi-person"></i> First Name</label>
-              <input type="text" name="first_name" class="form-control" placeholder="Enter first name" required>
+              <label for="first_name" class="form-label fw-semibold"><i class="bi bi-person"></i> First Name</label>
+              <input type="text" id="first_name" name="first_name" class="form-control" placeholder="Enter first name" value="<?= esc(old('first_name')) ?>" autocomplete="given-name" required>
             </div>
 
             <div class="col-md-4">
-              <label class="form-label fw-semibold"><i class="bi bi-person"></i> Last Name</label>
-              <input type="text" name="last_name" class="form-control" placeholder="Enter last name" required>
+              <label for="last_name" class="form-label fw-semibold"><i class="bi bi-person"></i> Last Name</label>
+              <input type="text" id="last_name" name="last_name" class="form-control" placeholder="Enter last name" value="<?= esc(old('last_name')) ?>" autocomplete="family-name" required>
             </div>
 
             <div class="col-md-4">
-              <label class="form-label fw-semibold"><i class="bi bi-person"></i> Middle Name</label>
-              <input type="text" name="middle_name" class="form-control" placeholder="Enter middle name">
+              <label for="middle_name" class="form-label fw-semibold"><i class="bi bi-person"></i> Middle Name</label>
+              <input type="text" id="middle_name" name="middle_name" class="form-control" placeholder="Enter middle name" value="<?= esc(old('middle_name')) ?>" autocomplete="additional-name">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
-              <input type="email" name="email" class="form-control" placeholder="example@email.com" required>
+              <label for="email" class="form-label fw-semibold"><i class="bi bi-envelope"></i> Email</label>
+              <input type="email" id="email" name="email" class="form-control" placeholder="example@email.com" value="<?= esc(old('email')) ?>" autocomplete="email" required>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="bi bi-person-badge"></i> Role</label>
-              <select name="role_id" class="form-select" required>
+              <label for="role_id" class="form-label fw-semibold"><i class="bi bi-person-badge"></i> Role</label>
+              <select id="role_id" name="role_id" class="form-select" autocomplete="off" required>
                 <option value="">Select Role</option>
                 <?php foreach ($roles as $role): ?>
-                  <option value="<?= esc($role['id']) ?>"><?= esc($role['role_name']) ?></option>
+                  <option value="<?= esc($role['id']) ?>" <?= old('role_id') == $role['id'] ? 'selected' : '' ?>><?= esc($role['role_name']) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="bi bi-building"></i> Branch</label>
-              <select name="branch_id" class="form-select">
+              <label for="branch_id" class="form-label fw-semibold"><i class="bi bi-building"></i> Branch</label>
+              <select id="branch_id" name="branch_id" class="form-select" autocomplete="off">
                 <option value="">(No branch assigned)</option>
                 <?php foreach ($branches as $branch): ?>
-                  <option value="<?= $branch['id'] ?>"><?= esc($branch['branch_name']) ?></option>
+                  <option value="<?= esc($branch['id']) ?>" <?= old('branch_id') == $branch['id'] ? 'selected' : '' ?>><?= esc($branch['branch_name']) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="bi bi-lock"></i> Password</label>
-              <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+              <label for="password" class="form-label fw-semibold"><i class="bi bi-lock"></i> Password</label>
+              <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" autocomplete="new-password" required>
             </div>
           </div>
 

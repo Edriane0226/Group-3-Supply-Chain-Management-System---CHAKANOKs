@@ -37,6 +37,8 @@ class UserManagement extends Controller
 
     public function create()
     {
+        helper(['form']);
+
         $branchModel = new BranchModel();
         $roleModel = new RoleModel();
         // GET niya Current na naa sa database
@@ -47,6 +49,52 @@ class UserManagement extends Controller
 
     public function store()
     {
+        helper(['form']);
+
+        $rules = [
+            'first_name' => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'last_name'  => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'email'      => 'required|valid_email|is_unique[users.email]|regex_match[/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/]',
+            'role_id'    => 'required|integer',
+            'branch_id'  => 'permit_empty|integer',
+            'password'   => 'required|min_length[6]'
+        ];
+
+        $messages = [
+            'first_name' => [
+                'required'    => 'First name is required.',
+                'regex_match' => 'First name may only contain letters and spaces.'
+            ],
+            'last_name' => [
+                'required'    => 'Last name is required.',
+                'regex_match' => 'Last name may only contain letters and spaces.'
+            ],
+            'email' => [
+                'required'    => 'Email address is required.',
+                'valid_email' => 'Please enter a valid email address.',
+                'is_unique'   => 'That email address is already registered.',
+                'regex_match' => 'Email address contains invalid characters.'
+            ],
+            'role_id' => [
+                'required' => 'Role selection is required.',
+                'integer'  => 'Role selection is invalid.'
+            ],
+            'branch_id' => [
+                'integer' => 'Branch selection is invalid.'
+            ],
+            'password' => [
+                'required'  => 'Password is required.',
+                'min_length' => 'Password must be at least 6 characters long.'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors())
+                ->with('error', 'Unable to save user. Please review the form for specific errors.');
+        }
+
         $userModel = new UserModel();
         // gikuha niya ang data galing sa form gisulod sa array
         $data = [
@@ -59,13 +107,21 @@ class UserManagement extends Controller
             'password'    => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
             'created_at'  => date('Y-m-d H:i:s')
         ];
+
+        if ($userModel->insert($data) === false) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $userModel->errors())
+                ->with('error', 'Unable to save user due to a database error. Please try again.');
+        }
         //tapos gi insert sa Users table gamit ang user table
-        $userModel->insert($data);
-        return redirect()->to('create')->with('success', 'User created successfully');
+        return redirect()->to('users')->with('success', 'User created successfully');
     }
 
     public function edit($id)
     {   
+        helper(['form']);
+
         //bale nag create ni siya ug instance sa models
         $userModel = new UserModel();
         $branchModel = new BranchModel();
@@ -80,7 +136,50 @@ class UserManagement extends Controller
     }
 
     public function update($id)
-    {
+    {   
+
+        $rules = [
+            'first_name' => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'last_name'  => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'email'      => 'required|valid_email|is_unique[users.email,id,' . $id . ']|regex_match[/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/]',
+            'role_id'    => 'required|integer',
+            'branch_id'  => 'permit_empty|integer',
+            'password'   => 'permit_empty|min_length[6]'
+        ];
+
+        $messages = [
+            'first_name' => [
+                'required'    => 'First name is required.',
+                'regex_match' => 'First name may only contain letters and spaces.'
+            ],
+            'last_name' => [
+                'required'    => 'Last name is required.',
+                'regex_match' => 'Last name may only contain letters and spaces.'
+            ],
+            'email' => [
+                'required'    => 'Email address is required.',
+                'valid_email' => 'Please enter a valid email address.',
+                'is_unique'   => 'That email address is already registered by another user.',
+                'regex_match' => 'Email address contains invalid characters.'
+            ],
+            'role_id' => [
+                'required' => 'Role selection is required.',
+                'integer'  => 'Role selection is invalid.'
+            ],
+            'branch_id' => [
+                'integer' => 'Branch selection is invalid.'
+            ],
+            'password' => [
+                'min_length' => 'Password must be at least 6 characters long.'
+            ]
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors())
+                ->with('error', 'Unable to update user. Please review the form for specific errors.');
+        }
         $userModel = new UserModel();
         $data = [
             'first_Name'  => $this->request->getPost('first_name'),
@@ -96,7 +195,13 @@ class UserManagement extends Controller
             $data['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
         }
 
-        $userModel->update($id, $data);
+        if ($userModel->update($id, $data) === false) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $userModel->errors())
+                ->with('error', 'Unable to update user due to a database error. Please try again.');
+        }
+
         return redirect()->to('users')->with('success', 'User updated successfully');
     }
 
