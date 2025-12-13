@@ -4,10 +4,10 @@ namespace App\Controllers;
 
 use App\Models\BranchModel;
 use CodeIgniter\Controller;
+use CodeIgniter\HTTP\ResponseInterface;
 
 class BranchManagement extends Controller
 {
-
     protected $session;
 
     public function __construct()
@@ -15,7 +15,6 @@ class BranchManagement extends Controller
         $this->session = session();
     }
 
-    
     private function authorize()
     {
         if (!$this->session->get('isLoggedIn')) {
@@ -63,15 +62,58 @@ class BranchManagement extends Controller
             return $redirect;
         }
 
+        $rules = [
+            'branch_name'  => 'required|min_length[3]|max_length[100] | regex_match[/^[a-zA-Z0-9\s]+$/]',
+            'location'     => 'required|min_length[3]|max_length[255] | regex_match[/^[a-zA-Z0-9\s]+$/]',
+            'contact_info' => 'permit_empty|max_length[12]',
+            'status'       => 'required|in_list[existing,upcoming,franchise]',
+        ];
+
+        $messages = [
+            'branch_name' => [
+                'required'   => 'Branch name is required.',
+                'min_length' => 'Branch name must be at least 3 characters.',
+            ],
+            'location' => [
+                'required'   => 'Location is required.',
+                'min_length' => 'Location must be at least 3 characters.',
+            ],
+            'status' => [
+                'required' => 'Please select a status for the branch.',
+                'in_list'  => 'Invalid status selected. Choose from existing, upcoming, or franchise.',
+            ],
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            $errors = $this->validator->getErrors();
+            $message = 'Validation failed. Please review the highlighted fields.';
+
+            if ($this->request->isAJAX()) {
+                return $this->response
+                    ->setStatusCode(ResponseInterface::HTTP_UNPROCESSABLE_ENTITY)
+                    ->setJSON([
+                        'status'  => 'error',
+                        'message' => $message,
+                        'errors'  => $errors,
+                    ]);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $errors)
+                ->with('error', $message);
+        }
+
         $branchModel = new BranchModel();
 
         //Gikuha niya data from the createBranch form POST 
         $data = [
-            'branch_name'  => $this->request->getPost('branch_name'),
-            'location'     => $this->request->getPost('location'),
-            'contact_info' => $this->request->getPost('contact_info'),
+            'branch_name'  => trim((string) $this->request->getPost('branch_name')),
+            'location'     => trim((string) $this->request->getPost('location')),
+            'contact_info' => trim((string) $this->request->getPost('contact_info')),
             'status'       => $this->request->getPost('status'),
         ];
+
         //Save dayun
         $branchModel->save($data);
 
@@ -104,12 +146,55 @@ class BranchManagement extends Controller
             return $redirect;
         }
 
+        $rules = [
+            'branch_name'  => 'required|min_length[3]|max_length[100] | regex_match[/^[a-zA-Z0-9\s]+$/]',
+            'location'     => 'required|min_length[3]|max_length[255] | regex_match[/^[a-zA-Z0-9\s]+$/]',
+            'contact_info' => 'permit_empty|max_length[12]',
+            'status'       => 'required|in_list[existing,upcoming,franchise]',
+        ];
+
+        $messages = [
+            'branch_name' => [
+                'required'   => 'Branch name is required.',
+                'min_length' => 'Branch name must be at least 3 characters.',
+            ],
+            'location' => [
+                'required'   => 'Location is required.',
+                'min_length' => 'Location must be at least 3 characters.',
+            ],
+            'status' => [
+                'required' => 'Please select a status for the branch.',
+                'in_list'  => 'Invalid status selected. Choose from existing, upcoming, or franchise.',
+            ],
+        ];
+
+        if (!$this->validate($rules, $messages)) {
+            $errors = $this->validator->getErrors();
+            $message = 'Validation failed. Please review the highlighted fields.';
+
+            if ($this->request->isAJAX()) {
+                return $this->response
+                    ->setStatusCode(ResponseInterface::HTTP_UNPROCESSABLE_ENTITY)
+                    ->setJSON([
+                        'status'  => 'error',
+                        'message' => $message,
+                        'errors'  => $errors,
+                    ]);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $errors)
+                ->with('error', $message);
+        }
+
         $branchModel = new BranchModel();
 
         $data = [
-            'branch_name'  => $this->request->getPost('branch_name'),
-            'location'     => $this->request->getPost('location'),
-            'contact_info' => $this->request->getPost('contact_info'),
+            'branch_name'  => trim((string) $this->request->getPost('branch_name')),
+            'location'     => trim((string) $this->request->getPost('location')),
+            'contact_info' => trim((string) $this->request->getPost('contact_info')),
+            'status'       => $this->request->getPost('status'),
         ];
 
         $branchModel->update($id, $data);
