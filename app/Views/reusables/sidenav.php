@@ -165,6 +165,9 @@
       <a href="<?= site_url('supplier-contracts') ?>" class="<?= (strpos(uri_string(), 'supplier-contracts') !== false) ? 'active' : '' ?>">
           <i class="bi bi-file-earmark-text me-2"></i> Supplier Contracts
       </a>
+      <a href="<?= site_url('franchise/applications') ?>" class="<?= (strpos(uri_string(), 'franchise') !== false) ? 'active' : '' ?>">
+          <i class="bi bi-file-earmark-text me-2"></i> Franchise Applications
+      </a>
 
   <?php elseif ($role === 'Inventory Staff'): ?>
       <a href="<?= site_url('inventory/overview') ?>" class="<?= (uri_string() == 'inventory/overview') ? 'active' : '' ?>">

@@ -135,6 +135,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const stockInIdInput = document.getElementById('stock_in_id');
   const availableStockInfo = document.getElementById('available_stock_info');
 
+  // If item is pre-selected (from validation error), load its details
+  if (itemSelect.value && !stockInIdInput.value) {
+    itemSelect.dispatchEvent(new Event('change'));
+  }
+
   itemSelect.addEventListener('change', async function() {
     const selectedOption = this.options[this.selectedIndex];
     const itemName = selectedOption.value;
@@ -157,13 +162,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch stock_in_id
     try {
       const response = await fetch(`<?= site_url('branch-transfers/get-item-details') ?>?item_name=${encodeURIComponent(itemName)}&branch_id=<?= $currentBranchId ?>`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      
+      if (data.error) {
+        console.error('API Error:', data.error);
+        alert('Error: ' + data.error);
+        stockInIdInput.value = '';
+        return;
+      }
       
       if (data.stock_in_id) {
         stockInIdInput.value = data.stock_in_id;
+        console.log('Stock In ID set:', data.stock_in_id);
+      } else {
+        console.error('No stock_in_id returned from API');
+        alert('Error: Unable to retrieve stock information. Please try selecting the item again.');
+        stockInIdInput.value = '';
       }
     } catch (error) {
       console.error('Error fetching item details:', error);
+      alert('Error loading item details. Please try again.');
+      stockInIdInput.value = '';
     }
   });
 
@@ -176,6 +200,17 @@ document.addEventListener('DOMContentLoaded', function() {
       this.setCustomValidity(`Quantity cannot exceed available stock (${maxStock})`);
     } else {
       this.setCustomValidity('');
+    }
+  });
+
+  // Form submission validation
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(e) {
+    if (!stockInIdInput.value || stockInIdInput.value === '') {
+      e.preventDefault();
+      alert('Please select an item first. The system needs to load item details.');
+      itemSelect.focus();
+      return false;
     }
   });
 });

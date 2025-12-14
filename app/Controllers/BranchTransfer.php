@@ -156,19 +156,25 @@ class BranchTransfer extends Controller
             return $this->response->setStatusCode(404)->setJSON(['error' => 'Item not found or out of stock']);
         }
 
-        // Get a stock_in record for this item
+        // Get the most recent stock_in record for this item
+        // This will be used as a reference for the transfer
         $stockIn = $this->db->table('stock_in')
             ->where('item_name', $itemName)
             ->where('branch_id', $branchId)
             ->orderBy('created_at', 'DESC')
+            ->limit(1)
             ->get()
             ->getRowArray();
+
+        if (!$stockIn || !isset($stockIn['id'])) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Stock record not found for this item']);
+        }
 
         return $this->response->setJSON([
             'item_name' => $item['item_name'],
             'available_stock' => $item['current_stock'],
             'unit' => $item['unit'] ?? 'pcs',
-            'stock_in_id' => $stockIn['id'] ?? null
+            'stock_in_id' => $stockIn['id']
         ]);
     }
 
@@ -247,12 +253,26 @@ class BranchTransfer extends Controller
             'notes' => $this->request->getPost('notes')
         ];
 
-        if ($this->transferModel->insert($transferData)) {
-            return redirect()->to(site_url('branch-transfers'))
-                           ->with('success', 'Transfer request created successfully. Waiting for approval.');
+        try {
+            // Skip model validation since we already validated in controller
+            $this->transferModel->skipValidation(true);
+            
+            if ($this->transferModel->insert($transferData)) {
+                return redirect()->to(site_url('branch-transfers'))
+                               ->with('success', 'Transfer request created successfully. Waiting for approval.');
+            } else {
+                $errors = $this->transferModel->errors();
+                $errorMsg = !empty($errors) ? implode(', ', $errors) : 'Unknown database error';
+                log_message('error', 'Branch Transfer Insert Failed: ' . json_encode($errors));
+                log_message('error', 'Transfer Data: ' . json_encode($transferData));
+                return redirect()->back()->withInput()->with('error', 'Failed to create transfer request: ' . $errorMsg);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Branch Transfer Exception: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            log_message('error', 'Transfer Data: ' . json_encode($transferData));
+            return redirect()->back()->withInput()->with('error', 'An error occurred. Please check the logs for details.');
         }
-
-        return redirect()->back()->withInput()->with('error', 'Failed to create transfer request.');
     }
 
     /**

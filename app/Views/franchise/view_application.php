@@ -182,10 +182,41 @@
                 </div>
                 <div class="card-body">
                     <?php if (in_array($application['status'], ['pending', 'under_review'])): ?>
-                        <!-- Approve Button -->
-                        <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
-                            <i class="bi bi-check-circle me-1"></i> Approve Application
-                        </button>
+                        <!-- Approve Button - Both Central Admin and Franchise Manager can approve -->
+                        <?php 
+                        // Get role from view variable or session as fallback
+                        $currentRole = isset($role) && !empty($role) ? $role : (session()->get('role') ?? '');
+                        // Debug: Uncomment to see role value (remove after testing)
+                        // echo "<!-- DEBUG: Role = " . htmlspecialchars($currentRole) . ", Status = " . htmlspecialchars($application['status']) . " -->";
+                        ?>
+                        <?php if ($currentRole === 'Central Office Admin'): ?>
+                            <!-- Central Admin Approval -->
+                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <i class="bi bi-check-circle me-1"></i> Approve Application (Strategic Review)
+                            </button>
+                            <small class="text-muted d-block mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                You can approve directly or mark for Franchise Manager review.
+                            </small>
+                        <?php elseif ($currentRole === 'Franchise Manager'): ?>
+                            <!-- Franchise Manager Approval -->
+                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <i class="bi bi-check-circle me-1"></i> Approve Application (Set Terms)
+                            </button>
+                            <small class="text-muted d-block mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Set franchise terms (royalty, fees, contract dates) and approve.
+                            </small>
+                        <?php else: ?>
+                            <!-- Fallback: Show approve button for any authorized role (Central Admin or Franchise Manager) -->
+                            <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#approveModal">
+                                <i class="bi bi-check-circle me-1"></i> Approve Application
+                            </button>
+                            <small class="text-muted d-block mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Both Central Admin and Franchise Manager can approve this application.
+                            </small>
+                        <?php endif; ?>
                         
                         <!-- Reject Button -->
                         <button type="button" class="btn btn-danger w-100 mb-2" data-bs-toggle="modal" data-bs-target="#rejectModal">
@@ -266,13 +297,36 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <?php 
+                    // Get role from view variable or session
+                    $modalRole = $role ?? session()->get('role') ?? '';
+                    ?>
+                    <?php if ($modalRole === 'Central Office Admin'): ?>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Central Admin Approval:</strong> You can approve this application directly. Franchise Manager can set detailed terms later if needed.
+                        </div>
+                    <?php elseif ($modalRole === 'Franchise Manager'): ?>
+                        <div class="alert alert-primary mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Franchise Manager Approval:</strong> Set all franchise terms (royalty, fees, contract dates) before approving.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Approval:</strong> Set franchise terms (royalty, fees, contract dates) and approve this application.
+                        </div>
+                    <?php endif; ?>
+                    
                     <div class="mb-3">
                         <label class="form-label">Royalty Rate (%)</label>
                         <input type="number" step="0.01" name="royalty_rate" class="form-control" value="5.00" required>
+                        <small class="text-muted">Default: 5.00%</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Franchise Fee (₱)</label>
                         <input type="number" step="0.01" name="franchise_fee" class="form-control" value="0">
+                        <small class="text-muted">One-time franchise fee</small>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -286,13 +340,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Notes</label>
-                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Add any additional notes or comments..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle me-1"></i> Approve
+                        <i class="bi bi-check-circle me-1"></i> Approve Application
                     </button>
                 </div>
             </form>

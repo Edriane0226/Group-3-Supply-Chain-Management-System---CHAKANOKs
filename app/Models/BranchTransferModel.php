@@ -178,50 +178,68 @@ class BranchTransferModel extends Model
      */
     public function checkStockAvailability(int $stockInId, int $quantity): bool
     {
-        // Get the stock_in record
-        $stockIn = $this->db->table('stock_in')->where('id', $stockInId)->get()->getRowArray();
-        
-        if (!$stockIn) {
+        try {
+            // Get the stock_in record
+            $stockIn = $this->db->table('stock_in')->where('id', $stockInId)->get()->getRowArray();
+            
+            if (!$stockIn) {
+                log_message('error', "Stock record not found for stock_in_id: {$stockInId}");
+                return false;
+            }
+
+            $itemName = $stockIn['item_name'] ?? null;
+            $branchId = $stockIn['branch_id'] ?? null;
+            
+            if (!$itemName || !$branchId) {
+                log_message('error', "Stock record missing item_name or branch_id for stock_in_id: {$stockInId}");
+                return false;
+            }
+
+            // Calculate current available stock
+            $totalInResult = $this->db->table('stock_in')
+                ->where('item_name', $itemName)
+                ->where('branch_id', $branchId)
+                ->selectSum('quantity', 'total_in')
+                ->get()
+                ->getRowArray();
+            $totalIn = (float)($totalInResult['total_in'] ?? 0);
+
+            $totalOutResult = $this->db->table('stock_out')
+                ->where('item_name', $itemName)
+                ->where('branch_id', $branchId)
+                ->selectSum('quantity', 'total_out')
+                ->get()
+                ->getRowArray();
+            $totalOut = (float)($totalOutResult['total_out'] ?? 0);
+
+            // Check pending transfers (reserved stock)
+            $pendingTransfersQuery = $this->db->table('branch_transfers')
+                ->where('from_branch_id', $branchId)
+                ->whereIn('status', ['pending', 'approved']);
+            
+            // Only filter by item_name if column exists
+            if ($this->db->fieldExists('item_name', 'branch_transfers')) {
+                $pendingTransfersQuery->where('item_name', $itemName);
+            } else {
+                // If item_name doesn't exist, use stock_in_id
+                $pendingTransfersQuery->where('stock_in_id', $stockInId);
+            }
+            
+            $pendingTransfersResult = $pendingTransfersQuery->selectSum('quantity', 'total_pending')
+                ->get()
+                ->getRowArray();
+            
+            $pendingTransfers = (float)($pendingTransfersResult['total_pending'] ?? 0);
+
+            $availableStock = $totalIn - $totalOut - $pendingTransfers;
+
+            log_message('debug', "Stock check: item={$itemName}, branch={$branchId}, in={$totalIn}, out={$totalOut}, pending={$pendingTransfers}, available={$availableStock}, requested={$quantity}");
+
+            return $availableStock >= $quantity;
+        } catch (\Exception $e) {
+            log_message('error', 'checkStockAvailability exception: ' . $e->getMessage());
             return false;
         }
-
-        // Calculate current available stock
-        $totalIn = $this->db->table('stock_in')
-            ->where('item_name', $stockIn['item_name'])
-            ->where('branch_id', $stockIn['branch_id'])
-            ->selectSum('quantity')
-            ->get()
-            ->getRowArray();
-
-        $totalOut = $this->db->table('stock_out')
-            ->where('item_name', $stockIn['item_name'])
-            ->where('branch_id', $stockIn['branch_id'])
-            ->selectSum('quantity')
-            ->get()
-            ->getRowArray();
-
-        // Check pending transfers (reserved stock)
-        $pendingTransfersQuery = $this->db->table('branch_transfers')
-            ->where('from_branch_id', $stockIn['branch_id'])
-            ->whereIn('status', ['pending', 'approved']);
-        
-        // Only filter by item_name if column exists
-        if ($this->db->fieldExists('item_name', 'branch_transfers')) {
-            $pendingTransfersQuery->where('item_name', $stockIn['item_name']);
-        } else {
-            // If item_name doesn't exist, use stock_in_id
-            $pendingTransfersQuery->where('stock_in_id', $stockInId);
-        }
-        
-        $pendingTransfers = $pendingTransfersQuery->selectSum('quantity')
-            ->get()
-            ->getRowArray();
-
-        $availableStock = ($totalIn['quantity'] ?? 0) 
-                        - ($totalOut['quantity'] ?? 0) 
-                        - ($pendingTransfers['quantity'] ?? 0);
-
-        return $availableStock >= $quantity;
     }
 
     /**

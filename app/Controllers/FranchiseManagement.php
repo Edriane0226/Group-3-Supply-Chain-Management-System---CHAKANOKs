@@ -109,8 +109,11 @@ class FranchiseManagement extends Controller
             return redirect()->to(site_url('franchise/applications'))->with('error', 'Application not found.');
         }
 
+        // Get role from session
+        $userRole = $this->session->get('role');
+        
         $data = [
-            'role'        => $this->session->get('role'),
+            'role'        => $userRole,
             'title'       => 'Application Details',
             'application' => $application,
         ];
@@ -201,9 +204,18 @@ class FranchiseManagement extends Controller
         ];
 
         $approvedBy = (int) $this->session->get('user_id');
+        $role = $this->session->get('role');
 
         if ($this->franchiseModel->approveApplication($id, $approvedBy, $approvalData)) {
-            return redirect()->to(site_url('franchise/application/' . $id))->with('success', 'Application approved successfully.');
+            // Role-based success message
+            $successMessage = 'Application approved successfully.';
+            if ($role === 'Central Office Admin') {
+                $successMessage = 'Application approved successfully by Central Admin. Franchise Manager can now proceed with operational setup.';
+            } elseif ($role === 'Franchise Manager') {
+                $successMessage = 'Application approved successfully by Franchise Manager. Franchise is ready for activation.';
+            }
+            
+            return redirect()->to(site_url('franchise/application/' . $id))->with('success', $successMessage);
         }
 
         return redirect()->back()->with('error', 'Failed to approve application.');
