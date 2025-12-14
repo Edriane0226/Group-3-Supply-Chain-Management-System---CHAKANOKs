@@ -219,6 +219,13 @@
                                   title="Record Payment">
                             <i class="bi bi-cash-coin"></i>
                           </button>
+                        <?php else: ?>
+                          <a href="<?= site_url('accounts-payable/receipt/' . $ap['id']) ?>" 
+                             class="btn btn-sm btn-info" 
+                             target="_blank"
+                             title="Print Receipt">
+                            <i class="bi bi-printer"></i>
+                          </a>
                         <?php endif; ?>
                       </div>
                     </td>
@@ -260,8 +267,7 @@
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Payment Amount <span class="text-danger">*</span></label>
-                  <input type="number" name="amount" class="form-control" step="0.01" min="0.01" max="<?= $ap['balance_due'] ?>" required>
-                  <small class="text-muted">Maximum: ₱<?= number_format($ap['balance_due'], 2) ?></small>
+                  <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Payment Method <span class="text-danger">*</span></label>

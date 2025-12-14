@@ -637,15 +637,40 @@ document.getElementById('supplierForm').addEventListener('submit', function(e) {
   e.preventDefault();
   const formData = new FormData(this);
   const poId = formData.get('po_id');
+  
+  // Get form values
+  const supplierConfirmed = document.getElementById('supplierConfirmed').checked;
+  const pickupDate = document.getElementById('pickupDate').value;
+  const notes = document.getElementById('supplierNotes').value || '';
+
+  // Prepare data object
+  const data = {
+    supplier_confirmed: supplierConfirmed,
+    pickup_date: pickupDate,
+    notes: notes
+  };
 
   fetch(`<?= site_url('logistics-coordinator/coordinate-supplier/') ?>${poId}`, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'X-Requested-With': 'XMLHttpRequest'
     },
-    body: formData
+    body: JSON.stringify(data)
   })
-  .then(response => response.json())
+  .then(response => {
+    // Check if response is ok
+    if (!response.ok) {
+      return response.text().then(text => {
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          throw new Error(text || 'Server error');
+        }
+      });
+    }
+    return response.json();
+  })
   .then(data => {
     if (data.success) {
       alert('Supplier coordination completed');
@@ -657,7 +682,7 @@ document.getElementById('supplierForm').addEventListener('submit', function(e) {
   })
   .catch(error => {
     console.error('Error:', error);
-    alert('Failed to coordinate supplier');
+    alert('Failed to coordinate supplier: ' + (error.message || 'Unknown error'));
   });
 });
 

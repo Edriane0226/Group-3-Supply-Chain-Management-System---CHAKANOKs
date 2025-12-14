@@ -160,8 +160,7 @@
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Payment Amount <span class="text-danger">*</span></label>
-                  <input type="number" name="amount" class="form-control" step="0.01" min="0.01" max="<?= $ap['balance_due'] ?>" required>
-                  <small class="text-muted">Maximum: ₱<?= number_format($ap['balance_due'], 2) ?></small>
+                  <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Payment Method <span class="text-danger">*</span></label>
@@ -229,6 +228,12 @@
               <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
               <p class="mt-3 mb-0"><strong>Fully Paid</strong></p>
               <p class="text-muted small">This invoice has been fully paid.</p>
+              <hr>
+              <a href="<?= site_url('accounts-payable/receipt/' . $ap['id']) ?>" 
+                 class="btn btn-primary w-100" 
+                 target="_blank">
+                <i class="bi bi-printer me-1"></i>Print Receipt
+              </a>
             </div>
           </div>
         <?php endif; ?>

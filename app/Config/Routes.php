@@ -68,6 +68,7 @@ $routes->post('deliveries/cancel/(:num)', 'Deliveries::cancel/$1');
 $routes->group('accounts-payable', function($routes) {
     $routes->get('/', 'AccountsPayable::index');
     $routes->get('view/(:num)', 'AccountsPayable::view/$1');
+    $routes->get('receipt/(:num)', 'AccountsPayable::printReceipt/$1');
     $routes->post('record-payment/(:num)', 'AccountsPayable::recordPayment/$1');
     $routes->post('mark-paid/(:num)', 'AccountsPayable::markAsPaid/$1');
 });

@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\AccountsPayableModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\SupplierModel;
+use App\Models\UserModel;
 use CodeIgniter\Controller;
 
 class AccountsPayable extends Controller
@@ -154,14 +155,25 @@ class AccountsPayable extends Controller
             return redirect()->back()->withInput()->with('error', 'Payment amount must be greater than 0.');
         }
 
+        // Handle overpayment
+        $overpayment = 0;
+        $paymentAmount = $amount;
         if ($amount > $ap['balance_due']) {
-            return redirect()->back()->withInput()->with('error', 'Payment amount cannot exceed balance due.');
+            $overpayment = $amount - $ap['balance_due'];
+            $paymentAmount = $ap['balance_due']; // Only record the balance due as payment
+            // Add overpayment info to notes
+            $overpaymentNote = "\n[Overpayment: ₱" . number_format($overpayment, 2) . " - Change/Refund to be processed]";
+            $notes = ($notes ? $notes . $overpaymentNote : trim($overpaymentNote));
         }
 
-        // Record payment
-        if ($this->accountsPayableModel->recordPayment($id, $amount, $paymentMethod, $paymentReference, $notes)) {
-            $status = $ap['balance_due'] - $amount <= 0 ? 'paid' : 'partial';
-            return redirect()->back()->with('success', "Payment recorded successfully. Status: " . ucfirst($status));
+        // Record payment (only record up to balance due)
+        if ($this->accountsPayableModel->recordPayment($id, $paymentAmount, $paymentMethod, $paymentReference, $notes)) {
+            // Refresh AP data to get updated status
+            $updatedAp = $this->accountsPayableModel->find($id);
+            $status = $updatedAp['payment_status'] ?? 'partial';
+            
+            // Automatically redirect to print receipt after successful payment
+            return redirect()->to(site_url('accounts-payable/receipt/' . $id));
         }
 
         return redirect()->back()->withInput()->with('error', 'Failed to record payment.');
@@ -193,6 +205,46 @@ class AccountsPayable extends Controller
         }
 
         return redirect()->back()->with('error', 'Failed to mark as paid.');
+    }
+
+    /**
+     * Print payment receipt
+     */
+    public function printReceipt(int $id)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $ap = $this->accountsPayableModel->find($id);
+
+        if (!$ap) {
+            return redirect()->to(site_url('accounts-payable'))->with('error', 'Account payable not found.');
+        }
+
+        // Allow printing for any payment (paid or partial)
+        // Receipt will show current payment status
+
+        // Get related purchase order details
+        $purchaseOrder = $this->purchaseOrderModel->select('purchase_orders.*, branches.branch_name')
+            ->join('branches', 'branches.id = purchase_orders.branch_id')
+            ->find($ap['purchase_order_id']);
+
+        // Get supplier details
+        $supplier = $this->supplierModel->find($ap['supplier_id']);
+
+        // Get current user details for receipt
+        $userModel = new UserModel();
+        $currentUser = $userModel->find(session()->get('user_id'));
+
+        $data = [
+            'ap' => $ap,
+            'purchaseOrder' => $purchaseOrder,
+            'supplier' => $supplier,
+            'currentUser' => $currentUser
+        ];
+
+        return view('accounts_payable/receipt', $data);
     }
 
     /**

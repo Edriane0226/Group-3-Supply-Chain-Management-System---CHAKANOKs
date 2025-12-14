@@ -219,9 +219,6 @@
       <a href="<?= site_url('supplier/invoices') ?>" class="<?= (uri_string() == 'supplier/invoices') ? 'active' : '' ?>">
           <i class="bi bi-receipt me-2"></i> Invoices & Payments
       </a>
-      <a href="<?= site_url('supplier/accounts-payable') ?>" class="<?= (strpos(uri_string(), 'supplier/accounts-payable') !== false) ? 'active' : '' ?>">
-          <i class="bi bi-cash-coin me-2"></i> Accounts Payable
-      </a>
       <a href="<?= site_url('supplier/notifications') ?>" class="<?= (uri_string() == 'supplier/notifications') ? 'active' : '' ?>">
           <i class="bi bi-bell me-2"></i> Notifications
       </a>

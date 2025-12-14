@@ -467,48 +467,74 @@ class LogisticsCoordinator extends BaseController
     // Step 2: Coordinate with Supplier
     public function coordinateWithSupplier(int $poId): ResponseInterface
     {
-        $session = session();
-        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Logistics Coordinator') {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        try {
+            $session = session();
+            if (!$session->get('isLoggedIn') || $session->get('role') !== 'Logistics Coordinator') {
+                return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+            }
+
+            $po = $this->purchaseOrderModel->find($poId);
+            if (!$po) {
+                return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found']);
+            }
+
+            // Handle both FormData and JSON
+            $data = $this->request->getJSON(true);
+            if ($data === null) {
+                // Try to get data from POST if JSON is null (FormData)
+                $data = $this->request->getPost();
+            }
+            
+            $supplierConfirmed = isset($data['supplier_confirmed']) ? (bool)$data['supplier_confirmed'] : false;
+            $pickupDate = $data['pickup_date'] ?? null;
+            $notes = $data['notes'] ?? null;
+
+            // If supplier has already confirmed (status is Confirmed, Preparing, or Ready for Pickup), 
+            // we can skip the confirmation check
+            $currentStatus = $po['status'] ?? 'Pending';
+            $isSupplierAlreadyConfirmed = in_array($currentStatus, ['Confirmed', 'Preparing', 'Ready for Pickup']);
+
+            if (!$isSupplierAlreadyConfirmed && (!$supplierConfirmed || !$pickupDate)) {
+                return $this->response->setStatusCode(400)->setJSON(['error' => 'Supplier confirmation and pickup date required']);
+            }
+
+            // If supplier already confirmed, use existing expected_delivery_date or require pickup date
+            if ($isSupplierAlreadyConfirmed && !$pickupDate) {
+                $pickupDate = $po['expected_delivery_date'] ?? date('Y-m-d', strtotime('+3 days'));
+            }
+
+            // Update PO with supplier coordination details
+            $updateData = [
+                'logistics_status' => 'supplier_coordinated',
+                'expected_delivery_date' => $pickupDate,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            // Append notes if provided
+            if ($notes) {
+                $existingNotes = $po['delivery_notes'] ?? '';
+                $updateData['delivery_notes'] = $existingNotes ? $existingNotes . "\n" . $notes : $notes;
+            }
+
+            if (!$this->purchaseOrderModel->update($poId, $updateData)) {
+                return $this->response->setStatusCode(500)->setJSON(['error' => 'Failed to update purchase order']);
+            }
+
+            // Notify logistics coordinators (wrap in try-catch to prevent notification errors from breaking the flow)
+            try {
+                $coordinatorIds = [(int)$session->get('user_id')];
+                $this->notificationModel->notifyLogisticsCoordinator('supplier_coordinated', $poId, $coordinatorIds);
+            } catch (\Exception $e) {
+                // Log notification error but don't fail the request
+                log_message('error', 'Notification error: ' . $e->getMessage());
+            }
+
+            return $this->response->setContentType('application/json')->setJSON(['success' => true, 'message' => 'Supplier coordination completed']);
+        } catch (\Exception $e) {
+            log_message('error', 'Coordinate supplier error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            return $this->response->setContentType('application/json')->setStatusCode(500)->setJSON(['error' => 'Failed to coordinate supplier: ' . $e->getMessage()]);
         }
-
-        $po = $this->purchaseOrderModel->find($poId);
-        if (!$po) {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'PO not found']);
-        }
-
-        $data = $this->request->getJSON(true);
-        $supplierConfirmed = $data['supplier_confirmed'] ?? false;
-        $pickupDate = $data['pickup_date'] ?? null;
-        $notes = $data['notes'] ?? null;
-
-        // If supplier has already confirmed (status is Confirmed, Preparing, or Ready for Pickup), 
-        // we can skip the confirmation check
-        $currentStatus = $po['status'] ?? 'Pending';
-        $isSupplierAlreadyConfirmed = in_array($currentStatus, ['Confirmed', 'Preparing', 'Ready for Pickup']);
-
-        if (!$isSupplierAlreadyConfirmed && (!$supplierConfirmed || !$pickupDate)) {
-            return $this->response->setStatusCode(400)->setJSON(['error' => 'Supplier confirmation and pickup date required']);
-        }
-
-        // If supplier already confirmed, use existing expected_delivery_date or require pickup date
-        if ($isSupplierAlreadyConfirmed && !$pickupDate) {
-            $pickupDate = $po['expected_delivery_date'] ?? date('Y-m-d', strtotime('+3 days'));
-        }
-
-        // Update PO with supplier coordination details
-        $this->purchaseOrderModel->update($poId, [
-            'logistics_status' => 'supplier_coordinated',
-            'expected_delivery_date' => $pickupDate,
-            'delivery_notes' => ($po['delivery_notes'] ?? '') . ($notes ? "\n" . $notes : ''),
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
-
-        // Notify logistics coordinators
-        $coordinatorIds = [(int)$session->get('user_id')];
-        $this->notificationModel->notifyLogisticsCoordinator('supplier_coordinated', $poId, $coordinatorIds);
-
-        return $this->response->setJSON(['success' => true, 'message' => 'Supplier coordination completed']);
     }
 
     // Step 3: Create Delivery Schedule
