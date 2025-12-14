@@ -491,10 +491,44 @@ class FranchiseManagement extends Controller
         $paymentId = $this->paymentModel->recordPayment($data);
 
         if ($paymentId) {
-            return redirect()->to(site_url('franchise/payments/' . $franchiseId))->with('success', 'Payment recorded successfully.');
+            // Automatically redirect to print receipt after successful payment
+            return redirect()->to(site_url('franchise/payment-receipt/' . $paymentId));
         }
 
         return redirect()->back()->withInput()->with('error', 'Failed to record payment.');
+    }
+
+    /**
+     * Print payment receipt
+     */
+    public function printReceipt(int $paymentId)
+    {
+        if ($redirect = $this->authorize()) {
+            return $redirect;
+        }
+
+        $payment = $this->paymentModel->find($paymentId);
+        if (!$payment) {
+            return redirect()->to(site_url('franchise/payments'))->with('error', 'Payment not found.');
+        }
+
+        // Get franchise details
+        $franchise = $this->franchiseModel->find($payment['franchise_id']);
+        if (!$franchise) {
+            return redirect()->to(site_url('franchise/payments'))->with('error', 'Franchise not found.');
+        }
+
+        // Get current user details for receipt
+        $userModel = new \App\Models\UserModel();
+        $currentUser = $userModel->find($this->session->get('user_id'));
+
+        $data = [
+            'payment' => $payment,
+            'franchise' => $franchise,
+            'currentUser' => $currentUser
+        ];
+
+        return view('franchise/payment_receipt', $data);
     }
 
     /**

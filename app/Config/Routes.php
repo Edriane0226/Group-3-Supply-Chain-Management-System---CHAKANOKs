@@ -165,6 +165,7 @@ $routes->group('franchise', function($routes) {
     $routes->get('payments', 'FranchiseManagement::payments');
     $routes->get('payments/(:num)', 'FranchiseManagement::payments/$1');
     $routes->post('payment/(:num)', 'FranchiseManagement::recordPayment/$1');
+    $routes->get('payment-receipt/(:num)', 'FranchiseManagement::printReceipt/$1');
     $routes->get('allocations', 'FranchiseManagement::allocations');
     $routes->get('allocations/(:num)', 'FranchiseManagement::allocations/$1');
     $routes->get('allocate/(:num)', 'FranchiseManagement::allocateSupply/$1');

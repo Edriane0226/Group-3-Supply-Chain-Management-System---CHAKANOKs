@@ -102,6 +102,7 @@
                                 <th>Period</th>
                                 <th class="text-end">Amount</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -156,10 +157,18 @@
                                             <?= ucfirst($payment['payment_status'] ?? 'completed') ?>
                                         </span>
                                     </td>
+                                    <td>
+                                        <a href="<?= site_url('franchise/payment-receipt/' . $payment['id']) ?>" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           target="_blank"
+                                           title="Print Receipt">
+                                            <i class="bi bi-printer"></i> Print
+                                        </a>
+                                    </td>
                                 </tr>
                                 <?php if (!empty($payment['remarks'])): ?>
                                     <tr class="table-light">
-                                        <td colspan="<?= empty($franchise) ? '9' : '8' ?>" class="small text-muted py-1 ps-4">
+                                        <td colspan="<?= empty($franchise) ? '10' : '9' ?>" class="small text-muted py-1 ps-4">
                                             <i class="bi bi-chat-left-text me-1"></i> <?= esc($payment['remarks']) ?>
                                         </td>
                                     </tr>
