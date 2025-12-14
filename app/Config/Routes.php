@@ -64,6 +64,14 @@ $routes->get('deliveries/details/(:num)', 'Deliveries::details/$1');
 $routes->post('deliveries/receive/(:num)', 'Deliveries::receive/$1');
 $routes->post('deliveries/cancel/(:num)', 'Deliveries::cancel/$1');
 
+// Central Admin Accounts Payable Routes (Payment Management)
+$routes->group('accounts-payable', function($routes) {
+    $routes->get('/', 'AccountsPayable::index');
+    $routes->get('view/(:num)', 'AccountsPayable::view/$1');
+    $routes->post('record-payment/(:num)', 'AccountsPayable::recordPayment/$1');
+    $routes->post('mark-paid/(:num)', 'AccountsPayable::markAsPaid/$1');
+});
+
 // Branch Transfer Routes
 $routes->group('branch-transfers', function($routes) {
     $routes->get('/', 'BranchTransfer::index');
@@ -127,6 +135,7 @@ $routes->group('supplier', function($routes) {
     $routes->get('invoices', 'Supplier::invoices');
     $routes->post('upload-invoice', 'Supplier::uploadInvoice');
     $routes->get('download-invoice/(:num)', 'Supplier::downloadInvoice/$1');
+    // Supplier Accounts Payable (view only)
     $routes->get('accounts-payable', 'Supplier::accountsPayable');
     $routes->get('accounts-payable/(:num)', 'Supplier::viewAccountsPayable/$1');
     $routes->get('notifications', 'Supplier::notifications');
