@@ -49,20 +49,6 @@ class SupplierContractsSeeder extends Seeder
         $statuses = ['active', 'active', 'draft', 'active'];
         
         foreach ($suppliers as $index => $supplier) {
-            // Generate contract number
-            $contractNumber = 'CNT-' . str_pad($supplier['id'], 4, '0', STR_PAD_LEFT) . '-' . date('Y');
-            
-            // Check if contract with this number already exists
-            $existingContract = $this->db->table('supplier_contracts')
-                ->where('contract_number', $contractNumber)
-                ->get()
-                ->getRow();
-            
-            // Skip if contract already exists
-            if ($existingContract) {
-                continue;
-            }
-            
             $startDate = date('Y-m-d', strtotime('-' . ($index * 30) . ' days'));
             $endDate = date('Y-m-d', strtotime($startDate . ' +1 year'));
             $renewalDate = date('Y-m-d', strtotime($endDate . ' -30 days'));
@@ -79,7 +65,7 @@ class SupplierContractsSeeder extends Seeder
             
             $data[] = [
                 'supplier_id' => $supplier['id'],
-                'contract_number' => $contractNumber,
+                'contract_number' => 'CNT-' . str_pad($supplier['id'], 4, '0', STR_PAD_LEFT) . '-' . date('Y'),
                 'contract_type' => $contractType,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
