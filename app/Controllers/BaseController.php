@@ -126,23 +126,22 @@ abstract class BaseController extends Controller
             return $this->cachedPermissions;
         }
 
-        $permissions = $this->session->get('permissions');
-
-        if (!is_array($permissions)) {
-            $roleId = (int) ($this->session->get('role_id') ?? 0);
-            if ($roleId > 0) {
-                $role = $this->roleModel->find($roleId);
-                if ($role && !empty($role['permissions'])) {
-                    $decoded = json_decode($role['permissions'], true);
-                    if (is_array($decoded)) {
-                        $permissions = $decoded;
-                    }
+        // Always reload from database to ensure we have the latest permissions
+        $roleId = (int) ($this->session->get('role_id') ?? 0);
+        $permissions = [];
+        
+        if ($roleId > 0) {
+            $role = $this->roleModel->find($roleId);
+            if ($role && !empty($role['permissions'])) {
+                $decoded = json_decode($role['permissions'], true);
+                if (is_array($decoded)) {
+                    $permissions = $decoded;
                 }
             }
-            $permissions = is_array($permissions) ? $permissions : [];
-            $this->session->set('permissions', $permissions);
         }
-
+        
+        // Update session with latest permissions
+        $this->session->set('permissions', $permissions);
         $this->cachedPermissions = $permissions;
 
         return $permissions;
