@@ -237,7 +237,58 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- Reports Section -->
+    <div class="dashboard-section">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Branch Reports & Analytics</h6>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-12">
+              <h6 class="text-primary mb-3"><i class="bi bi-box-seam me-2"></i>Inventory Reports</h6>
+            </div>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <div class="d-grid gap-2">
+                <a href="<?= site_url('inventory/reports') ?>" class="btn btn-primary">
+                  <i class="bi bi-file-earmark-text me-2"></i>View Detailed Reports
+                </a>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-success" onclick="exportBranchReport('inventory', 'csv')">
+                  <i class="bi bi-file-earmark-spreadsheet me-2"></i>Export CSV
+                </button>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-danger" onclick="exportBranchReport('inventory', 'pdf')">
+                  <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+                </button>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary" onclick="exportBranchReport('inventory', 'excel')">
+                  <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Quick Export:</strong> Export your current branch inventory data instantly. For detailed reports with advanced filters, date ranges, and custom options, visit the 
+            <a href="<?= site_url('inventory/reports') ?>" class="alert-link">Inventory Reports</a> page.
+          </div>
+        </div>
+      </div>
+    </div>
 
   <!-- Central Office Admin Dashboard -->
   <?php elseif ($role == 'Central Office Admin'): ?>
@@ -1331,4 +1382,19 @@ if (fastSlowMovingCtx) {
 }
 <?php endif; ?>
 </script>
+
+<?php if (($role ?? '') == 'Branch Manager'): ?>
+<script>
+// Branch Manager Reports Export Function
+function exportBranchReport(type, format) {
+  const branchId = <?php echo json_encode(session()->get('branch_id') ?? 0); ?>;
+  const url = new URL('<?php echo base_url('inventory/export'); ?>', window.location.origin);
+  url.searchParams.set('export', format);
+  if (branchId) url.searchParams.set('branch_id', branchId);
+  
+  window.open(url, '_blank');
+}
+</script>
+<?php endif; ?>
+
 <?php endif; ?>

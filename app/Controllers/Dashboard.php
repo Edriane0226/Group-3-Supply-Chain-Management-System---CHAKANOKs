@@ -40,7 +40,12 @@ class Dashboard extends Controller
         $AllBranches = $branchModel->findAll();
 
         if ($role === 'Branch Manager') {
-            $allUsers = $userModel->getUserByBranch($branchId);
+            try {
+                $allUsers = $userModel->getUserByBranch($branchId);
+            } catch (\Exception $e) {
+                $allUsers = [];
+                log_message('error', 'Dashboard getUserByBranch error: ' . $e->getMessage());
+            }
 
             $windowStart = date('Y-m-d');
             $windowEnd = date('Y-m-d', strtotime('+14 days'));
@@ -59,7 +64,11 @@ class Dashboard extends Controller
                 $branchDeliveryStatus[$statusLabel]++;
             }
 
-            $incomingDeliveries = $branchId ? $inventoryModel->getDeliveries($branchId, 'Pending') : [];
+            try {
+                $incomingDeliveries = $branchId ? $inventoryModel->getDeliveries($branchId, 'Pending') : [];
+            } catch (\Exception $e) {
+                $incomingDeliveries = [];
+            }
             $incomingDeliveries = array_map(static function ($delivery) {
                 $delivery['source'] = 'delivery_record';
                 return $delivery;
@@ -84,6 +93,42 @@ class Dashboard extends Controller
 
             $incomingDeliveries = array_merge($incomingDeliveries, $scheduleIncoming);
 
+            // Get additional dashboard data
+            $formattedStockWarning = [];
+            $inventoryValue = 0;
+            
+            if ($branchId > 0) {
+                try {
+                    $stockWarning = $inventoryModel->getLowStockAlerts($branchId);
+                    // Format stockWarning to match view expectations
+                    foreach ($stockWarning as $item) {
+                        $formattedStockWarning[] = [
+                            'item_name' => $item['item_name'] ?? 'N/A',
+                            'quantity' => $item['available_stock'] ?? 0,
+                            'reorder_level' => 10, // Default reorder level
+                            'unit' => 'pcs' // Default unit
+                        ];
+                    }
+                    
+                    // Calculate inventory value (need to get price from stock_in)
+                    $db = \Config\Database::connect();
+                    $inventoryWithPrice = $db->table('stock_in')
+                        ->select('item_name, branch_id, SUM(quantity) as total_qty, AVG(price) as avg_price, unit')
+                        ->where('branch_id', $branchId)
+                        ->groupBy('item_name', 'branch_id', 'unit')
+                        ->get()
+                        ->getResultArray();
+                    
+                    foreach ($inventoryWithPrice as $item) {
+                        $inventoryValue += ($item['total_qty'] ?? 0) * ($item['avg_price'] ?? 0);
+                    }
+                } catch (\Exception $e) {
+                    // If there's an error, just use empty arrays
+                    $formattedStockWarning = [];
+                    $inventoryValue = 0;
+                }
+            }
+
             $data = [
                 'branchName' => $branchName,
                 'allUsers' => $allUsers,
@@ -91,6 +136,15 @@ class Dashboard extends Controller
                 'upcomingDeliveries' => $upcomingDeliveries,
                 'branchDeliveryStatus' => $branchDeliveryStatus,
                 'incomingDeliveries' => array_slice($incomingDeliveries, 0, 5),
+                'stockWarning' => $formattedStockWarning,
+                'inventoryValue' => $inventoryValue,
+                'totalSalesToday' => 'N/A', // Placeholder - can be implemented later
+                'topSellingItems' => 'N/A', // Placeholder - can be implemented later
+                'pendingPRs' => 0, // Placeholder - can be implemented later
+                'dailySalesSummary' => 'N/A', // Placeholder - can be implemented later
+                'salesBreakdown' => 'N/A', // Placeholder - can be implemented later
+                'inventoryLevels' => 'N/A', // Placeholder - can be implemented later
+                'recentActivity' => 'N/A', // Placeholder - can be implemented later
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
