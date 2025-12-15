@@ -18,19 +18,53 @@ More information about the plans for version 4 can be found in [CodeIgniter 4](h
 You can read the [user guide](https://codeigniter.com/user_guide/)
 corresponding to the latest version of the framework.
 
-## Installation & updates
+## Installation & Setup
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+### For New Installation (Cloning from GitHub)
 
-When updating, check the release notes to see if there are any changes you might need to apply
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd CHAKANOKS_SCMS
+   ```
+
+2. **Install dependencies (IMPORTANT!):**
+   ```bash
+   composer install
+   ```
+   > ⚠️ **CRITICAL:** The `vendor/` directory is not included in git. You MUST run `composer install` after cloning to install all required libraries (TCPDF, PhpSpreadsheet, etc.). Without this, PDF and Excel exports will fail.
+   
+   **If you still get errors after `composer install`, try:**
+   ```bash
+   composer dump-autoload
+   ```
+   This regenerates the autoloader cache which might be needed on some systems.
+
+3. **Setup environment file:**
+   ```bash
+   copy env .env
+   ```
+   (On Linux/Mac: `cp env .env`)
+   
+   Then edit `.env` and configure:
+   - `app.baseURL` - Your application URL
+   - Database settings (host, database, username, password)
+
+4. **Run database migrations (if needed):**
+   ```bash
+   php spark migrate
+   ```
+
+### For Updates
+
+When updating, run:
+```bash
+composer update
+```
+
+Check the release notes to see if there are any changes you might need to apply
 to your `app` folder. The affected files can be copied or merged from
 `vendor/codeigniter4/framework/app`.
-
-## Setup
-
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
 
 ## Important Change with index.php
 

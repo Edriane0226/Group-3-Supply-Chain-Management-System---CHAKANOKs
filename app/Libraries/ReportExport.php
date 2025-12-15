@@ -2,37 +2,59 @@
 
 namespace App\Libraries;
 
-use TCPDF;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-
 class ReportExport
 {
     /**
      * Ensure vendor autoload is loaded
      */
-    public function __construct()
+    private function ensureVendorAutoload(): void
     {
-        // Ensure vendor autoload is loaded
-        $vendorAutoload = ROOTPATH . 'vendor/autoload.php';
-        if (file_exists($vendorAutoload) && !class_exists('TCPDF')) {
-            require_once $vendorAutoload;
+        static $loaded = false;
+        if (!$loaded) {
+            $vendorAutoload = ROOTPATH . 'vendor/autoload.php';
+            if (file_exists($vendorAutoload)) {
+                require_once $vendorAutoload;
+                $loaded = true;
+            }
         }
+    }
+    
+    /**
+     * Check if TCPDF is available
+     */
+    private function isTCPDFAvailable(): bool
+    {
+        $this->ensureVendorAutoload();
+        
+        // Check if class exists (allow autoloader to load it)
+        return class_exists('TCPDF') || class_exists('\TCPDF');
+    }
+    
+    /**
+     * Check if PhpSpreadsheet is available
+     */
+    private function isPhpSpreadsheetAvailable(): bool
+    {
+        $this->ensureVendorAutoload();
+        
+        // Check if class exists (allow autoloader to load it)
+        return class_exists('PhpOffice\PhpSpreadsheet\Spreadsheet') || class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet');
     }
     /**
      * Generate PDF report
      */
     public function generatePDF(array $data, string $title, array $headers, string $filename = null): string
     {
-        // Try to use TCPDF - will throw error if not available
-        try {
-            $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-        } catch (\Error $e) {
-            throw new \Exception('TCPDF library is not installed. Please run: composer require tecnickcom/tcpdf. Error: ' . $e->getMessage());
+        // Ensure vendor autoload is loaded
+        $this->ensureVendorAutoload();
+        
+        // Check if TCPDF is available
+        if (!$this->isTCPDFAvailable()) {
+            throw new \Exception('TCPDF library is not installed. Please run: composer install');
         }
+        
+        // Use TCPDF
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         
         // Set document information
         $pdf->SetCreator('ChakaNoks SCMS');
@@ -96,24 +118,28 @@ class ReportExport
      */
     public function generateExcel(array $data, string $title, array $headers, string $filename = null): string
     {
-        // Try to use PhpSpreadsheet - will throw error if not available
-        try {
-            $spreadsheet = new Spreadsheet();
-        } catch (\Error $e) {
-            throw new \Exception('PhpSpreadsheet library is not installed. Please run: composer require phpoffice/phpspreadsheet. Error: ' . $e->getMessage());
+        // Ensure vendor autoload is loaded
+        $this->ensureVendorAutoload();
+        
+        // Check if PhpSpreadsheet is available
+        if (!$this->isPhpSpreadsheetAvailable()) {
+            throw new \Exception('PhpSpreadsheet library is not installed. Please run: composer install');
         }
+        
+        // Use PhpSpreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         
         // Set title
         $sheet->setCellValue('A1', $title);
         $sheet->mergeCells('A1:' . $this->getColumnLetter(count($headers)) . '1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         
         // Set generated date
         $sheet->setCellValue('A2', 'Generated: ' . date('F d, Y h:i A'));
         $sheet->mergeCells('A2:' . $this->getColumnLetter(count($headers)) . '2');
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         
         // Header row
         $row = 4;
@@ -123,11 +149,11 @@ class ReportExport
             $sheet->setCellValue($cell, $header);
             $sheet->getStyle($cell)->getFont()->setBold(true);
             $sheet->getStyle($cell)->getFill()
-                ->setFillType(Fill::FILL_SOLID)
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
                 ->getStartColor()->setARGB('FFE0E0E0');
             $sheet->getStyle($cell)->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                ->setVertical(Alignment::VERTICAL_CENTER);
+                ->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)
+                ->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
             $col++;
         }
         
@@ -152,11 +178,11 @@ class ReportExport
         
         // Add borders
         $sheet->getStyle('A4:' . $this->getColumnLetter(count($headers)) . ($row - 1))
-            ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
         
         // Save to file or return
         if ($filename) {
-            $writer = new Xlsx($spreadsheet);
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
             $writer->save($filename);
             return $filename;
         }
@@ -166,7 +192,7 @@ class ReportExport
         if (!is_dir(WRITEPATH . 'temp')) {
             mkdir(WRITEPATH . 'temp', 0755, true);
         }
-        $writer = new Xlsx($spreadsheet);
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->save($tempFile);
         
         return $tempFile;

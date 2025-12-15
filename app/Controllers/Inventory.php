@@ -219,29 +219,51 @@ class Inventory extends BaseController
                     ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
                     ->setBody($csv);
             } elseif ($format === 'pdf') {
-                $filename = 'inventory_report_' . date('Y-m-d') . '.pdf';
-                $pdfContent = $reportExport->generatePDF($exportData, $title, $headers);
-                return $this->response
-                    ->setHeader('Content-Type', 'application/pdf')
-                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                    ->setBody($pdfContent);
-            } elseif ($format === 'excel' || $format === 'xlsx') {
-                $filename = 'inventory_report_' . date('Y-m-d') . '.xlsx';
-                $excelFile = $reportExport->generateExcel($exportData, $title, $headers);
-                
-                if (!file_exists($excelFile)) {
-                    throw new \Exception('Excel file was not created successfully');
+                try {
+                    $filename = 'inventory_report_' . date('Y-m-d') . '.pdf';
+                    $pdfContent = $reportExport->generatePDF($exportData, $title, $headers);
+                    return $this->response
+                        ->setHeader('Content-Type', 'application/pdf')
+                        ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->setBody($pdfContent);
+                } catch (\Exception $e) {
+                    // Fallback to CSV if PDF library is not available
+                    log_message('warning', 'PDF export failed, falling back to CSV: ' . $e->getMessage());
+                    $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
+                    $csv = $reportExport->generateCSV($exportData, $headers);
+                    return $this->response
+                        ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                        ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->setBody($csv);
                 }
-                
-                $excelContent = file_get_contents($excelFile);
-                // Clean up temp file after reading
-                @unlink($excelFile);
-                
-                return $this->response
-                    ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                    ->setHeader('Content-Length', strlen($excelContent))
-                    ->setBody($excelContent);
+            } elseif ($format === 'excel' || $format === 'xlsx') {
+                try {
+                    $filename = 'inventory_report_' . date('Y-m-d') . '.xlsx';
+                    $excelFile = $reportExport->generateExcel($exportData, $title, $headers);
+                    
+                    if (!file_exists($excelFile)) {
+                        throw new \Exception('Excel file was not created successfully');
+                    }
+                    
+                    $excelContent = file_get_contents($excelFile);
+                    // Clean up temp file after reading
+                    @unlink($excelFile);
+                    
+                    return $this->response
+                        ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                        ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->setHeader('Content-Length', strlen($excelContent))
+                        ->setBody($excelContent);
+                } catch (\Exception $e) {
+                    // Fallback to CSV if Excel library is not available
+                    log_message('warning', 'Excel export failed, falling back to CSV: ' . $e->getMessage());
+                    $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
+                    $csv = $reportExport->generateCSV($exportData, $headers);
+                    return $this->response
+                        ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                        ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                        ->setBody($csv);
+                }
             }
 
             return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);

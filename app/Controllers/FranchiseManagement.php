@@ -968,16 +968,38 @@ class FranchiseManagement extends BaseController
 
         // Generate export based on format
         if ($format === 'pdf') {
-            $filename = str_replace(' ', '_', strtolower($title)) . '.pdf';
-            $pdfContent = $reportExport->generatePDF($data, $title, $headers);
-            return $this->response
-                ->setHeader('Content-Type', 'application/pdf')
-                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setBody($pdfContent);
+            try {
+                $filename = str_replace(' ', '_', strtolower($title)) . '.pdf';
+                $pdfContent = $reportExport->generatePDF($data, $title, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'application/pdf')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($pdfContent);
+            } catch (\Exception $e) {
+                // Fallback to CSV if PDF library is not available
+                log_message('warning', 'PDF export failed, falling back to CSV: ' . $e->getMessage());
+                $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
+                $csv = $reportExport->generateCSV($data, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($csv);
+            }
         } elseif ($format === 'excel' || $format === 'xlsx') {
-            $filename = str_replace(' ', '_', strtolower($title)) . '.xlsx';
-            $excelFile = $reportExport->generateExcel($data, $title, $headers);
-            return $this->response->download($excelFile, null)->setFileName($filename);
+            try {
+                $filename = str_replace(' ', '_', strtolower($title)) . '.xlsx';
+                $excelFile = $reportExport->generateExcel($data, $title, $headers);
+                return $this->response->download($excelFile, null)->setFileName($filename);
+            } catch (\Exception $e) {
+                // Fallback to CSV if Excel library is not available
+                log_message('warning', 'Excel export failed, falling back to CSV: ' . $e->getMessage());
+                $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
+                $csv = $reportExport->generateCSV($data, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($csv);
+            }
         } elseif ($format === 'csv') {
             $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
             $csv = $reportExport->generateCSV($data, $headers);
