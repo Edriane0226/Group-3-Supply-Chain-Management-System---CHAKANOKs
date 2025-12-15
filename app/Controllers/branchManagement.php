@@ -3,38 +3,19 @@
 namespace App\Controllers;
 
 use App\Models\BranchModel;
-use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class BranchManagement extends Controller
+class BranchManagement extends BaseController
 {
-    protected $session;
-
     public function __construct()
     {
-        $this->session = session();
         helper(['form', 'url']);
-    }
-
-    private function authorize()
-    {
-        if (!$this->session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))
-                ->with('error', 'Please login first.');
-        }
-
-        if ($this->session->get('role') !== 'Central Office Admin') {
-            return redirect()->to(site_url('login'))
-                ->with('error', 'Unauthorized access to Branch Management.');
-        }
-
-        return null; // Authorized
     }
 
     //Pang access ni siya sa branchManagement page at the same time gikuha niya ang branches store to $data['branches']
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.view')) {
             return $redirect;
         }
 
@@ -47,7 +28,7 @@ class BranchManagement extends Controller
      //Paadto sa createBranch form
     public function create()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.create')) {
             return $redirect;
         }
 
@@ -59,7 +40,7 @@ class BranchManagement extends Controller
      */
     public function store()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.create')) {
             return $redirect;
         }
 
@@ -149,7 +130,7 @@ class BranchManagement extends Controller
     //Show form the same time kuha branch id
     public function edit($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.update')) {
             return $redirect;
         }
 
@@ -167,7 +148,7 @@ class BranchManagement extends Controller
     // Update dayun from edit form POST tapos update data           
     public function update($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.update')) {
             return $redirect;
         }
 
@@ -258,7 +239,7 @@ class BranchManagement extends Controller
      */
     public function delete($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.delete')) {
             return $redirect;
         }
 

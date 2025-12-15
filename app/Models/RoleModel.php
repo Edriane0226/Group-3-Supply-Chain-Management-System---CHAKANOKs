@@ -8,6 +8,6 @@ class RoleModel extends Model
 {
     protected $table      = 'roles';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['id', 'role_name', 'created_at', 'updated_at'];
+    protected $allowedFields = ['role_name', 'description', 'permissions', 'created_at', 'updated_at'];
     protected $returnType    = 'array';
 }

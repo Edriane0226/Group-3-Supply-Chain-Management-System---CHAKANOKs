@@ -5,15 +5,13 @@ namespace App\Controllers;
 use App\Models\UserModel;
 use App\Models\BranchModel;
 use App\Models\RoleModel;
-use CodeIgniter\Controller;
 
-class UserManagement extends Controller
+class UserManagement extends BaseController
 {
     public function index()
     {   
-        // Check Sesssion kung dli Central Office Admin ang role auto back to login
-        if (session()->get('role') !== 'Central Office Admin') {
-            return redirect()->to('/login')->with('error', 'Unauthorized access');
+        if ($redirect = $this->authorize('users.view')) {
+            return $redirect;
         }
 
         $userModel = new UserModel();
@@ -37,6 +35,10 @@ class UserManagement extends Controller
 
     public function create()
     {
+        if ($redirect = $this->authorize('users.create')) {
+            return $redirect;
+        }
+
         helper(['form']);
 
         $branchModel = new BranchModel();
@@ -49,6 +51,10 @@ class UserManagement extends Controller
 
     public function store()
     {
+        if ($redirect = $this->authorize('users.create')) {
+            return $redirect;
+        }
+
         helper(['form']);
 
         $rules = [
@@ -120,6 +126,10 @@ class UserManagement extends Controller
 
     public function edit($id)
     {   
+        if ($redirect = $this->authorize('users.update')) {
+            return $redirect;
+        }
+
         helper(['form']);
 
         //bale nag create ni siya ug instance sa models
@@ -137,6 +147,9 @@ class UserManagement extends Controller
 
     public function update($id)
     {   
+        if ($redirect = $this->authorize('users.update')) {
+            return $redirect;
+        }
 
         $rules = [
             'first_name' => 'required|regex_match[/^[a-zA-Z\s]+$/]',
@@ -207,6 +220,10 @@ class UserManagement extends Controller
 
     public function delete($id)
     {
+        if ($redirect = $this->authorize('users.delete')) {
+            return $redirect;
+        }
+
         $userModel = new UserModel();
         $userModel->delete($id);
 

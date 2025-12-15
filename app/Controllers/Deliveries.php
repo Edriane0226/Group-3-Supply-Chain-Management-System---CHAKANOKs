@@ -17,15 +17,11 @@ class Deliveries extends BaseController
 
     public function index()
     {
-        $session = session();
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        if ($redirect = $this->authorize('deliveries.view')) {
+            return $redirect;
         }
 
-        if (!in_array($session->get('role'), ['Branch Manager', 'Inventory Staff', 'Central Office Admin'])) {
-            $session->setFlashdata('error', 'Unauthorized access.');
-            return redirect()->to(site_url('login'));
-        }
+        $session = session();
 
         $branchId = (int)($session->get('branch_id') ?? 0);
 
@@ -56,10 +52,11 @@ class Deliveries extends BaseController
     // Get delivery details
     public function details(int $id): ResponseInterface
     {
-        $session = session();
-        if (!$session->get('isLoggedIn')) {
+        if (!$this->canAccess('deliveries.view')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
+
+        $session = session();
 
         $delivery = $this->inventoryModel->getDeliveryDetails($id);
 
@@ -79,10 +76,11 @@ class Deliveries extends BaseController
     // Mark delivery as received
     public function receive(int $id): ResponseInterface
     {
-        $session = session();
-        if (!$session->get('isLoggedIn') || !in_array($session->get('role'), ['Inventory Staff', 'Branch Manager'])) {
+        if (!$this->canAccess('deliveries.receive')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
+
+        $session = session();
 
         $delivery = $this->inventoryModel->getDeliveryDetails($id);
 
@@ -110,10 +108,11 @@ class Deliveries extends BaseController
     // Cancel delivery
     public function cancel(int $id): ResponseInterface
     {
-        $session = session();
-        if (!$session->get('isLoggedIn') || !in_array($session->get('role'), ['Branch Manager', 'Central Office Admin'])) {
+        if (!$this->canAccess('deliveries.cancel')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
+
+        $session = session();
 
         $delivery = $this->inventoryModel->getDeliveryDetails($id);
 

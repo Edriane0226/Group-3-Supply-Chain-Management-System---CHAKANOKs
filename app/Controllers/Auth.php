@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Models\BranchModel;
+use App\Models\RoleModel;
 use CodeIgniter\Controller;
 
 class Auth extends Controller
@@ -24,10 +25,11 @@ class Auth extends Controller
         $session     = session();
         $userModel   = new UserModel();
         $branchModel = new BranchModel();
+        $roleModel   = new RoleModel();
 
         $rules = [
             'id'       => 'required|integer',
-            'password' => 'required'
+            'password' => 'required',
         ];
 
         if (!$this->validate($rules)) {
@@ -37,7 +39,7 @@ class Auth extends Controller
         // Clear any previous session
         $session->remove([
             'user_id','first_Name','last_Name','middle_Name',
-            'email','role','branch_id','branch_name','full_name','isLoggedIn'
+            'email','role','role_id','branch_id','branch_name','full_name','isLoggedIn','permissions'
         ]);
 
         $id       = $this->request->getVar('id');
@@ -56,11 +58,13 @@ class Auth extends Controller
 
             // Set session for supplier
             $session->set([
-                'user_id'     => $supplier['id'],
-                'supplier_name' => $supplier['supplier_name'],
-                'role'        => 'Supplier',
-                'role_id'     => 6, // Assuming Supplier role id is 6
-                'isLoggedIn'  => true
+                'user_id'        => $supplier['id'],
+                'supplier_name'  => $supplier['supplier_name'],
+                'email'          => $supplier['email'] ?? null,
+                'role'           => 'Supplier',
+                'role_id'        => $supplier['role_id'] ?? 6,
+                'permissions'    => [],
+                'isLoggedIn'     => true,
             ]);
 
             $session->setFlashdata('success', 'Welcome ' . $supplier['supplier_name'] . '!');
@@ -94,6 +98,18 @@ class Auth extends Controller
         // Prepare full name
         $fullName = trim($user['first_Name'] . ' ' . $user['last_Name']);
 
+        // Resolve role permissions
+        $rolePermissions = [];
+        if (!empty($user['role_id'])) {
+            $roleRecord = $roleModel->find($user['role_id']);
+            if ($roleRecord && !empty($roleRecord['permissions'])) {
+                $decoded = json_decode($roleRecord['permissions'], true);
+                if (is_array($decoded)) {
+                    $rolePermissions = $decoded;
+                }
+            }
+        }
+
         // Set session data
         $session->set([
             'user_id'     => $user['id'],
@@ -106,7 +122,8 @@ class Auth extends Controller
             'branch_id'   => $branchId,
             'branch_name' => $branchData['branch_name'] ?? 'No Assigned Branch',
             'full_name'   => $fullName,
-            'isLoggedIn'  => true
+            'permissions' => $rolePermissions,
+            'isLoggedIn'  => true,
         ]);
 
         $session->setFlashdata('success', 'Welcome ' . $user['first_Name'] . '!');

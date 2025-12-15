@@ -6,9 +6,8 @@ use App\Models\AccountsPayableModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\SupplierModel;
 use App\Models\UserModel;
-use CodeIgniter\Controller;
 
-class AccountsPayable extends Controller
+class AccountsPayable extends BaseController
 {
     protected $accountsPayableModel;
     protected $purchaseOrderModel;
@@ -22,30 +21,11 @@ class AccountsPayable extends Controller
     }
 
     /**
-     * Check authorization - only Central Office Admin
-     */
-    private function authorize(): ?\CodeIgniter\HTTP\RedirectResponse
-    {
-        $session = session();
-        
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        $role = $session->get('role');
-        if ($role !== 'Central Office Admin') {
-            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access.');
-        }
-
-        return null;
-    }
-
-    /**
      * List all accounts payable
      */
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('accounts_payable.view')) {
             return $redirect;
         }
 
@@ -101,7 +81,7 @@ class AccountsPayable extends Controller
      */
     public function view(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('accounts_payable.view')) {
             return $redirect;
         }
 
@@ -135,7 +115,7 @@ class AccountsPayable extends Controller
      */
     public function recordPayment(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('accounts_payable.manage')) {
             return $redirect;
         }
 
@@ -184,7 +164,7 @@ class AccountsPayable extends Controller
      */
     public function markAsPaid(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('accounts_payable.manage')) {
             return $redirect;
         }
 
@@ -212,7 +192,7 @@ class AccountsPayable extends Controller
      */
     public function printReceipt(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('accounts_payable.print')) {
             return $redirect;
         }
 

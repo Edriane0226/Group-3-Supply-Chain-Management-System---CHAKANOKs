@@ -8,9 +8,7 @@ use App\Models\BranchModel;
 use App\Models\ActivityLogModel;
 use App\Models\SystemSettingModel;
 use App\Models\ContactMessageModel;
-use CodeIgniter\Controller;
-
-class SystemAdmin extends Controller
+class SystemAdmin extends BaseController
 {
     protected UserModel $userModel;
     protected RoleModel $roleModel;
@@ -19,6 +17,7 @@ class SystemAdmin extends Controller
     protected SystemSettingModel $settingModel;
     protected ContactMessageModel $contactModel;
     protected $session;
+    private array $permissionGroups;
 
     public function __construct()
     {
@@ -29,24 +28,10 @@ class SystemAdmin extends Controller
         $this->settingModel = new SystemSettingModel();
         $this->contactModel = new ContactMessageModel();
         $this->session = session();
+        $this->permissionGroups = $this->buildPermissionGroups();
         helper(['form', 'url', 'text']);
     }
 
-    /**
-     * Check authorization - only System Administrator allowed
-     */
-    private function authorize()
-    {
-        if (!$this->session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        if ($this->session->get('role') !== 'System Administrator') {
-            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access. System Administrator only.');
-        }
-
-        return null;
-    }
 
     /**
      * Log activity helper
@@ -61,7 +46,7 @@ class SystemAdmin extends Controller
      */
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('dashboard.view')) {
             return $redirect;
         }
 
@@ -88,7 +73,7 @@ class SystemAdmin extends Controller
      */
     public function users()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.view')) {
             return $redirect;
         }
 
@@ -130,7 +115,7 @@ class SystemAdmin extends Controller
      */
     public function createUser()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.create')) {
             return $redirect;
         }
 
@@ -149,7 +134,7 @@ class SystemAdmin extends Controller
      */
     public function storeUser()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.create')) {
             return $redirect;
         }
 
@@ -191,7 +176,7 @@ class SystemAdmin extends Controller
      */
     public function editUser(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.update')) {
             return $redirect;
         }
 
@@ -217,7 +202,7 @@ class SystemAdmin extends Controller
      */
     public function updateUser(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.update')) {
             return $redirect;
         }
 
@@ -268,7 +253,7 @@ class SystemAdmin extends Controller
      */
     public function deleteUser(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.delete')) {
             return $redirect;
         }
 
@@ -296,7 +281,7 @@ class SystemAdmin extends Controller
      */
     public function resetPassword(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('users.reset_password')) {
             return $redirect;
         }
 
@@ -322,21 +307,23 @@ class SystemAdmin extends Controller
      */
     public function roles()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('roles.view')) {
             return $redirect;
         }
 
         $roles = $this->roleModel->findAll();
 
-        // Count users per role
         foreach ($roles as &$role) {
+            $role['permissions'] = $this->decodePermissions($role['permissions'] ?? null);
             $role['user_count'] = $this->userModel->where('role_id', $role['id'])->countAllResults();
         }
+        unset($role);
 
         $data = [
             'role'  => $this->session->get('role'),
             'title' => 'Role Management',
             'roles' => $roles,
+            'permissionGroups' => $this->permissionGroups,
         ];
 
         return view('reusables/sidenav', $data) . view('admin/roles', $data);
@@ -347,7 +334,7 @@ class SystemAdmin extends Controller
      */
     public function createRole()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('roles.create')) {
             return $redirect;
         }
 
@@ -359,9 +346,12 @@ class SystemAdmin extends Controller
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $permissions = $this->sanitizePermissions($this->request->getPost('permissions') ?? []);
+
         $roleData = [
             'role_name'   => $this->request->getPost('role_name'),
             'description' => $this->request->getPost('description'),
+            'permissions' => json_encode($permissions),
         ];
 
         if ($this->roleModel->insert($roleData)) {
@@ -377,7 +367,7 @@ class SystemAdmin extends Controller
      */
     public function updateRole(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('roles.update')) {
             return $redirect;
         }
 
@@ -395,13 +385,19 @@ class SystemAdmin extends Controller
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $permissions = $this->sanitizePermissions($this->request->getPost('permissions') ?? []);
+
         $roleData = [
             'role_name'   => $this->request->getPost('role_name'),
             'description' => $this->request->getPost('description'),
+            'permissions' => json_encode($permissions),
         ];
 
         if ($this->roleModel->update($id, $roleData)) {
             $this->logActivity('update', 'roles', 'Updated role: ' . $roleData['role_name']);
+            if ((int) ($this->session->get('role_id') ?? 0) === $id) {
+                $this->refreshPermissions($permissions);
+            }
             return redirect()->to(site_url('admin/roles'))->with('success', 'Role updated successfully.');
         }
 
@@ -413,7 +409,7 @@ class SystemAdmin extends Controller
      */
     public function deleteRole(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('roles.delete')) {
             return $redirect;
         }
 
@@ -442,7 +438,7 @@ class SystemAdmin extends Controller
      */
     public function branches()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branches.view')) {
             return $redirect;
         }
 
@@ -462,7 +458,7 @@ class SystemAdmin extends Controller
      */
     public function activityLogs()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('activity_logs.view')) {
             return $redirect;
         }
 
@@ -504,7 +500,7 @@ class SystemAdmin extends Controller
      */
     public function clearLogs()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('activity_logs.clear')) {
             return $redirect;
         }
 
@@ -521,7 +517,7 @@ class SystemAdmin extends Controller
      */
     public function settings()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('settings.view')) {
             return $redirect;
         }
 
@@ -540,7 +536,7 @@ class SystemAdmin extends Controller
      */
     public function updateSettings()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('settings.update')) {
             return $redirect;
         }
 
@@ -560,7 +556,7 @@ class SystemAdmin extends Controller
      */
     public function backup()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('backups.view')) {
             return $redirect;
         }
 
@@ -601,7 +597,7 @@ class SystemAdmin extends Controller
      */
     public function createBackup()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('backups.create')) {
             return $redirect;
         }
 
@@ -662,7 +658,7 @@ class SystemAdmin extends Controller
      */
     public function downloadBackup(string $filename)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('backups.download')) {
             return $redirect;
         }
 
@@ -682,7 +678,7 @@ class SystemAdmin extends Controller
      */
     public function deleteBackup(string $filename)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('backups.delete')) {
             return $redirect;
         }
 
@@ -705,7 +701,7 @@ class SystemAdmin extends Controller
      */
     public function clearCache()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('backups.clear_cache')) {
             return $redirect;
         }
 
@@ -762,11 +758,144 @@ class SystemAdmin extends Controller
     }
 
     /**
+     * Build the list of available permission groups.
+     */
+    private function buildPermissionGroups(): array
+    {
+        return [
+            'system' => [
+                'label' => 'System Access',
+                'permissions' => [
+                    'full_access' => 'Full system administration access',
+                ],
+            ],
+            'dashboard' => [
+                'label' => 'Dashboard',
+                'permissions' => [
+                    'view' => 'View system dashboard',
+                ],
+            ],
+            'users' => [
+                'label' => 'User Management',
+                'permissions' => [
+                    'view' => 'View user list',
+                    'create' => 'Create users',
+                    'update' => 'Update users',
+                    'delete' => 'Delete users',
+                    'reset_password' => 'Reset user passwords',
+                ],
+            ],
+            'roles' => [
+                'label' => 'Role Management',
+                'permissions' => [
+                    'view' => 'View roles',
+                    'create' => 'Create roles',
+                    'update' => 'Update roles',
+                    'delete' => 'Delete roles',
+                ],
+            ],
+            'branches' => [
+                'label' => 'Branch Management',
+                'permissions' => [
+                    'view' => 'View branches',
+                    'create' => 'Create branches',
+                    'update' => 'Update branches',
+                    'delete' => 'Delete branches',
+                ],
+            ],
+            'settings' => [
+                'label' => 'System Settings',
+                'permissions' => [
+                    'view' => 'View settings',
+                    'update' => 'Update settings',
+                ],
+            ],
+            'activity_logs' => [
+                'label' => 'Activity Logs',
+                'permissions' => [
+                    'view' => 'View activity logs',
+                    'clear' => 'Clear activity logs',
+                ],
+            ],
+            'backups' => [
+                'label' => 'Backups & Maintenance',
+                'permissions' => [
+                    'view' => 'Access backup page',
+                    'create' => 'Create database backups',
+                    'download' => 'Download backups',
+                    'delete' => 'Delete backups',
+                    'clear_cache' => 'Clear system cache',
+                ],
+            ],
+            'contact' => [
+                'label' => 'Contact Messages',
+                'permissions' => [
+                    'view' => 'View contact messages',
+                    'update_status' => 'Update message status',
+                    'delete' => 'Delete contact messages',
+                    'reply' => 'Reply to contact messages',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Return the flat list of valid permission keys.
+     */
+    private function getAllPermissionKeys(): array
+    {
+        static $keys = null;
+
+        if ($keys !== null) {
+            return $keys;
+        }
+
+        $keys = [];
+
+        foreach ($this->permissionGroups as $groupKey => $group) {
+            foreach (array_keys($group['permissions']) as $permissionKey) {
+                $keys[] = $groupKey . '.' . $permissionKey;
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Sanitize incoming permissions data to allow only defined keys.
+     */
+    private function sanitizePermissions($permissions): array
+    {
+        if (!is_array($permissions)) {
+            $permissions = $permissions ? [$permissions] : [];
+        }
+
+        $permissions = array_map('strval', $permissions);
+        $validPermissions = $this->getAllPermissionKeys();
+
+        return array_values(array_unique(array_intersect($permissions, $validPermissions)));
+    }
+
+    /**
+     * Decode a JSON permissions payload.
+     */
+    private function decodePermissions(?string $permissions): array
+    {
+        if (empty($permissions)) {
+            return [];
+        }
+
+        $decoded = json_decode($permissions, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
      * Contact Messages - List all messages
      */
     public function contactMessages()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('contact.view')) {
             return $redirect;
         }
 
@@ -801,7 +930,7 @@ class SystemAdmin extends Controller
      */
     public function viewContactMessage($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('contact.view')) {
             return $redirect;
         }
 
@@ -832,7 +961,7 @@ class SystemAdmin extends Controller
      */
     public function updateMessageStatus($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('contact.update_status')) {
             return $redirect;
         }
 
@@ -864,7 +993,7 @@ class SystemAdmin extends Controller
      */
     public function deleteContactMessage($id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('contact.delete')) {
             return $redirect;
         }
 

@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use CodeIgniter\Controller;
 use App\Models\UserModel;
 use App\Models\PurchaseOrderModel;
 use App\Models\PurchaseRequestModel;
@@ -17,17 +16,15 @@ use App\Models\AccountsPayableModel;
 use App\Models\SupplierModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
-
-class Dashboard extends Controller
+class Dashboard extends BaseController
 {
     public function index()
     {
-        $session = session();
-
-        //  Check if logged in
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        if ($redirect = $this->authorize('dashboard.view')) {
+            return $redirect;
         }
+
+        $session = session();
 
         $role = $session->get('role');
         $branchName = $session->get('branch_name');

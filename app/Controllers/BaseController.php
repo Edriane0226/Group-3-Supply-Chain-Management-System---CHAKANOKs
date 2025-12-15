@@ -2,9 +2,11 @@
 
 namespace App\Controllers;
 
+use App\Models\RoleModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
+use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -28,20 +30,16 @@ abstract class BaseController extends Controller
      */
     protected $request;
 
-    /**
-     * An array of helpers to be loaded automatically upon
-     * class instantiation. These helpers will be available
-     * to all other controllers that extend BaseController.
-     *
-     * @var list<string>
-     */
     protected $helpers = [];
 
+    protected $session;
+
+    protected RoleModel $roleModel;
+
     /**
-     * Be sure to declare properties for any property fetch you initialized.
-     * The creation of dynamic property is deprecated in PHP 8.2.
+     * Cached current user's permissions for the lifetime of the request.
      */
-    // protected $session;
+    private array $cachedPermissions = [];
 
     /**
      * @return void
@@ -51,8 +49,121 @@ abstract class BaseController extends Controller
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
 
-        // Preload any models, libraries, etc, here.
+        $this->session = session();
+        helper(['url']);
+        $this->roleModel = new RoleModel();
+    }
 
-        // E.g.: $this->session = service('session');
+    /**
+     * Ensure the current user has the required permission.
+     *
+     * @param null|string|array $requiredPermission
+     */
+    protected function authorize(null|string|array $requiredPermission = null): ?RedirectResponse
+    {
+        if (!$this->session->get('isLoggedIn')) {
+            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        if ($this->session->get('role') === 'System Administrator') {
+            return null;
+        }
+
+        if ($this->canAccess($requiredPermission)) {
+            return null;
+        }
+
+        return redirect()->back()->with('error', 'You do not have permission to perform this action.');
+    }
+
+    /**
+     * Determine if the current user can access the provided permission.
+     *
+     * @param null|string|array $permission
+     */
+    protected function canAccess(null|string|array $permission): bool
+    {
+        if (!$this->session->get('isLoggedIn')) {
+            return false;
+        }
+
+        if ($this->session->get('role') === 'System Administrator') {
+            return true;
+        }
+
+        if ($permission === null) {
+            return true;
+        }
+
+        $permissions = $this->getCurrentPermissions();
+
+        if ($this->hasPermission('system.full_access', $permissions)) {
+            return true;
+        }
+
+        if (is_array($permission)) {
+            foreach ($permission as $perm) {
+                if ($this->hasPermission($perm, $permissions)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return $this->hasPermission($permission, $permissions);
+    }
+
+    /**
+     * Retrieve current user's permissions, loading from the database if needed.
+     */
+    protected function getCurrentPermissions(): array
+    {
+        if (!empty($this->cachedPermissions)) {
+            return $this->cachedPermissions;
+        }
+
+        $permissions = $this->session->get('permissions');
+
+        if (!is_array($permissions)) {
+            $roleId = (int) ($this->session->get('role_id') ?? 0);
+            if ($roleId > 0) {
+                $role = $this->roleModel->find($roleId);
+                if ($role && !empty($role['permissions'])) {
+                    $decoded = json_decode($role['permissions'], true);
+                    if (is_array($decoded)) {
+                        $permissions = $decoded;
+                    }
+                }
+            }
+            $permissions = is_array($permissions) ? $permissions : [];
+            $this->session->set('permissions', $permissions);
+        }
+
+        $this->cachedPermissions = $permissions;
+
+        return $permissions;
+    }
+
+    /**
+     * Helper to check if a permission exists in the provided set.
+     */
+    protected function hasPermission(string $permission, ?array $permissions = null): bool
+    {
+        if ($permission === '') {
+            return false;
+        }
+
+        $permissions = $permissions ?? $this->getCurrentPermissions();
+
+        return in_array($permission, $permissions, true);
+    }
+
+    /**
+     * Forget cached permissions for the current request/session.
+     */
+    protected function refreshPermissions(array $permissions): void
+    {
+        $this->cachedPermissions = $permissions;
+        $this->session->set('permissions', $permissions);
     }
 }

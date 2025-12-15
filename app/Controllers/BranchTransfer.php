@@ -5,9 +5,8 @@ namespace App\Controllers;
 use App\Models\BranchTransferModel;
 use App\Models\BranchModel;
 use App\Models\InventoryModel;
-use CodeIgniter\Controller;
 
-class BranchTransfer extends Controller
+class BranchTransfer extends BaseController
 {
     protected BranchTransferModel $transferModel;
     protected BranchModel $branchModel;
@@ -24,30 +23,11 @@ class BranchTransfer extends Controller
     }
 
     /**
-     * Check authorization for Branch Manager
-     */
-    private function authorize(): ?\CodeIgniter\HTTP\RedirectResponse
-    {
-        $session = session();
-        
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        $role = $session->get('role');
-        if (!in_array($role, ['Branch Manager', 'Central Office Admin'])) {
-            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access.');
-        }
-
-        return null;
-    }
-
-    /**
      * List all branch transfers
      */
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.view')) {
             return $redirect;
         }
 
@@ -84,7 +64,7 @@ class BranchTransfer extends Controller
      */
     public function create()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.create')) {
             return $redirect;
         }
 
@@ -131,7 +111,7 @@ class BranchTransfer extends Controller
      */
     public function getItemDetails()
     {
-        if ($redirect = $this->authorize()) {
+        if (!$this->canAccess(['branch_transfers.create', 'branch_transfers.view'])) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
@@ -183,7 +163,7 @@ class BranchTransfer extends Controller
      */
     public function store()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.create')) {
             return $redirect;
         }
 
@@ -280,7 +260,7 @@ class BranchTransfer extends Controller
      */
     public function view(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.view')) {
             return $redirect;
         }
 
@@ -323,7 +303,7 @@ class BranchTransfer extends Controller
      */
     public function approve(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.approve')) {
             return $redirect;
         }
 
@@ -364,7 +344,7 @@ class BranchTransfer extends Controller
      */
     public function reject(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.reject')) {
             return $redirect;
         }
 
@@ -401,7 +381,7 @@ class BranchTransfer extends Controller
      */
     public function complete(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('branch_transfers.complete')) {
             return $redirect;
         }
 

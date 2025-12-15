@@ -26,8 +26,8 @@ class Inventory extends BaseController
     // ✅ Main Inventory Page (Branch Manager)
     public function index()
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login');
+        if ($redirect = $this->authorize('inventory.view')) {
+            return $redirect;
         }
 
         $branchId = (int)(session()->get('branch_id') ?? 0);
@@ -48,6 +48,10 @@ class Inventory extends BaseController
     // ✅ Live inventory JSON (for frontend auto-refresh)
     public function liveInventory(): ResponseInterface
     {
+        if (!$this->canAccess('inventory.view')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
         $branchId = (int)(session()->get('branch_id') ?? 0);
         $inventory = $branchId > 0
             ? $this->inventoryModel->where('branch_id', $branchId)->findAll()
@@ -59,6 +63,10 @@ class Inventory extends BaseController
     // ✅ Update stock
     public function updateStock(): ResponseInterface
     {
+        if (!$this->canAccess('inventory.adjust')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
         $id    = (int)$this->request->getPost('id');
         $delta = (int)$this->request->getPost('delta');
 
@@ -77,6 +85,10 @@ class Inventory extends BaseController
     // ✅ Find by barcode
     public function findByBarcode(): ResponseInterface
     {
+        if (!$this->canAccess('inventory.view')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
         $barcode  = (string)$this->request->getGet('barcode');
         $branchId = (int)(session()->get('branch_id') ?? 0);
 
@@ -96,6 +108,10 @@ class Inventory extends BaseController
     // ✅ Get current stock balance
     public function balance(): ResponseInterface
     {
+        if (!$this->canAccess('inventory.view')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
+        }
+
         $branchId = (int)$this->request->getGet('branch_id') ?? (int)(session()->get('branch_id') ?? 0);
 
         $balance = $this->inventoryModel->getStockBalance($branchId);
@@ -106,9 +122,8 @@ class Inventory extends BaseController
     // ✅ Stock In (add to inventory)
     public function stockin(): ResponseInterface
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) {
-            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        if (!$this->canAccess('inventory.stock_in')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
         $data = $this->request->getJSON(true);
@@ -134,9 +149,8 @@ class Inventory extends BaseController
     // ✅ Stock Out (remove from inventory)
     public function stockout(): ResponseInterface
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) {
-            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        if (!$this->canAccess('inventory.stock_out')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
         $data = $this->request->getJSON(true);
@@ -162,6 +176,10 @@ class Inventory extends BaseController
     // ✅ Export reports
     public function export(): ResponseInterface
     {
+        if ($redirect = $this->authorize('inventory.export')) {
+            return $redirect;
+        }
+
         try {
             $format = $this->request->getGet('export') ?? 'csv';
             $branchId = (int)$this->request->getGet('branch_id') ?? (int)(session()->get('branch_id') ?? 0);
@@ -241,9 +259,8 @@ class Inventory extends BaseController
     // ✅ Receive stock (increase)
     public function receive(): ResponseInterface
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) {
-            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        if (!$this->canAccess('inventory.adjust')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
         $id     = (int)$this->request->getPost('id');
         $amount = (int)$this->request->getPost('amount');
@@ -260,9 +277,8 @@ class Inventory extends BaseController
     // ✅ Report damage (decrease)
     public function reportDamage(): ResponseInterface
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) {
-            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        if (!$this->canAccess('inventory.adjust')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
         $id     = (int)$this->request->getPost('id');
         $amount = (int)$this->request->getPost('amount');
@@ -279,9 +295,8 @@ class Inventory extends BaseController
     // ✅ Branch-scoped summary for dashboards
     public function summary(): ResponseInterface
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) {
-            return $this->response->setStatusCode(302)->setJSON(['redirect' => (string)$guard->getHeaderLine('Location')]);
+        if (!$this->canAccess('inventory.view')) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
         $branchId = (int)(session()->get('branch_id') ?? 0);
         if ($branchId <= 0) {
@@ -291,37 +306,29 @@ class Inventory extends BaseController
         return $this->response->setJSON($summary);
     }
 
-    // Access guards
-    private function ensureInventoryAccess()
-    {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login');
-        }
-        $role = (string) (session()->get('role') ?? '');
-        if ($role !== 'Inventory Staff' && $role !== 'Branch Manager' && $role !== 'Central Office Admin') {
-            return redirect()->to('/login');
-        }
-        return null;
-    }
-
     // Staff Pages (Inventory Staff only)
     public function overviewPage() {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) return $guard;
-        if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
+        if ($redirect = $this->authorize('inventory.staff_portal')) {
+            return $redirect;
+        }
         $branchId = (int)(session()->get('branch_id') ?? 0);
         $data['inventory'] = $this->inventoryModel->getStockBalance($branchId);
         return view('pages/inventory_overview', $data);
     }
-    public function scanPage() { $guard = $this->ensureInventoryAccess(); if ($guard) return $guard; if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); } return view('pages/inventory_scan'); }
+    public function scanPage() {
+        if ($redirect = $this->authorize('inventory.staff_portal')) {
+            return $redirect;
+        }
+        return view('pages/inventory_scan');
+    }
 
 
     // Stock In Page
     public function stockInPage()
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) return $guard;
-        if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
+        if ($redirect = $this->authorize('inventory.staff_portal')) {
+            return $redirect;
+        }
         $data['stockTypes'] = $this->inventoryModel->getStockTypes();
         return view('pages/inventory_stockin', $data);
     }
@@ -329,9 +336,9 @@ class Inventory extends BaseController
     // Stock Out Page
     public function stockOutPage()
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) return $guard;
-        if ((string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
+        if ($redirect = $this->authorize('inventory.staff_portal')) {
+            return $redirect;
+        }
         $data['stockTypes'] = $this->inventoryModel->getStockTypes();
         return view('pages/inventory_stockout', $data);
     }
@@ -339,9 +346,9 @@ class Inventory extends BaseController
     // Reports Page
     public function reportsPage()
     {
-        $guard = $this->ensureInventoryAccess();
-        if ($guard) return $guard;
-        if ((string)session()->get('role') !== 'Branch Manager' && (string)session()->get('role') !== 'Central Office Admin' && (string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
+        if ($redirect = $this->authorize('inventory.reports')) {
+            return $redirect;
+        }
         $branchId = (int)(session()->get('branch_id') ?? 0);
         $branchModel = new BranchModel();
         $data['balance'] = $this->inventoryModel->getBalance($branchId);
@@ -352,14 +359,11 @@ class Inventory extends BaseController
 
     public function confirmDelivery(int $scheduleId): ResponseInterface
     {
-        if (!session()->get('isLoggedIn')) {
+        if (!$this->canAccess('inventory.confirm_delivery')) {
             return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
         }
 
         $role = (string) (session()->get('role') ?? '');
-        if (!in_array($role, ['Inventory Staff', 'Branch Manager', 'Central Office Admin'], true)) {
-            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized']);
-        }
 
         $schedule = $this->deliveryScheduleModel->getScheduleWithRelations($scheduleId);
         if (!$schedule) {

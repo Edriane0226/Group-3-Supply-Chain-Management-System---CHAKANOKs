@@ -2,9 +2,7 @@
 
 namespace App\Controllers;
 
-use CodeIgniter\Controller;
-
-class BranchManager extends Controller
+class BranchManager extends BaseController
 {
     public function __construct()
     {
@@ -14,15 +12,8 @@ class BranchManager extends Controller
     // ✅ Dashboard for Branch Manager
     public function dashboard()
     {
-        // Make sure user is logged in
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
-        }
-
-        // Allow only Branch Manager role
-        if (session()->get('role') !== 'Branch Manager') {
-            session()->setFlashdata('error', 'Unauthorized: Branch Manager only');
-            return redirect()->to('login');
+        if ($redirect = $this->authorize('branch_manager.dashboard')) {
+            return $redirect;
         }
 
         // Pass session data to the view
@@ -39,13 +30,8 @@ class BranchManager extends Controller
     // ✅ Example: View branch reports
     public function reports()
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
-        }
-
-        if (session()->get('role') !== 'Branch Manager') {
-            session()->setFlashdata('error', 'Unauthorized: Branch Manager only');
-            return redirect()->to('login');
+        if ($redirect = $this->authorize('branch_manager.reports')) {
+            return $redirect;
         }
 
         return view('branchmanager/reports');
@@ -54,13 +40,8 @@ class BranchManager extends Controller
     // ✅ Example: Manage staff under this branch
     public function manageStaff()
     {
-        if (!session()->get('isLoggedIn')) {
-            return redirect()->to('login');
-        }
-
-        if (session()->get('role') !== 'Branch Manager') {
-            session()->setFlashdata('error', 'Unauthorized: Branch Manager only');
-            return redirect()->to('login');
+        if ($redirect = $this->authorize('branch_manager.manage_staff')) {
+            return $redirect;
         }
 
         return view('branchmanager/manage_staff');
