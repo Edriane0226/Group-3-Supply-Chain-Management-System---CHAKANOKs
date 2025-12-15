@@ -26,6 +26,10 @@ class ScheduledReports extends Controller
      */
     public function generateDailyReports()
     {
+        if (!is_cli()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Scheduled reports can only be triggered from the CLI.']);
+        }
+
         // This can be called via cron: 0 8 * * * (daily at 8 AM)
         
         $recipients = $this->getReportRecipients();
@@ -112,6 +116,10 @@ class ScheduledReports extends Controller
      */
     public function generateWeeklyFranchiseReport()
     {
+        if (!is_cli()) {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Scheduled reports can only be triggered from the CLI.']);
+        }
+
         // Can be called via cron: 0 9 * * 1 (Every Monday at 9 AM)
         
         $franchiseModel = new FranchiseModel();

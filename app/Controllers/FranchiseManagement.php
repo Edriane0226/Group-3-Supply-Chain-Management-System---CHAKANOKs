@@ -6,9 +6,7 @@ use App\Models\FranchiseModel;
 use App\Models\FranchisePaymentModel;
 use App\Models\FranchiseSupplyAllocationModel;
 use App\Models\BranchModel;
-use CodeIgniter\Controller;
-
-class FranchiseManagement extends Controller
+class FranchiseManagement extends BaseController
 {
     protected FranchiseModel $franchiseModel;
     protected FranchisePaymentModel $paymentModel;
@@ -29,15 +27,10 @@ class FranchiseManagement extends Controller
     /**
      * Check authorization - only Franchise Manager and Central Office Admin allowed
      */
-    private function authorize()
+    private function ensureFranchiseAccess(null|string|array $permission)
     {
-        if (!$this->session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        $allowedRoles = ['Franchise Manager', 'Central Office Admin'];
-        if (!in_array($this->session->get('role'), $allowedRoles)) {
-            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access to Franchise Management.');
+        if ($redirect = $this->authorize($permission)) {
+            return $redirect;
         }
 
         return null;
@@ -48,7 +41,7 @@ class FranchiseManagement extends Controller
      */
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.dashboard')) {
             return $redirect;
         }
 
@@ -72,7 +65,7 @@ class FranchiseManagement extends Controller
      */
     public function applications()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -99,7 +92,7 @@ class FranchiseManagement extends Controller
      */
     public function viewApplication(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -126,7 +119,7 @@ class FranchiseManagement extends Controller
      */
     public function create()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -143,7 +136,7 @@ class FranchiseManagement extends Controller
      */
     public function store()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -181,7 +174,7 @@ class FranchiseManagement extends Controller
      */
     public function approve(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -226,7 +219,7 @@ class FranchiseManagement extends Controller
      */
     public function reject(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -254,7 +247,7 @@ class FranchiseManagement extends Controller
      */
     public function markUnderReview(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.applications')) {
             return $redirect;
         }
 
@@ -274,7 +267,7 @@ class FranchiseManagement extends Controller
      */
     public function franchises()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.franchises')) {
             return $redirect;
         }
 
@@ -292,7 +285,7 @@ class FranchiseManagement extends Controller
      */
     public function viewFranchise(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.franchises')) {
             return $redirect;
         }
 
@@ -318,7 +311,7 @@ class FranchiseManagement extends Controller
      */
     public function activate(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.manage_franchises')) {
             return $redirect;
         }
 
@@ -355,7 +348,7 @@ class FranchiseManagement extends Controller
      */
     public function suspend(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.manage_franchises')) {
             return $redirect;
         }
 
@@ -379,7 +372,7 @@ class FranchiseManagement extends Controller
      */
     public function reactivate(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.manage_franchises')) {
             return $redirect;
         }
 
@@ -401,7 +394,7 @@ class FranchiseManagement extends Controller
      */
     public function terminate(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.manage_franchises')) {
             return $redirect;
         }
 
@@ -425,7 +418,7 @@ class FranchiseManagement extends Controller
      */
     public function payments(?int $franchiseId = null)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.payments')) {
             return $redirect;
         }
 
@@ -455,7 +448,7 @@ class FranchiseManagement extends Controller
      */
     public function recordPayment(int $franchiseId)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.payments')) {
             return $redirect;
         }
 
@@ -503,7 +496,7 @@ class FranchiseManagement extends Controller
      */
     public function printReceipt(int $paymentId)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.payments')) {
             return $redirect;
         }
 
@@ -536,7 +529,7 @@ class FranchiseManagement extends Controller
      */
     public function allocations(?int $franchiseId = null)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.allocations')) {
             return $redirect;
         }
 
@@ -566,7 +559,7 @@ class FranchiseManagement extends Controller
      */
     public function allocateSupply(int $franchiseId)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.allocations')) {
             return $redirect;
         }
 
@@ -590,7 +583,7 @@ class FranchiseManagement extends Controller
      */
     public function processAllocation(int $franchiseId)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.allocations')) {
             return $redirect;
         }
 
@@ -646,7 +639,7 @@ class FranchiseManagement extends Controller
      */
     public function updateAllocationStatus(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.allocations')) {
             return $redirect;
         }
 
@@ -669,7 +662,7 @@ class FranchiseManagement extends Controller
      */
     public function reports()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.reports')) {
             return $redirect;
         }
 
@@ -702,7 +695,7 @@ class FranchiseManagement extends Controller
      */
     public function performanceReport(int $franchiseId)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.reports')) {
             return $redirect;
         }
 
@@ -737,7 +730,7 @@ class FranchiseManagement extends Controller
      */
     public function sendPaymentReminders()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.send_reminders')) {
             return $redirect;
         }
 
@@ -855,7 +848,7 @@ class FranchiseManagement extends Controller
      */
     public function search()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess(['franchise.franchises', 'franchise.reports'])) {
             return $redirect;
         }
 
@@ -881,7 +874,7 @@ class FranchiseManagement extends Controller
      */
     public function exportReport()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->ensureFranchiseAccess('franchise.reports')) {
             return $redirect;
         }
 

@@ -46,7 +46,7 @@ class SystemAdmin extends BaseController
      */
     public function index()
     {
-        if ($redirect = $this->authorize('dashboard.view')) {
+        if ($redirect = $this->authorize('system.full_access')) {
             return $redirect;
         }
 
@@ -794,6 +794,14 @@ class SystemAdmin extends BaseController
                     'delete' => 'Delete roles',
                 ],
             ],
+            'branch_manager' => [
+                'label' => 'Branch Manager Portal',
+                'permissions' => [
+                    'dashboard' => 'Access branch manager dashboard',
+                    'reports' => 'View branch reports',
+                    'manage_staff' => 'Manage branch staff',
+                ],
+            ],
             'branches' => [
                 'label' => 'Branch Management',
                 'permissions' => [
@@ -801,6 +809,90 @@ class SystemAdmin extends BaseController
                     'create' => 'Create branches',
                     'update' => 'Update branches',
                     'delete' => 'Delete branches',
+                ],
+            ],
+            'branch_transfers' => [
+                'label' => 'Branch Transfers',
+                'permissions' => [
+                    'view' => 'View transfer requests',
+                    'create' => 'Create transfer requests',
+                    'approve' => 'Approve incoming transfers',
+                    'reject' => 'Reject transfer requests',
+                    'complete' => 'Mark transfers as completed',
+                ],
+            ],
+            'deliveries' => [
+                'label' => 'Deliveries',
+                'permissions' => [
+                    'view' => 'View delivery schedules',
+                    'receive' => 'Acknowledge received deliveries',
+                    'cancel' => 'Cancel pending deliveries',
+                ],
+            ],
+            'inventory' => [
+                'label' => 'Inventory Management',
+                'permissions' => [
+                    'view' => 'View inventory balances',
+                    'staff_portal' => 'Access inventory staff portal',
+                    'stock_in' => 'Record stock in',
+                    'stock_out' => 'Record stock out',
+                    'adjust' => 'Adjust stock levels',
+                    'export' => 'Export inventory reports',
+                    'reports' => 'View inventory reports',
+                    'confirm_delivery' => 'Confirm delivery receipts',
+                ],
+            ],
+            'accounts_payable' => [
+                'label' => 'Accounts Payable',
+                'permissions' => [
+                    'view' => 'View accounts payable records',
+                    'manage' => 'Record and manage payments',
+                    'print' => 'Print payment receipts',
+                ],
+            ],
+            'purchase_requests' => [
+                'label' => 'Purchase Requests',
+                'permissions' => [
+                    'view' => 'View purchase requests',
+                    'create' => 'Create purchase requests',
+                    'update' => 'Update purchase requests',
+                    'delete' => 'Delete purchase requests',
+                    'approve' => 'Approve purchase requests',
+                    'reject' => 'Reject purchase requests',
+                    'cancel' => 'Cancel purchase requests',
+                ],
+            ],
+            'logistics' => [
+                'label' => 'Logistics Coordination',
+                'permissions' => [
+                    'dashboard' => 'Access logistics dashboard',
+                    'schedule' => 'Schedule deliveries',
+                    'optimize_route' => 'Optimize delivery routes',
+                    'update_status' => 'Update delivery statuses',
+                    'calendar' => 'View logistics calendar',
+                    'notifications' => 'View logistics notifications',
+                ],
+            ],
+            'franchise' => [
+                'label' => 'Franchise Management',
+                'permissions' => [
+                    'dashboard' => 'Access franchise dashboard',
+                    'applications' => 'Manage franchise applications',
+                    'franchises' => 'View franchise directory',
+                    'manage_franchises' => 'Activate or suspend franchises',
+                    'payments' => 'Manage franchise payments',
+                    'allocations' => 'Manage franchise supply allocations',
+                    'reports' => 'View franchise reports',
+                    'send_reminders' => 'Send franchise payment reminders',
+                ],
+            ],
+            'supplier_contracts' => [
+                'label' => 'Supplier Contracts',
+                'permissions' => [
+                    'view' => 'View supplier contracts',
+                    'create' => 'Create supplier contracts',
+                    'update' => 'Update supplier contracts',
+                    'delete' => 'Delete supplier contracts',
                 ],
             ],
             'settings' => [

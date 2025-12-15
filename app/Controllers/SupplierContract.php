@@ -4,36 +4,16 @@ namespace App\Controllers;
 
 use App\Models\SupplierContractModel;
 use App\Models\SupplierModel;
-use CodeIgniter\Controller;
-
-class SupplierContract extends Controller
+class SupplierContract extends BaseController
 {
     protected SupplierContractModel $contractModel;
     protected SupplierModel $supplierModel;
-    protected $session;
 
     public function __construct()
     {
         $this->contractModel = new SupplierContractModel();
         $this->supplierModel = new SupplierModel();
-        $this->session = session();
         helper(['form', 'url']);
-    }
-
-    /**
-     * Check authorization - only Central Office Admin allowed
-     */
-    private function authorize()
-    {
-        if (!$this->session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-        }
-
-        if ($this->session->get('role') !== 'Central Office Admin') {
-            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access. Central Office Admin only.');
-        }
-
-        return null;
     }
 
     /**
@@ -41,7 +21,7 @@ class SupplierContract extends Controller
      */
     public function index()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.view')) {
             return $redirect;
         }
 
@@ -81,7 +61,7 @@ class SupplierContract extends Controller
      */
     public function create()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.create')) {
             return $redirect;
         }
 
@@ -99,7 +79,7 @@ class SupplierContract extends Controller
      */
     public function store()
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.create')) {
             return $redirect;
         }
 
@@ -148,7 +128,7 @@ class SupplierContract extends Controller
      */
     public function view(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.view')) {
             return $redirect;
         }
 
@@ -172,7 +152,7 @@ class SupplierContract extends Controller
      */
     public function edit(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.update')) {
             return $redirect;
         }
 
@@ -197,7 +177,7 @@ class SupplierContract extends Controller
      */
     public function update(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.update')) {
             return $redirect;
         }
 
@@ -248,7 +228,7 @@ class SupplierContract extends Controller
      */
     public function delete(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.delete')) {
             return $redirect;
         }
 
@@ -270,7 +250,7 @@ class SupplierContract extends Controller
      */
     public function activate(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.update')) {
             return $redirect;
         }
 
@@ -290,7 +270,7 @@ class SupplierContract extends Controller
      */
     public function renew(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.update')) {
             return $redirect;
         }
 
@@ -315,7 +295,7 @@ class SupplierContract extends Controller
      */
     public function processRenewal(int $id)
     {
-        if ($redirect = $this->authorize()) {
+        if ($redirect = $this->authorize('supplier_contracts.update')) {
             return $redirect;
         }
 

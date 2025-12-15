@@ -7,21 +7,15 @@ use App\Models\PurchaseOrderModel;
 use App\Models\SupplierItemModel;
 use App\Models\SupplierModel;
 use App\Models\BranchModel;
-use CodeIgniter\Controller;
-
-class PurchaseRequest extends Controller
+class PurchaseRequest extends BaseController
 {
     public function index()
     {
-        $session = session();
-        if (!$session->get('isLoggedIn')) {
-            return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        if ($redirect = $this->authorize('purchase_requests.view')) {
+            return $redirect;
         }
 
-        if (!in_array($session->get('role'), ['Branch Manager', 'Central Office Admin', 'Inventory Staff'])) {
-            $session->setFlashdata('error', 'Unauthorized access.');
-            return redirect()->to(site_url('login'));
-        }
+        $session = $this->session;
 
         $purchModel = new PurchaseRequestModel();
         $branchModel = new BranchModel();
@@ -52,78 +46,85 @@ class PurchaseRequest extends Controller
 
     public function create()
     {
+        if ($redirect = $this->authorize('purchase_requests.create')) {
+            return $redirect;
+        }
+
         $supplierModel = new SupplierModel();
         $branchModel   = new BranchModel();
         $supplierItemModel = new SupplierItemModel();
 
         $data = [
-        'suppliers' => $supplierModel->getActiveSuppliers(),
-        'supplier_items' => $supplierItemModel->findAll(), // all items
-        'role' => session()->get('role'),
-        'title' => 'New Purchase Request'
-    ];
+            'suppliers' => $supplierModel->getActiveSuppliers(),
+            'supplier_items' => $supplierItemModel->findAll(),
+            'role' => $this->session->get('role'),
+            'title' => 'New Purchase Request',
+        ];
 
-        $role = session()->get('role');
-
-        return view('reusables/sidenav', ['role' => $role]) . view('purchase_requests/create', $data);
+        return view('reusables/sidenav', ['role' => $this->session->get('role')])
+            . view('purchase_requests/create', $data);
     }
 
     public function store()
-{
-    $session = session();
-    if (!$session->get('isLoggedIn')) {
-        return redirect()->to(site_url('login'))->with('error', 'Please login first.');
-    }
-
-    $model = new PurchaseRequestModel();
-
-    $itemNames   = $this->request->getPost('item_name');
-    $quantities  = $this->request->getPost('quantity');
-    $suppliers   = $this->request->getPost('supplier_id');
-    $units       = $this->request->getPost('unit');
-    $prices      = $this->request->getPost('price');
-    $descriptions = $this->request->getPost('description');
-
-    if (!is_array($itemNames) || count($itemNames) === 0) {
-        return redirect()->back()->withInput()->with('error', 'Please add at least one item.');
-    }
-
-    $records = [];
-    $branchId = (int) ($session->get('branch_id') ?: $this->request->getPost('branch_id'));
-
-    for ($i = 0; $i < count($itemNames); $i++) {
-        if (empty($itemNames[$i]) || empty($quantities[$i]) || empty($suppliers[$i])) {
-            continue; // skip incomplete rows
+    {
+        if ($redirect = $this->authorize('purchase_requests.create')) {
+            return $redirect;
         }
 
-        $records[] = [
-            'branch_id'    => $branchId,
-            'supplier_id'  => (int) $suppliers[$i],
-            'item_name'    => $itemNames[$i],
-            'quantity'     => (int) $quantities[$i],
-            'unit'         => $units[$i] ?? 'pcs',
-            'price'        => $quantities[$i] * $prices[$i],
-            'description'  => $descriptions[$i] ?? null,
-            'request_date' => date('Y-m-d H:i:s'),
-            'status'       => 'pending',
-        ];
-    }
+        $model = new PurchaseRequestModel();
 
-    if (empty($records)) {
-        return redirect()->back()->withInput()->with('error', 'No valid items to submit.');
-    }
+        $itemNames   = $this->request->getPost('item_name');
+        $quantities  = $this->request->getPost('quantity');
+        $suppliers   = $this->request->getPost('supplier_id');
+        $units       = $this->request->getPost('unit');
+        $prices      = $this->request->getPost('price');
+        $descriptions = $this->request->getPost('description');
 
-    if ($model->insertBatch($records)) {
-        return redirect()->to(site_url('purchase-requests'))
-                         ->with('success', 'Purchase request submitted successfully.');
-    }
+        if (!is_array($itemNames) || count($itemNames) === 0) {
+            return redirect()->back()->withInput()->with('error', 'Please add at least one item.');
+        }
 
-    return redirect()->back()->withInput()->with('error', 'Failed to create Purchase Request');
-}
+        $records = [];
+        $branchId = (int) ($this->session->get('branch_id') ?: $this->request->getPost('branch_id'));
+
+        $totalItems = count($itemNames);
+        for ($i = 0; $i < $totalItems; $i++) {
+            if (empty($itemNames[$i]) || empty($quantities[$i]) || empty($suppliers[$i])) {
+                continue;
+            }
+
+            $records[] = [
+                'branch_id'    => $branchId,
+                'supplier_id'  => (int) $suppliers[$i],
+                'item_name'    => $itemNames[$i],
+                'quantity'     => (int) $quantities[$i],
+                'unit'         => $units[$i] ?? 'pcs',
+                'price'        => $quantities[$i] * $prices[$i],
+                'description'  => $descriptions[$i] ?? null,
+                'request_date' => date('Y-m-d H:i:s'),
+                'status'       => 'pending',
+            ];
+        }
+
+        if (empty($records)) {
+            return redirect()->back()->withInput()->with('error', 'No valid items to submit.');
+        }
+
+        if ($model->insertBatch($records)) {
+            return redirect()->to(site_url('purchase-requests'))
+                             ->with('success', 'Purchase request submitted successfully.');
+        }
+
+        return redirect()->back()->withInput()->with('error', 'Failed to create Purchase Request');
+    }
 
 
     public function edit($id)
     {
+        if ($redirect = $this->authorize('purchase_requests.update')) {
+            return $redirect;
+        }
+
         $model         = new PurchaseRequestModel();
         $supplierModel = new SupplierModel();
         $branchModel   = new BranchModel();
@@ -137,6 +138,10 @@ class PurchaseRequest extends Controller
 
     public function update($id)
     {
+        if ($redirect = $this->authorize('purchase_requests.update')) {
+            return $redirect;
+        }
+
         $model = new PurchaseRequestModel();
 
         $data = [
@@ -158,6 +163,10 @@ class PurchaseRequest extends Controller
 
     public function delete($id)
     {
+        if ($redirect = $this->authorize('purchase_requests.delete')) {
+            return $redirect;
+        }
+
         $model = new PurchaseRequestModel();
         $model->delete($id);
 
@@ -166,17 +175,14 @@ class PurchaseRequest extends Controller
 
     public function approve($id)
     {
-        $session = session();
-
-        // Only Central Office Admin can approve
-        if ($session->get('role') !== 'Central Office Admin') {
-            return redirect()->back()->with('error', 'Unauthorized');
+        if ($redirect = $this->authorize('purchase_requests.approve')) {
+            return $redirect;
         }
 
         $requestModel = new \App\Models\PurchaseRequestModel();
         $purchaseOrderModel = new \App\Models\PurchaseOrderModel();
 
-        $approvedBy = (int) $session->get('user_id');
+        $approvedBy = (int) $this->session->get('user_id');
 
         try {
             // 1️⃣ Find the request first
@@ -217,9 +223,8 @@ class PurchaseRequest extends Controller
 
     public function cancel($id)
     {
-        $session = session();
-        if ($session->get('role') !== 'Central Office Admin') {
-            return redirect()->back()->with('error', 'Unauthorized');
+        if ($redirect = $this->authorize('purchase_requests.cancel')) {
+            return $redirect;
         }
 
         $remarks = $this->request->getPost('remarks');
@@ -236,9 +241,8 @@ class PurchaseRequest extends Controller
 
     public function reject($id)
     {
-        $session = session();
-        if ($session->get('role') !== 'Central Office Admin') {
-            return redirect()->back()->with('error', 'Unauthorized');
+        if ($redirect = $this->authorize('purchase_requests.reject')) {
+            return $redirect;
         }
 
         $model = new PurchaseRequestModel();
