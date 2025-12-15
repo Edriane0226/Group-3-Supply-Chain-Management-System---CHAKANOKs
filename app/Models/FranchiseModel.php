@@ -43,7 +43,7 @@ class FranchiseModel extends Model
     protected $validationRules = [
         'applicant_name' => 'required|min_length[3]|max_length[150]',
         'contact_info'   => 'required|max_length[150]',
-        'email'          => 'permit_empty|valid_email|max_length[150]',
+    'email'          => 'permit_empty|valid_email|max_length[150]|is_unique[franchises.email]',
     ];
 
     protected $validationMessages = [

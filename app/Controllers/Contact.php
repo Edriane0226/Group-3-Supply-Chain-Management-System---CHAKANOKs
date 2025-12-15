@@ -8,6 +8,7 @@ use App\Models\ContactMessageModel;
 
 class Contact extends BaseController
 {
+    private const ALPHANUMERIC_SPACE_NEWLINE_RULE = 'regex_match[/^[A-Za-z0-9 \r\n]+$/]';
     protected ContactMessageModel $contactModel;
 
     public function __construct()
@@ -40,35 +41,39 @@ class Contact extends BaseController
         $rules = [
             'name' => [
                 'label' => 'Name',
-                'rules' => 'required|min_length[3]|max_length[50]',
+                'rules' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[3]|max_length[50]',
                 'errors' => [
                     'required' => 'The {field} field is required.',
                     'min_length' => 'The {field} must be at least {param} characters long.',
-                    'max_length' => 'The {field} cannot exceed {param} characters.'
+                    'max_length' => 'The {field} cannot exceed {param} characters.',
+                    'regex_match' => 'The {field} may only contain letters, numbers, spaces, and line breaks.'
                 ]
             ],
             'email' => [
                 'label' => 'Email',
-                'rules' => 'required|valid_email',
+                'rules' => 'required|valid_email|is_unique[contact_messages.email]',
                 'errors' => [
                     'required' => 'The {field} field is required.',
-                    'valid_email' => 'Please provide a valid {field} address.'
+                    'valid_email' => 'Please provide a valid {field} address.',
+                    'is_unique' => 'We have already received a message from this {field}. Please use a different email.'
                 ]
             ],
             'subject' => [
                 'label' => 'Subject',
-                'rules' => 'required|min_length[5]|max_length[100]',
+                'rules' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[5]|max_length[100]',
                 'errors' => [
                     'required' => 'The {field} field is required.',
-                    'min_length' => 'The {field} must be at least {param} characters long.'
+                    'min_length' => 'The {field} must be at least {param} characters long.',
+                    'regex_match' => 'The {field} may only contain letters, numbers, spaces, and line breaks.'
                 ]
             ],
             'message' => [
                 'label' => 'Message',
-                'rules' => 'required|min_length[10]',
+                'rules' => 'required|' . self::ALPHANUMERIC_SPACE_NEWLINE_RULE . '|min_length[10]',
                 'errors' => [
                     'required' => 'The {field} field is required.',
-                    'min_length' => 'The {field} must be at least {param} characters long.'
+                    'min_length' => 'The {field} must be at least {param} characters long.',
+                    'regex_match' => 'The {field} may only contain letters, numbers, spaces, and line breaks.'
                 ]
             ]
         ];

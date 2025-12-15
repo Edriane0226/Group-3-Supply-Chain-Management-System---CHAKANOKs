@@ -186,11 +186,11 @@ class BranchTransfer extends BaseController
         $rules = [
             'from_branch_id' => 'required|integer',
             'to_branch_id' => 'required|integer',
-            'item_name' => 'required|max_length[150]',
+            'item_name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[150]',
             'stock_in_id' => 'required|integer',
             'quantity' => 'required|integer|greater_than[0]',
-            'unit' => 'permit_empty|max_length[50]',
-            'notes' => 'permit_empty'
+            'unit' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[50]',
+            'notes' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]'
         ];
 
         if (!$this->validate($rules)) {

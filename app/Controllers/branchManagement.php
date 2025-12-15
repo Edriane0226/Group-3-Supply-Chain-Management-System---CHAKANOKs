@@ -45,8 +45,8 @@ class BranchManagement extends BaseController
         }
 
         $rules = [
-            'branch_name'  => 'required|min_length[3]|max_length[150]|regex_match[/^[A-Za-z0-9\s]+$/]',
-            'location'     => 'required|min_length[3]|max_length[255]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'branch_name'  => 'required|min_length[3]|max_length[150]|' . self::ALPHANUMERIC_SPACE_RULE,
+            'location'     => 'required|min_length[3]|max_length[255]|' . self::ALPHANUMERIC_SPACE_RULE,
             'contact_info' => 'permit_empty|regex_match[/^[0-9]{7,15}$/]',
             'status'       => 'required|in_list[existing,upcoming,franchise]',
         ];
@@ -153,8 +153,8 @@ class BranchManagement extends BaseController
         }
 
         $rules = [
-            'branch_name'  => 'required|min_length[3]|max_length[150]|regex_match[/^[A-Za-z0-9\s]+$/]',
-            'location'     => 'required|min_length[3]|max_length[255]|regex_match[/^[A-Za-z0-9\s]+$/]',
+            'branch_name'  => 'required|min_length[3]|max_length[150]|' . self::ALPHANUMERIC_SPACE_RULE,
+            'location'     => 'required|min_length[3]|max_length[255]|' . self::ALPHANUMERIC_SPACE_RULE,
             'contact_info' => 'permit_empty|regex_match[/^[0-9]{7,15}$/]',
             'status'       => 'required|in_list[existing,upcoming,franchise]',
         ];

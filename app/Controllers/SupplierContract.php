@@ -88,9 +88,14 @@ class SupplierContract extends BaseController
             'contract_type'     => 'required|in_list[Supply Agreement,Service Contract,Exclusive Agreement,Non-Exclusive Agreement]',
             'start_date'        => 'required|valid_date',
             'end_date'          => 'required|valid_date',
-            'payment_terms'     => 'permit_empty|max_length[100]',
+            'payment_terms'     => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[100]',
             'minimum_order_value' => 'permit_empty|decimal',
             'discount_rate'     => 'permit_empty|decimal',
+            'delivery_terms'    => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'quality_standards' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'penalty_clauses'   => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'status'            => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[50]',
+            'notes'             => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {
@@ -191,9 +196,14 @@ class SupplierContract extends BaseController
             'contract_type'     => 'required|in_list[Supply Agreement,Service Contract,Exclusive Agreement,Non-Exclusive Agreement]',
             'start_date'        => 'required|valid_date',
             'end_date'          => 'required|valid_date',
-            'payment_terms'     => 'permit_empty|max_length[100]',
+            'payment_terms'     => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[100]',
             'minimum_order_value' => 'permit_empty|decimal',
             'discount_rate'     => 'permit_empty|decimal',
+            'delivery_terms'    => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'quality_standards' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'penalty_clauses'   => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'status'            => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[50]',
+            'notes'             => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {
@@ -306,8 +316,13 @@ class SupplierContract extends BaseController
         }
 
         $rules = [
-            'start_date' => 'required|valid_date',
-            'end_date'   => 'required|valid_date',
+            'start_date'        => 'required|valid_date',
+            'end_date'          => 'required|valid_date',
+            'payment_terms'     => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[100]',
+            'delivery_terms'    => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'quality_standards' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'penalty_clauses'   => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'notes'             => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {

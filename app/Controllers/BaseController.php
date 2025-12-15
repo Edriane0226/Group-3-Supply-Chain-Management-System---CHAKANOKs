@@ -24,6 +24,10 @@ use Psr\Log\LoggerInterface;
 abstract class BaseController extends Controller
 {
     /**
+     * Shared regex rule to limit free-text inputs to letters, numbers, spaces, and line breaks.
+     */
+    protected const ALPHANUMERIC_SPACE_RULE = 'regex_match[/^[A-Za-z0-9 ]+$/]';
+    /**
      * Instance of the main Request object.
      *
      * @var CLIRequest|IncomingRequest

@@ -139,8 +139,9 @@ class SystemAdmin extends BaseController
         }
 
         $rules = [
-            'first_Name' => 'required|min_length[2]|max_length[100]',
-            'last_Name'  => 'required|min_length[2]|max_length[100]',
+            'first_Name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[2]|max_length[100]',
+            'middle_Name' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[100]',
+            'last_Name'  => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[2]|max_length[100]',
             'email'      => 'required|valid_email|is_unique[users.email]',
             'password'   => 'required|min_length[6]',
             'role_id'    => 'required|integer',
@@ -213,8 +214,9 @@ class SystemAdmin extends BaseController
         }
 
         $rules = [
-            'first_Name' => 'required|min_length[2]|max_length[100]',
-            'last_Name'  => 'required|min_length[2]|max_length[100]',
+            'first_Name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[2]|max_length[100]',
+            'middle_Name' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[100]',
+            'last_Name'  => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[2]|max_length[100]',
             'email'      => "required|valid_email|is_unique[users.email,id,{$id}]",
             'role_id'    => 'required|integer',
         ];
@@ -339,7 +341,8 @@ class SystemAdmin extends BaseController
         }
 
         $rules = [
-            'role_name' => 'required|min_length[3]|max_length[100]|is_unique[roles.role_name]',
+            'role_name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[3]|max_length[100]|is_unique[roles.role_name]',
+            'description' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {
@@ -378,7 +381,8 @@ class SystemAdmin extends BaseController
         }
 
         $rules = [
-            'role_name' => "required|min_length[3]|max_length[100]|is_unique[roles.role_name,id,{$id}]",
+            'role_name' => "required|" . self::ALPHANUMERIC_SPACE_RULE . "|min_length[3]|max_length[100]|is_unique[roles.role_name,id,{$id}]",
+            'description' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {

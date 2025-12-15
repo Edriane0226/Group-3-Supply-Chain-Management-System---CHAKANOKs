@@ -141,9 +141,13 @@ class FranchiseManagement extends BaseController
         }
 
         $rules = [
-            'applicant_name' => 'required|min_length[3]|max_length[150]',
-            'contact_info'   => 'required|max_length[150]',
-            'email'          => 'permit_empty|valid_email|max_length[150]',
+            'applicant_name'       => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|min_length[3]|max_length[150]',
+            'contact_info'         => 'required|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[150]',
+            'email'                => 'permit_empty|valid_email|max_length[150]|is_unique[franchises.email]',
+            'address'              => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'proposed_location'    => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'business_experience'  => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
+            'investment_capacity'  => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE . '|max_length[255]',
         ];
 
         if (!$this->validate($rules)) {

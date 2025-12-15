@@ -58,8 +58,9 @@ class UserManagement extends BaseController
         helper(['form']);
 
         $rules = [
-            'first_name' => 'required|regex_match[/^[a-zA-Z\s]+$/]',
-            'last_name'  => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'first_name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE,
+            'middle_name' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE,
+            'last_name'  => 'required|' . self::ALPHANUMERIC_SPACE_RULE,
             'email'      => 'required|valid_email|is_unique[users.email]|regex_match[/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/]',
             'role_id'    => 'required|integer',
             'branch_id'  => 'permit_empty|integer',
@@ -69,11 +70,14 @@ class UserManagement extends BaseController
         $messages = [
             'first_name' => [
                 'required'    => 'First name is required.',
-                'regex_match' => 'First name may only contain letters and spaces.'
+                'regex_match' => 'First name may only contain letters, numbers, and spaces.'
+            ],
+            'middle_name' => [
+                'regex_match' => 'Middle name may only contain letters, numbers, and spaces.'
             ],
             'last_name' => [
                 'required'    => 'Last name is required.',
-                'regex_match' => 'Last name may only contain letters and spaces.'
+                'regex_match' => 'Last name may only contain letters, numbers, and spaces.'
             ],
             'email' => [
                 'required'    => 'Email address is required.',
@@ -152,8 +156,9 @@ class UserManagement extends BaseController
         }
 
         $rules = [
-            'first_name' => 'required|regex_match[/^[a-zA-Z\s]+$/]',
-            'last_name'  => 'required|regex_match[/^[a-zA-Z\s]+$/]',
+            'first_name' => 'required|' . self::ALPHANUMERIC_SPACE_RULE,
+            'middle_name' => 'permit_empty|' . self::ALPHANUMERIC_SPACE_RULE,
+            'last_name'  => 'required|' . self::ALPHANUMERIC_SPACE_RULE,
             'email'      => 'required|valid_email|is_unique[users.email,id,' . $id . ']|regex_match[/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/]',
             'role_id'    => 'required|integer',
             'branch_id'  => 'permit_empty|integer',
@@ -163,11 +168,14 @@ class UserManagement extends BaseController
         $messages = [
             'first_name' => [
                 'required'    => 'First name is required.',
-                'regex_match' => 'First name may only contain letters and spaces.'
+                'regex_match' => 'First name may only contain letters, numbers, and spaces.'
+            ],
+            'middle_name' => [
+                'regex_match' => 'Middle name may only contain letters, numbers, and spaces.'
             ],
             'last_name' => [
                 'required'    => 'Last name is required.',
-                'regex_match' => 'Last name may only contain letters and spaces.'
+                'regex_match' => 'Last name may only contain letters, numbers, and spaces.'
             ],
             'email' => [
                 'required'    => 'Email address is required.',
