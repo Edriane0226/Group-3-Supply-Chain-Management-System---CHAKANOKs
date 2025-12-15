@@ -45,6 +45,11 @@ class FranchiseManagement extends BaseController
             return $redirect;
         }
 
+        $userId = (int)($this->session->get('user_id') ?? 0);
+        $notificationModel = new \App\Models\NotificationModel();
+        $notifications = $userId > 0 ? $notificationModel->getUserNotifications($userId, null) : [];
+        $unreadCount = $userId > 0 ? $notificationModel->getUnreadCount($userId) : 0;
+
         $data = [
             'role'  => $this->session->get('role'),
             'title' => 'Franchise Management',
@@ -55,6 +60,8 @@ class FranchiseManagement extends BaseController
             'recentPayments' => $this->paymentModel->getRecentPayments(5),
             'expiringContracts' => $this->franchiseModel->getExpiringContracts(30),
             'pendingAllocations' => $this->allocationModel->getPendingAllocations(),
+            'notifications' => array_slice($notifications, 0, 10),
+            'unreadCount' => $unreadCount,
         ];
 
         return view('reusables/sidenav', $data) . view('franchise/dashboard', $data);

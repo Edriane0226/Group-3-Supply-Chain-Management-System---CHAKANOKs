@@ -234,4 +234,14 @@ $routes->group('admin', function($routes) {
 $routes->get('contact', 'Contact::index');
 $routes->post('contact/send', 'Contact::send');
 
+// Notification Routes
+$routes->group('notifications', function($routes) {
+    $routes->get('/', 'Notifications::index');
+    $routes->get('view/(:num)', 'Notifications::view/$1');
+    $routes->get('count', 'Notifications::count');
+    $routes->get('list', 'Notifications::getNotifications');
+    $routes->post('mark-read/(:num)', 'Notifications::markRead/$1');
+    $routes->post('mark-all-read', 'Notifications::markAllRead');
+});
+
 // Removed duplicate/invalid Branch routes for dashboard and inventory

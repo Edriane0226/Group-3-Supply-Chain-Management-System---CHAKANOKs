@@ -307,8 +307,120 @@
       </a>
   <?php endif; ?>
 
+  <!-- Notifications -->
+  <?php
+  $notificationModel = new \App\Models\NotificationModel();
+  $userId = session()->get('user_id');
+  $unreadNotifications = $userId ? $notificationModel->getUnreadCount($userId) : 0;
+  $recentNotifications = $userId ? $notificationModel->getUserNotifications($userId, 'pending') : [];
+  $recentNotifications = array_slice($recentNotifications, 0, 5);
+  ?>
+  <div class="notification-container" style="position: relative; width: 100%; margin: 8px;">
+    <a href="#" class="notification-toggle" style="color: #fff; text-decoration: none; width: 100%; padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-radius: 6px; margin: 2px 0;">
+      <i class="bi bi-bell me-2"></i> Notifications
+      <?php if ($unreadNotifications > 0): ?>
+        <span class="badge bg-danger ms-auto" id="notification-badge"><?= $unreadNotifications ?></span>
+      <?php endif; ?>
+    </a>
+    
+    <!-- Notification Dropdown -->
+    <div class="notification-dropdown" id="notificationDropdown" style="display: none; position: absolute; bottom: 100%; left: 0; width: 300px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-bottom: 8px; max-height: 400px; overflow-y: auto;">
+      <div style="padding: 12px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center;">
+        <strong>Notifications</strong>
+        <button type="button" class="btn btn-sm btn-link text-danger p-0" id="markAllRead" style="font-size: 0.8rem;">Mark all read</button>
+      </div>
+      <div id="notificationList">
+        <?php if (!empty($recentNotifications)): ?>
+          <?php foreach ($recentNotifications as $notif): ?>
+            <div class="notification-item" data-id="<?= $notif['id'] ?>" style="padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer;" onclick="window.location.href='<?= site_url('notifications/view/' . $notif['id']) ?>'">
+              <div style="font-weight: 600; font-size: 0.9rem; color: #333;"><?= esc($notif['title']) ?></div>
+              <div style="font-size: 0.85rem; color: #666; margin-top: 4px;"><?= esc($notif['message']) ?></div>
+              <div style="font-size: 0.75rem; color: #999; margin-top: 4px;"><?= date('M d, Y H:i', strtotime($notif['created_at'])) ?></div>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <div style="padding: 20px; text-align: center; color: #999;">
+            <i class="bi bi-bell-slash" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No new notifications</p>
+          </div>
+        <?php endif; ?>
+      </div>
+      <div style="padding: 8px; text-align: center; border-top: 1px solid #dee2e6;">
+        <a href="<?= site_url('notifications') ?>" style="color: #007bff; text-decoration: none; font-size: 0.85rem;">View all notifications</a>
+      </div>
+    </div>
+  </div>
+
   <a href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const notificationToggle = document.querySelector('.notification-toggle');
+  const notificationDropdown = document.getElementById('notificationDropdown');
+  
+  if (notificationToggle && notificationDropdown) {
+    // Toggle dropdown
+    notificationToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      notificationDropdown.style.display = notificationDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!notificationToggle.contains(e.target) && !notificationDropdown.contains(e.target)) {
+        notificationDropdown.style.display = 'none';
+      }
+    });
+    
+    // Mark all as read
+    const markAllRead = document.getElementById('markAllRead');
+    if (markAllRead) {
+      markAllRead.addEventListener('click', function(e) {
+        e.stopPropagation();
+        fetch('<?= site_url('notifications/mark-all-read') ?>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          }
+        });
+      });
+    }
+    
+    // Poll for new notifications every 30 seconds
+    setInterval(function() {
+      fetch('<?= site_url('notifications/count') ?>')
+        .then(response => response.json())
+        .then(data => {
+          const badge = document.getElementById('notification-badge');
+          if (data.count > 0) {
+            if (badge) {
+              badge.textContent = data.count;
+            } else {
+              const newBadge = document.createElement('span');
+              newBadge.className = 'badge bg-danger ms-auto';
+              newBadge.id = 'notification-badge';
+              newBadge.textContent = data.count;
+              notificationToggle.appendChild(newBadge);
+            }
+          } else {
+            if (badge) {
+              badge.remove();
+            }
+          }
+        })
+        .catch(error => console.error('Error fetching notifications:', error));
+    }, 30000);
+  }
+});
+</script>
 
 <!-- Content will be inserted here by controller -->
 </body>

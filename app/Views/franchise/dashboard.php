@@ -27,6 +27,37 @@
         </div>
     <?php endif; ?>
 
+    <!-- Notifications Section -->
+    <?php if (!empty($notifications ?? [])): ?>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Recent Notifications</h6>
+            <?php if (($unreadCount ?? 0) > 0): ?>
+                <span class="badge bg-danger"><?= $unreadCount ?> unread</span>
+            <?php endif; ?>
+        </div>
+        <div class="card-body">
+            <div class="list-group list-group-flush">
+                <?php foreach (array_slice($notifications, 0, 5) as $notification): ?>
+                    <div class="list-group-item <?= $notification['status'] === 'pending' ? 'bg-light' : '' ?>">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><?= esc($notification['title']) ?></h6>
+                            <small class="text-muted"><?= date('M d, H:i', strtotime($notification['created_at'])) ?></small>
+                        </div>
+                        <p class="mb-1 small"><?= esc($notification['message']) ?></p>
+                        <?php if ($notification['status'] === 'pending'): ?>
+                            <small class="badge bg-warning text-dark">New</small>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="text-center mt-3">
+                <a href="<?= site_url('notifications') ?>" class="btn btn-sm btn-outline-primary">View All Notifications</a>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Statistics Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">

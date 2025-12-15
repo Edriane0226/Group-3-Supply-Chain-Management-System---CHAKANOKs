@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\RoleModel;
+use App\Models\NotificationModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
@@ -39,6 +40,7 @@ abstract class BaseController extends Controller
     protected $session;
 
     protected RoleModel $roleModel;
+    protected NotificationModel $notificationModel;
 
     /**
      * Cached current user's permissions for the lifetime of the request.
@@ -56,6 +58,7 @@ abstract class BaseController extends Controller
         $this->session = session();
         helper(['url']);
         $this->roleModel = new RoleModel();
+        $this->notificationModel = new NotificationModel();
     }
 
     /**
@@ -216,5 +219,102 @@ abstract class BaseController extends Controller
     {
         $this->cachedPermissions = $permissions;
         $this->session->set('permissions', $permissions);
+    }
+
+    /**
+     * Create notification for action (helper method for all controllers)
+     * 
+     * @param string $action Action type (create, update, delete, approve, reject, etc.)
+     * @param string $module Module name (users, purchase_requests, etc.)
+     * @param int|null $referenceId Reference ID for the action
+     * @param array $userIds Array of user IDs to notify
+     * @param string|null $customMessage Custom message (optional)
+     * @param string|null $customTitle Custom title (optional)
+     */
+    protected function notifyAction(string $action, string $module, ?int $referenceId = null, array $userIds = [], ?string $customMessage = null, ?string $customTitle = null): void
+    {
+        if (empty($userIds)) {
+            return;
+        }
+
+        // Default messages for common actions
+        $actionMessages = [
+            'create' => 'A new {module} has been created.',
+            'update' => 'A {module} has been updated.',
+            'delete' => 'A {module} has been deleted.',
+            'approve' => 'A {module} has been approved.',
+            'reject' => 'A {module} has been rejected.',
+            'cancel' => 'A {module} has been cancelled.',
+            'complete' => 'A {module} has been completed.',
+            'payment' => 'A payment has been recorded for {module}.',
+            'status_change' => 'Status of {module} has been changed.',
+        ];
+
+        $moduleLabels = [
+            'users' => 'user',
+            'purchase_requests' => 'purchase request',
+            'purchase_orders' => 'purchase order',
+            'deliveries' => 'delivery',
+            'inventory' => 'inventory item',
+            'branches' => 'branch',
+            'franchises' => 'franchise',
+            'accounts_payable' => 'invoice',
+            'branch_transfers' => 'branch transfer',
+            'supplier_contracts' => 'supplier contract',
+            'roles' => 'role',
+        ];
+
+        $moduleLabel = $moduleLabels[$module] ?? $module;
+        $defaultMessage = $actionMessages[$action] ?? 'An action has been performed on {module}.';
+        $message = $customMessage ?? str_replace('{module}', $moduleLabel, $defaultMessage);
+        $title = $customTitle ?? ucfirst(str_replace('_', ' ', $module)) . ' ' . ucfirst($action);
+
+        // Get current user ID
+        $currentUserId = (int) ($this->session->get('user_id') ?? 0);
+        
+        // If no specific users provided, notify all relevant users based on module
+        if (empty($userIds)) {
+            $userModel = new \App\Models\UserModel();
+            
+            switch ($module) {
+                case 'purchase_requests':
+                case 'purchase_orders':
+                    // Notify central office admins and logistics coordinators
+                    $users = $userModel->whereIn('role', ['Central Office Admin', 'Logistics Coordinator'])->findAll();
+                    $userIds = array_column($users, 'id');
+                    break;
+                case 'deliveries':
+                    // Notify branch managers and inventory staff
+                    $users = $userModel->whereIn('role', ['Branch Manager', 'Inventory Staff'])->findAll();
+                    $userIds = array_column($users, 'id');
+                    break;
+                case 'users':
+                case 'roles':
+                case 'branches':
+                    // Notify all admins
+                    $users = $userModel->whereIn('role', ['System Administrator', 'Central Office Admin'])->findAll();
+                    $userIds = array_column($users, 'id');
+                    break;
+                default:
+                    // Notify all users (can be refined per module)
+                    $users = $userModel->findAll();
+                    $userIds = array_column($users, 'id');
+            }
+        }
+
+        // Remove current user from notifications (don't notify yourself)
+        $userIds = array_filter($userIds, fn($id) => $id !== $currentUserId);
+
+        // Create notifications for each user
+        foreach ($userIds as $userId) {
+            $this->notificationModel->createNotification([
+                'user_id' => $userId,
+                'type' => 'in_app',
+                'title' => $title,
+                'message' => $message,
+                'reference_type' => $module,
+                'reference_id' => $referenceId ?? 0,
+            ]);
+        }
     }
 }

@@ -29,12 +29,18 @@ class Dashboard extends BaseController
         $role = $session->get('role');
         $branchName = $session->get('branch_name');
         $branchId = (int)($session->get('branch_id') ?? 0);
+        $userId = (int)($session->get('user_id') ?? 0);
 
         $userModel = new UserModel();
         $branchModel = new BranchModel();
         $deliveryScheduleModel = new DeliveryScheduleModel();
         $inventoryModel = new InventoryModel();
+        $notificationModel = new \App\Models\NotificationModel();
         $AllBranches = $branchModel->findAll();
+        
+        // Get notifications for current user
+        $notifications = $userId > 0 ? $notificationModel->getUserNotifications($userId, null) : [];
+        $unreadCount = $userId > 0 ? $notificationModel->getUnreadCount($userId) : 0;
 
         if ($role === 'Branch Manager') {
             try {
@@ -142,6 +148,8 @@ class Dashboard extends BaseController
                 'salesBreakdown' => 'N/A', // Placeholder - can be implemented later
                 'inventoryLevels' => 'N/A', // Placeholder - can be implemented later
                 'recentActivity' => 'N/A', // Placeholder - can be implemented later
+                'notifications' => array_slice($notifications, 0, 10),
+                'unreadCount' => $unreadCount,
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
@@ -284,12 +292,17 @@ class Dashboard extends BaseController
                 'reorderPointAnalysis' => $reorderPointAnalysis,
                 'demandVsSupply' => $demandVsSupply,
                 'seasonalPatterns' => $seasonalPatterns,
+                // Notifications
+                'notifications' => array_slice($notifications, 0, 10),
+                'unreadCount' => $unreadCount,
             ];
 
             return view('reusables/sidenav', $data) . view('pages/dashboard');
         } elseif ($role === 'Inventory Staff') {
             $data = [
                 'role' => $role,
+                'notifications' => array_slice($notifications, 0, 10),
+                'unreadCount' => $unreadCount,
             ];
 
             return view('reusables/sidenav', $data) . view('pages/inventory_overview');

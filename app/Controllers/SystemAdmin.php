@@ -50,6 +50,10 @@ class SystemAdmin extends BaseController
             return $redirect;
         }
 
+        $userId = (int)($this->session->get('user_id') ?? 0);
+        $notifications = $userId > 0 ? $this->notificationModel->getUserNotifications($userId, null) : [];
+        $unreadCount = $userId > 0 ? $this->notificationModel->getUnreadCount($userId) : 0;
+        
         $data = [
             'role'  => $this->session->get('role'),
             'title' => 'System Administration',
@@ -63,6 +67,8 @@ class SystemAdmin extends BaseController
             'activityStats'    => $this->activityLogModel->getStatistics(),
             'recentActivities' => $this->activityLogModel->getRecentActivities(10),
             'systemHealth'     => $this->getSystemHealth(),
+            'notifications'    => array_slice($notifications, 0, 10),
+            'unreadCount'      => $unreadCount,
         ];
 
         return view('reusables/sidenav', $data) . view('admin/dashboard', $data);
