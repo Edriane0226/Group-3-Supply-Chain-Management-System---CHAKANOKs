@@ -6,9 +6,53 @@ use App\Models\UserModel;
 use App\Models\BranchModel;
 use App\Models\RoleModel;
 use CodeIgniter\Controller;
+use CodeIgniter\HTTP\RedirectResponse;
 
 class Auth extends Controller
 {
+    /**
+     * Check if current user's role has been changed to have no permissions.
+     * If so, log them out automatically.
+     */
+    protected function checkRolePermissions(): ?RedirectResponse
+    {
+        $session = session();
+        
+        if (!$session->get('isLoggedIn')) {
+            return null;
+        }
+
+        // System Administrator always has access
+        if ($session->get('role') === 'System Administrator') {
+            return null;
+        }
+
+        $roleModel = new RoleModel();
+        $roleId = (int) ($session->get('role_id') ?? 0);
+        
+        if ($roleId > 0) {
+            $role = $roleModel->find($roleId);
+            
+            if ($role) {
+                // Check if role has permissions
+                $permissions = [];
+                if (!empty($role['permissions'])) {
+                    $decoded = json_decode($role['permissions'], true);
+                    if (is_array($decoded)) {
+                        $permissions = $decoded;
+                    }
+                }
+                
+                // If role has no permissions, log the user out
+                if (empty($permissions)) {
+                    $session->destroy();
+                    return redirect()->to(site_url('login'))->with('error', 'You don\'t have permission to access this system.');
+                }
+            }
+        }
+
+        return null;
+    }
 
     // Show Login Form
     public function login()
@@ -179,6 +223,12 @@ class Auth extends Controller
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
         }
 
+        // Check if user's role has been changed to have no permissions
+        $roleCheck = $this->checkRolePermissions();
+        if ($roleCheck !== null) {
+            return $roleCheck;
+        }
+
         if (session()->get('role') === 'Central Office Admin') {
             // Include sidenav for Central Office Admin
             return view('reusables/sidenav') . view('pages/central');
@@ -193,6 +243,12 @@ class Auth extends Controller
     {
         if (!session()->get('isLoggedIn')) {
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        // Check if user's role has been changed to have no permissions
+        $roleCheck = $this->checkRolePermissions();
+        if ($roleCheck !== null) {
+            return $roleCheck;
         }
 
         $role = session()->get('role');
@@ -214,6 +270,12 @@ class Auth extends Controller
     {
         if (!session()->get('isLoggedIn')) {
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        // Check if user's role has been changed to have no permissions
+        $roleCheck = $this->checkRolePermissions();
+        if ($roleCheck !== null) {
+            return $roleCheck;
         }
 
         if (session()->get('role') === 'Central Office Admin') {

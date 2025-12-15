@@ -59,6 +59,47 @@ abstract class BaseController extends Controller
     }
 
     /**
+     * Check if current user's role has been changed to have no permissions.
+     * If so, log them out automatically.
+     */
+    protected function checkRolePermissions(): ?RedirectResponse
+    {
+        if (!$this->session->get('isLoggedIn')) {
+            return null;
+        }
+
+        // System Administrator always has access
+        if ($this->session->get('role') === 'System Administrator') {
+            return null;
+        }
+
+        $roleId = (int) ($this->session->get('role_id') ?? 0);
+        
+        if ($roleId > 0) {
+            $role = $this->roleModel->find($roleId);
+            
+            if ($role) {
+                // Check if role has permissions
+                $permissions = [];
+                if (!empty($role['permissions'])) {
+                    $decoded = json_decode($role['permissions'], true);
+                    if (is_array($decoded)) {
+                        $permissions = $decoded;
+                    }
+                }
+                
+                // If role has no permissions, log the user out
+                if (empty($permissions)) {
+                    $this->session->destroy();
+                    return redirect()->to(site_url('login'))->with('error', 'You don\'t have permission to access this system.');
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Ensure the current user has the required permission.
      *
      * @param null|string|array $requiredPermission
@@ -67,6 +108,12 @@ abstract class BaseController extends Controller
     {
         if (!$this->session->get('isLoggedIn')) {
             return redirect()->to(site_url('login'))->with('error', 'Please login first.');
+        }
+
+        // Check if user's role has been changed to have no permissions
+        $roleCheck = $this->checkRolePermissions();
+        if ($roleCheck !== null) {
+            return $roleCheck;
         }
 
         if ($this->session->get('role') === 'System Administrator') {
