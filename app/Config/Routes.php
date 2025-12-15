@@ -13,6 +13,8 @@ $routes->get('/logout', 'Auth::logout');
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('dashboard/test-data', 'Dashboard::testData');
 $routes->get('dashboard/export', 'Dashboard::exportReport');
+$routes->get('dashboard/central-reports', 'Dashboard::centralReports');
+$routes->get('dashboard/export-central-report', 'Dashboard::exportCentralReport');
 
 //Central
 $routes->get('/central', 'Auth::centralDashboard');

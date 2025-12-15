@@ -171,6 +171,9 @@
       <a href="<?= site_url('accounts-payable') ?>" class="<?= (strpos(uri_string(), 'accounts-payable') !== false) ? 'active' : '' ?>">
           <i class="bi bi-cash-coin me-2"></i> Accounts Payable
       </a>
+      <a href="<?= site_url('dashboard/central-reports') ?>" class="<?= (uri_string() == 'dashboard/central-reports') ? 'active' : '' ?>">
+          <i class="bi bi-file-earmark-bar-graph me-2"></i> Reports
+      </a>
 
   <?php elseif ($role === 'Inventory Staff'): ?>
       <a href="<?= site_url('inventory/overview') ?>" class="<?= (uri_string() == 'inventory/overview') ? 'active' : '' ?>">

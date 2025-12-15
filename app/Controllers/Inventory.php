@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\InventoryModel;
 use App\Models\DeliveryScheduleModel;
 use App\Models\PurchaseOrderModel;
+use App\Models\BranchModel;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\HTTP\ResponseInterface;
 
@@ -161,53 +162,80 @@ class Inventory extends BaseController
     // ✅ Export reports
     public function export(): ResponseInterface
     {
-        $format = $this->request->getGet('export') ?? 'csv';
-        $branchId = (int)$this->request->getGet('branch_id') ?? (int)(session()->get('branch_id') ?? 0);
-        $itemTypeId = $this->request->getGet('item_type_id');
-        $dateFrom = $this->request->getGet('date_from');
-        $dateTo = $this->request->getGet('date_to');
+        try {
+            $format = $this->request->getGet('export') ?? 'csv';
+            $branchId = (int)$this->request->getGet('branch_id') ?? (int)(session()->get('branch_id') ?? 0);
+            $itemTypeId = $this->request->getGet('item_type_id');
+            $dateFrom = $this->request->getGet('date_from');
+            $dateTo = $this->request->getGet('date_to');
 
-        $data = $this->inventoryModel->getExportData($branchId, $itemTypeId, $dateFrom, $dateTo);
-        
-        // Prepare data for export
-        $exportData = [];
-        foreach ($data as $item) {
-            $exportData[] = [
-                $item['item_name'] ?? '',
-                $item['current_stock'] ?? 0,
-                $item['unit'] ?? '',
-                $item['expiry_date'] ?? 'N/A',
-                $item['barcode'] ?? '',
-                $item['updated_at'] ?? ''
-            ];
-        }
-        
-        $headers = ['Item Name', 'Current Stock', 'Unit', 'Expiry Date', 'Barcode', 'Last Updated'];
-        $title = 'Inventory Report - ' . date('F d, Y');
-        $reportExport = new \App\Libraries\ReportExport();
-
-        if ($format === 'csv') {
-            $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
-            $csv = $reportExport->generateCSV($exportData, $headers);
-            return $this->response
-                ->setHeader('Content-Type', 'text/csv')
-                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setBody($csv);
-        } elseif ($format === 'pdf') {
-            $filename = 'inventory_report_' . date('Y-m-d') . '.pdf';
-            $pdfContent = $reportExport->generatePDF($exportData, $title, $headers);
-            return $this->response
-                ->setHeader('Content-Type', 'application/pdf')
-                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setBody($pdfContent);
-        } elseif ($format === 'excel' || $format === 'xlsx') {
-            $filename = 'inventory_report_' . date('Y-m-d') . '.xlsx';
-            $excelFile = $reportExport->generateExcel($exportData, $title, $headers);
+            $data = $this->inventoryModel->getExportData($branchId, $itemTypeId, $dateFrom, $dateTo);
             
-            return $this->response->download($excelFile, null)->setFileName($filename);
-        }
+            // Prepare data for export
+            $exportData = [];
+            if (!empty($data)) {
+                foreach ($data as $item) {
+                    $exportData[] = [
+                        $item['item_name'] ?? '',
+                        $item['current_stock'] ?? 0,
+                        $item['unit'] ?? '',
+                        $item['expiry_date'] ?? 'N/A',
+                        $item['barcode'] ?? '',
+                        $item['updated_at'] ?? ''
+                    ];
+                }
+            } else {
+                // If no data, add a message row
+                $exportData[] = ['No data available for the selected filters', '', '', '', '', ''];
+            }
+            
+            $headers = ['Item Name', 'Current Stock', 'Unit', 'Expiry Date', 'Barcode', 'Last Updated'];
+            $title = 'Inventory Report - ' . date('F d, Y');
+            $reportExport = new \App\Libraries\ReportExport();
 
-        return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+            if ($format === 'csv') {
+                $filename = 'inventory_report_' . date('Y-m-d') . '.csv';
+                $csv = $reportExport->generateCSV($exportData, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($csv);
+            } elseif ($format === 'pdf') {
+                $filename = 'inventory_report_' . date('Y-m-d') . '.pdf';
+                $pdfContent = $reportExport->generatePDF($exportData, $title, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'application/pdf')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($pdfContent);
+            } elseif ($format === 'excel' || $format === 'xlsx') {
+                $filename = 'inventory_report_' . date('Y-m-d') . '.xlsx';
+                $excelFile = $reportExport->generateExcel($exportData, $title, $headers);
+                
+                if (!file_exists($excelFile)) {
+                    throw new \Exception('Excel file was not created successfully');
+                }
+                
+                $excelContent = file_get_contents($excelFile);
+                // Clean up temp file after reading
+                @unlink($excelFile);
+                
+                return $this->response
+                    ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setHeader('Content-Length', strlen($excelContent))
+                    ->setBody($excelContent);
+            }
+
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+        } catch (\Exception $e) {
+            log_message('error', 'Export error: ' . $e->getMessage());
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'error' => 'Export failed: ' . $e->getMessage(),
+                    'message' => 'Please check if required libraries (TCPDF, PhpSpreadsheet) are installed. Run: composer install'
+                ]);
+        }
     }
 
     // ✅ Receive stock (increase)
@@ -315,7 +343,10 @@ class Inventory extends BaseController
         if ($guard) return $guard;
         if ((string)session()->get('role') !== 'Branch Manager' && (string)session()->get('role') !== 'Central Office Admin' && (string)session()->get('role') !== 'Inventory Staff') { return redirect()->to('/inventory'); }
         $branchId = (int)(session()->get('branch_id') ?? 0);
+        $branchModel = new BranchModel();
         $data['balance'] = $this->inventoryModel->getBalance($branchId);
+        $data['stockTypes'] = $this->inventoryModel->getStockTypes();
+        $data['branches'] = $branchModel->findAll();
         return view('pages/inventory_reports', $data);
     }
 

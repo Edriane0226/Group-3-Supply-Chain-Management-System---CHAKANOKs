@@ -10,6 +10,12 @@ use App\Models\InventoryModel;
 use App\Models\BranchModel;
 use App\Models\DeliveryScheduleModel;
 use App\Models\DemandAnalysisModel;
+use App\Models\FranchiseModel;
+use App\Models\FranchisePaymentModel;
+use App\Models\BranchTransferModel;
+use App\Models\AccountsPayableModel;
+use App\Models\SupplierModel;
+use CodeIgniter\HTTP\ResponseInterface;
 
 
 class Dashboard extends Controller
@@ -406,5 +412,223 @@ class Dashboard extends Controller
         }
 
         return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+    }
+
+    /**
+     * Central Office Reports Page - Comprehensive reports for all modules
+     */
+    public function centralReports()
+    {
+        $session = session();
+        
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Central Office Admin') {
+            return redirect()->to(site_url('login'))->with('error', 'Unauthorized access.');
+        }
+
+        $inventoryModel = new InventoryModel();
+        $branchModel = new BranchModel();
+        $deliveryScheduleModel = new DeliveryScheduleModel();
+        $franchiseModel = new FranchiseModel();
+        $branchTransferModel = new BranchTransferModel();
+        $supplierModel = new SupplierModel();
+
+        $data = [
+            'role' => $session->get('role'),
+            'title' => 'Central Office Reports',
+            'branches' => $branchModel->findAll(),
+            'stockTypes' => $inventoryModel->getStockTypes(),
+            'suppliers' => $supplierModel->findAll(),
+        ];
+
+        return view('reusables/sidenav', $data) . view('pages/central_reports', $data);
+    }
+
+    /**
+     * Export Central Office Reports
+     */
+    public function exportCentralReport(): ResponseInterface
+    {
+        $session = session();
+        
+        if (!$session->get('isLoggedIn') || $session->get('role') !== 'Central Office Admin') {
+            return $this->response->setStatusCode(403)->setJSON(['error' => 'Unauthorized access.']);
+        }
+
+        try {
+            $reportType = $this->request->getGet('type') ?? 'inventory';
+            $format = $this->request->getGet('format') ?? 'pdf';
+            $branchId = (int)$this->request->getGet('branch_id') ?? 0;
+            $itemTypeId = $this->request->getGet('item_type_id');
+            $dateFrom = $this->request->getGet('date_from');
+            $dateTo = $this->request->getGet('date_to');
+
+            $reportExport = new \App\Libraries\ReportExport();
+            $data = [];
+            $headers = [];
+            $title = '';
+
+            $inventoryModel = new InventoryModel();
+            $branchModel = new BranchModel();
+            $deliveryScheduleModel = new DeliveryScheduleModel();
+            $franchiseModel = new FranchiseModel();
+            $franchisePaymentModel = new FranchisePaymentModel();
+            $branchTransferModel = new BranchTransferModel();
+            $accountsPayableModel = new AccountsPayableModel();
+            $supplierModel = new SupplierModel();
+
+            switch ($reportType) {
+                case 'inventory':
+                    $title = 'Inventory Report - ' . date('F d, Y');
+                    $exportData = $inventoryModel->getExportData($branchId, $itemTypeId, $dateFrom, $dateTo);
+                    $headers = ['Item Name', 'Current Stock', 'Unit', 'Expiry Date', 'Barcode', 'Last Updated'];
+                    foreach ($exportData as $item) {
+                        $data[] = [
+                            $item['item_name'] ?? '',
+                            $item['current_stock'] ?? 0,
+                            $item['unit'] ?? '',
+                            $item['expiry_date'] ?? 'N/A',
+                            $item['barcode'] ?? 'N/A',
+                            $item['updated_at'] ?? 'N/A'
+                        ];
+                    }
+                    break;
+
+                case 'branch':
+                    $title = 'Branch Performance Report - ' . date('F d, Y');
+                    $branches = $branchModel->findAll();
+                    $headers = ['Branch Name', 'Location', 'Status', 'Total Inventory Items', 'Total Stock Value'];
+                    foreach ($branches as $branch) {
+                        $branchInventory = $inventoryModel->getBalance($branch['id']);
+                        $totalItems = count($branchInventory);
+                        $totalValue = 0;
+                        foreach ($branchInventory as $item) {
+                            $totalValue += ($item['current_stock'] ?? 0) * ($item['price'] ?? 0);
+                        }
+                        $data[] = [
+                            $branch['branch_name'] ?? 'N/A',
+                            $branch['location'] ?? 'N/A',
+                            ucfirst($branch['status'] ?? 'N/A'),
+                            $totalItems,
+                            '₱' . number_format($totalValue, 2)
+                        ];
+                    }
+                    break;
+
+                case 'logistics':
+                    $title = 'Logistics Coordinator Report - ' . date('F d, Y');
+                    $startDate = $dateFrom ?: date('Y-m-d', strtotime('-30 days'));
+                    $endDate = $dateTo ?: date('Y-m-d');
+                    $schedules = $deliveryScheduleModel->getSchedulesByDateRange($startDate, $endDate);
+                    $headers = ['Schedule ID', 'Branch', 'Supplier', 'Scheduled Date', 'Status', 'Delivery Status'];
+                    foreach ($schedules as $schedule) {
+                        $po = (new PurchaseOrderModel())->find($schedule['po_id'] ?? 0);
+                        $branch = $branchModel->find($schedule['branch_id'] ?? 0);
+                        $data[] = [
+                            $schedule['id'] ?? 'N/A',
+                            $branch['branch_name'] ?? 'N/A',
+                            $po['supplier_name'] ?? 'N/A',
+                            date('M d, Y', strtotime($schedule['scheduled_date'] ?? '')),
+                            ucfirst($schedule['status'] ?? 'N/A'),
+                            ucfirst($po['logistics_status'] ?? 'N/A')
+                        ];
+                    }
+                    break;
+
+                case 'franchise':
+                    $title = 'Franchise Performance Report - ' . date('F d, Y');
+                    $startDate = $dateFrom ?: date('Y-m-d', strtotime('-12 months'));
+                    $endDate = $dateTo ?: date('Y-m-d');
+                    $performanceData = $franchiseModel->getAllFranchisesPerformance($startDate, $endDate);
+                    $headers = ['Franchise', 'Status', 'Total Payments', 'Avg Monthly Revenue', 'Overall Score'];
+                    foreach ($performanceData as $perf) {
+                        $data[] = [
+                            $perf['franchise_name'] ?? 'N/A',
+                            ucfirst($perf['status'] ?? 'N/A'),
+                            '₱' . number_format($perf['total_payments'] ?? 0, 2),
+                            '₱' . number_format($perf['avg_monthly_revenue'] ?? 0, 2),
+                            number_format($perf['overall_score'] ?? 0, 1)
+                        ];
+                    }
+                    break;
+
+                case 'accounts-payable':
+                    $title = 'Accounts Payable Report - ' . date('F d, Y');
+                    $supplierId = $this->request->getGet('supplier_id') ? (int)$this->request->getGet('supplier_id') : null;
+                    $status = $this->request->getGet('status');
+                    
+                    $accountsPayable = $accountsPayableModel->getAccountsPayableWithRelations($supplierId, $status);
+                    
+                    // Filter by date range if provided
+                    if ($dateFrom && $dateTo) {
+                        $accountsPayable = array_filter($accountsPayable, function($ap) use ($dateFrom, $dateTo) {
+                            $invoiceDate = $ap['invoice_date'] ?? $ap['created_at'];
+                            return $invoiceDate >= $dateFrom && $invoiceDate <= $dateTo;
+                        });
+                    }
+                    
+                    $headers = ['Invoice #', 'Supplier', 'Branch', 'Invoice Amount', 'Amount Paid', 'Balance Due', 'Due Date', 'Payment Status'];
+                    foreach ($accountsPayable as $ap) {
+                        $data[] = [
+                            'AP-' . str_pad($ap['id'], 6, '0', STR_PAD_LEFT),
+                            $ap['supplier_name'] ?? 'N/A',
+                            $ap['branch_name'] ?? 'N/A',
+                            '₱' . number_format($ap['invoice_amount'] ?? 0, 2),
+                            '₱' . number_format($ap['amount_paid'] ?? 0, 2),
+                            '₱' . number_format($ap['balance_due'] ?? 0, 2),
+                            $ap['due_date'] ? date('M d, Y', strtotime($ap['due_date'])) : 'N/A',
+                            ucfirst($ap['payment_status'] ?? 'N/A')
+                        ];
+                    }
+                    break;
+
+                default:
+                    return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid report type']);
+            }
+
+            if (empty($data)) {
+                $data[] = ['No data available for the selected filters', '', '', '', '', ''];
+            }
+
+            if ($format === 'csv') {
+                $filename = str_replace(' ', '_', strtolower($title)) . '.csv';
+                $csv = $reportExport->generateCSV($data, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($csv);
+            } elseif ($format === 'pdf') {
+                $filename = str_replace(' ', '_', strtolower($title)) . '.pdf';
+                $pdfContent = $reportExport->generatePDF($data, $title, $headers);
+                return $this->response
+                    ->setHeader('Content-Type', 'application/pdf')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setBody($pdfContent);
+            } elseif ($format === 'excel' || $format === 'xlsx') {
+                $filename = str_replace(' ', '_', strtolower($title)) . '.xlsx';
+                $excelFile = $reportExport->generateExcel($data, $title, $headers);
+                
+                if (!file_exists($excelFile)) {
+                    throw new \Exception('Excel file was not created successfully');
+                }
+                
+                $excelContent = file_get_contents($excelFile);
+                @unlink($excelFile);
+                
+                return $this->response
+                    ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                    ->setHeader('Content-Length', strlen($excelContent))
+                    ->setBody($excelContent);
+            }
+
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid export format']);
+        } catch (\Exception $e) {
+            log_message('error', 'Central Report Export error: ' . $e->getMessage());
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'error' => 'Export failed: ' . $e->getMessage()
+                ]);
+        }
     }
 }
