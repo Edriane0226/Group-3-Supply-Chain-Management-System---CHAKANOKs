@@ -217,7 +217,8 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Amount (₱) <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="amount" class="form-control" required>
+                            <input type="text" name="amount" class="form-control payment-amount-input" placeholder="0.00" required>
+                            <input type="hidden" name="amount_raw" class="amount-raw-value">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Payment Date <span class="text-danger">*</span></label>
@@ -264,3 +265,86 @@
 </div>
 <?php endif; ?>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Format number with local-specific formatting (Philippines: comma for thousands, period for decimals)
+  function formatNumber(value) {
+    if (!value) return '';
+    
+    // Remove all non-numeric characters except decimal point
+    let num = value.toString().replace(/[^\d.]/g, '');
+    
+    // Split by decimal point
+    let parts = num.split('.');
+    let integerPart = parts[0];
+    let decimalPart = parts.length > 1 ? parts[1].substring(0, 2) : '';
+    
+    // Add thousands separator
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Combine
+    return decimalPart ? integerPart + '.' + decimalPart : integerPart;
+  }
+  
+  // Parse formatted number back to raw number
+  function parseNumber(formattedValue) {
+    if (!formattedValue) return '';
+    return formattedValue.toString().replace(/,/g, '');
+  }
+  
+  // Handle all payment amount inputs
+  const paymentInputs = document.querySelectorAll('.payment-amount-input');
+  
+  paymentInputs.forEach(function(input) {
+    const rawInput = input.closest('form').querySelector('.amount-raw-value');
+    
+    // Format on input
+    input.addEventListener('input', function(e) {
+      const cursorPosition = e.target.selectionStart;
+      const oldValue = e.target.value;
+      const formatted = formatNumber(e.target.value);
+      
+      e.target.value = formatted;
+      
+      // Update raw value for form submission
+      if (rawInput) {
+        rawInput.value = parseNumber(formatted);
+      }
+      
+      // Restore cursor position
+      const diff = formatted.length - oldValue.length;
+      e.target.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+    });
+    
+    // Format on blur
+    input.addEventListener('blur', function(e) {
+      const parsed = parseNumber(e.target.value);
+      if (parsed && !isNaN(parsed) && parseFloat(parsed) > 0) {
+        e.target.value = formatNumber(parseFloat(parsed).toFixed(2));
+        if (rawInput) {
+          rawInput.value = parseFloat(parsed).toFixed(2);
+        }
+      }
+    });
+    
+    // Before form submit, ensure raw value is set and update visible input
+    const form = input.closest('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const parsed = parseNumber(input.value);
+        if (parsed && !isNaN(parsed)) {
+          const rawValue = parseFloat(parsed).toFixed(2);
+          if (rawInput) {
+            rawInput.value = rawValue;
+            // Also update the visible input to raw value for submission
+            input.value = rawValue;
+          } else {
+            // If no hidden input, replace the visible input value with raw number
+            input.value = rawValue;
+          }
+        }
+      });
+    }
+  });
+});
+</script>

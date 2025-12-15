@@ -125,7 +125,17 @@ class AccountsPayable extends BaseController
             return redirect()->back()->with('error', 'Account payable not found.');
         }
 
-        $amount = (float)$this->request->getPost('amount');
+        // Get amount - check for raw value first (from formatted input), otherwise parse the formatted value
+        $amountRaw = $this->request->getPost('amount_raw');
+        $amountFormatted = $this->request->getPost('amount');
+        
+        if ($amountRaw) {
+            $amount = (float)$amountRaw;
+        } else {
+            // Parse formatted number (remove commas)
+            $amount = (float)str_replace(',', '', $amountFormatted);
+        }
+        
         $paymentMethod = $this->request->getPost('payment_method') ?? 'bank_transfer';
         $paymentReference = $this->request->getPost('payment_reference') ?? null;
         $notes = $this->request->getPost('notes') ?? null;

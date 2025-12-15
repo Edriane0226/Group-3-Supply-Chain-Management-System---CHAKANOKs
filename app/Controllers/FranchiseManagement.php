@@ -472,10 +472,21 @@ class FranchiseManagement extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        // Get amount - check for raw value first (from formatted input), otherwise parse the formatted value
+        $amountRaw = $this->request->getPost('amount_raw');
+        $amountFormatted = $this->request->getPost('amount');
+        
+        if ($amountRaw) {
+            $amount = (float)$amountRaw;
+        } else {
+            // Parse formatted number (remove commas)
+            $amount = (float)str_replace(',', '', $amountFormatted);
+        }
+
         $data = [
             'franchise_id'     => $franchiseId,
             'payment_type'     => $this->request->getPost('payment_type'),
-            'amount'           => $this->request->getPost('amount'),
+            'amount'           => $amount,
             'reference_number' => $this->request->getPost('reference_number'),
             'payment_method'   => $this->request->getPost('payment_method') ?: 'cash',
             'payment_date'     => $this->request->getPost('payment_date'),
